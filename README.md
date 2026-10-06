@@ -6,7 +6,7 @@
 [![Architectures](https://img.shields.io/badge/arch-amd64%20%7C%20aarch64%20%7C%20armv7-8957e5)](#architecture-support)
 [![Base image](https://img.shields.io/badge/base-Alpine%203.21-0db7ed)](claude-terminal/Dockerfile)
 
-A Home Assistant add-on that runs Anthropic's **Claude Code CLI** in a browser-based terminal, right inside your dashboard. It ships the tools you actually need for HA work — the `ha` and `gh` CLIs, git, Python — keeps your session alive across restarts with tmux, and lets you install extra packages that survive reboots.
+A Home Assistant app that runs Anthropic's **Claude Code CLI** in a browser-based terminal, right inside your dashboard. It ships the tools you actually need for HA work — the `ha` and `gh` CLIs, git, Python — keeps your session alive across restarts with tmux, and lets you install extra packages that survive reboots.
 
 ![Claude Terminal Screenshot](claude-terminal/screenshot.png)
 
@@ -15,7 +15,7 @@ A Home Assistant add-on that runs Anthropic's **Claude Code CLI** in a browser-b
 > which itself builds on [heytcass/home-assistant-addons](https://github.com/heytcass/home-assistant-addons)
 > by Tom Cassady. Upstream's last release was 2.0.13 in July 2026 and several community pull
 > requests are still open, so this fork collects the fixes published across the community forks
-> and keeps Claude Code current. Huge thanks to Javier for the add-on this is built on.
+> and keeps Claude Code current. Huge thanks to Javier for the app this is built on.
 > Same MIT license as the original.
 
 ## What's different in this fork
@@ -34,11 +34,11 @@ and log in once — both can run side by side.
 
 ## Install
 
-[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FEifel-Joe%2Fclaude-code-ha)
+[![Open your Home Assistant instance and show the add app repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FEifel-Joe%2Fclaude-code-ha)
 
 Or add it manually:
 
-1. **Settings → Add-ons → Add-on Store**
+1. **Settings → Apps → App Store**
 2. Top-right menu (⋮) → **Repositories**
 3. Add `https://github.com/Eifel-Joe/claude-code-ha` and click **Add**
 4. Install **Claude Terminal Pro**, start it, and open the panel from the sidebar
@@ -64,7 +64,7 @@ Authentication uses OAuth — no API key or config needed for a normal setup. Th
 - **Claude Code skills & commands** for Home Assistant pre-installed
 
 ### Persistence & packages
-- **Everything in `/data`** survives reboots and add-on updates (auth, config, packages)
+- **Everything in `/data`** survives reboots and app updates (auth, config, packages)
 - **`persist-install`** — install APK/pip packages that stick across restarts, into an isolated Python venv
 - **Auto-install** — declare packages in the config and they install on startup (`persistent_apk_packages`, `persistent_pip_packages`)
 - **Always-current Claude Code** — kept in `/data/npm` and updated on each start (on by default: `use_persistent_claude`, `auto_update_claude_on_start`), validated before activation; or update manually from the session picker
@@ -144,7 +144,7 @@ The target architecture is resolved from Home Assistant's `BUILD_ARCH` build arg
 
 ## Recommended: Home Assistant plugins for Claude
 
-Pair the add-on with the **[Claude Home Assistant Plugins](https://github.com/ESJavadex/claude-homeassistant-plugins)** for HA-specific tools and context (entity management, automation helpers, and more):
+Pair the app with the **[Claude Home Assistant Plugins](https://github.com/ESJavadex/claude-homeassistant-plugins)** for HA-specific tools and context (entity management, automation helpers, and more):
 
 ```bash
 npx claude-plugins install @ESJavadex/claude-homeassistant-plugins/homeassistant-config
@@ -156,8 +156,8 @@ This drops a `CLAUDE.md` into your config directory with context tailored for Ho
 
 ## Documentation
 
-- [Add-on documentation](claude-terminal/DOCS.md) — options, usage, persistent packages
-- [Development guide](DEVELOPMENT.md) — build and test the add-on locally
+- [App documentation](claude-terminal/DOCS.md) — options, usage, persistent packages
+- [Development guide](DEVELOPMENT.md) — build and test the app locally
 - [Changelog](claude-terminal/CHANGELOG.md) — release history
 
 ## Community tools
@@ -174,7 +174,7 @@ Found a bug or have a request? [Open an issue](https://github.com/Eifel-Joe/clau
 - **Upstream:** Javier Santos ([@ESJavadex](https://github.com/ESJavadex)) — creator of
   Claude Terminal Pro: persistent packages, tmux persistence, multi-arch and much more.
   Greetings and thanks, Javier! More of his AI + Home Assistant work: [Javadex](https://www.javadex.es/)
-- **Original creator:** Tom Cassady ([@heytcass](https://github.com/heytcass)) — the initial Claude Terminal add-on
+- **Original creator:** Tom Cassady ([@heytcass](https://github.com/heytcass)) — the initial Claude Terminal app
 - **Community fork contributions in 2.1.0:** [@Moulbi](https://github.com/Moulbi),
   [@PeterLinuxOSS](https://github.com/PeterLinuxOSS), [@nsleigh](https://github.com/nsleigh),
   [@marcjay](https://github.com/marcjay), [@martinboksa](https://github.com/martinboksa)

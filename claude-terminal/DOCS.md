@@ -4,22 +4,22 @@ An enhanced terminal interface for Anthropic's Claude Code CLI in Home Assistant
 
 ## About
 
-Claude Terminal Pro is an enhanced fork of the original Claude Terminal add-on, providing a web-based terminal with Claude Code CLI pre-installed plus persistent package management capabilities. Access Claude's powerful AI capabilities directly from your Home Assistant dashboard with the added benefit of installing and persisting custom packages across restarts.
+Claude Terminal Pro is an enhanced fork of the original Claude Terminal app, providing a web-based terminal with Claude Code CLI pre-installed plus persistent package management capabilities. Access Claude's powerful AI capabilities directly from your Home Assistant dashboard with the added benefit of installing and persisting custom packages across restarts.
 
 ## Installation
 
-1. Add this repository to your Home Assistant add-on store:
-   - Go to Settings → Add-ons → Add-on Store
+1. Add this repository to your Home Assistant app store:
+   - Go to Settings → Apps → App Store
    - Click the menu (⋮) and select Repositories
    - Add: `https://github.com/Eifel-Joe/claude-code-ha`
-2. Install the Claude Terminal Pro add-on
-3. Start the add-on
+2. Install the Claude Terminal Pro app
+3. Start the app
 4. Click "OPEN WEB UI" to access the terminal
 5. On first use, follow the OAuth prompts to log in to your Anthropic account
 
 ## Configuration
 
-The add-on offers several configuration options:
+The app offers several configuration options:
 
 ### Auto Launch Claude
 - **Default**: `true`
@@ -64,7 +64,7 @@ There are four ways, and which ones you need depends on the device:
 - **Claude Code's `/copy`** emits an OSC 52 escape sequence; tmux forwards it
   (`set-clipboard on`) and the browser writes it to the clipboard.
 
-**Long links.** The terminal breaks a long URL across rows, and the add-on puts
+**Long links.** The terminal breaks a long URL across rows, and the app puts
 it back together — including the case where the tail is re-indented, which would
 otherwise leave spaces inside the link. If a link is cut off at the edge of the
 screen it is refused rather than copied in half, and the status line says so;
@@ -72,13 +72,13 @@ scroll until all of it is visible.
 
 **Plain HTTP.** Over `http://homeassistant.local:8123` browsers do not expose
 `navigator.clipboard` at all — that API is restricted to secure contexts. The
-add-on falls back to a hidden-textarea copy, which Chrome only permits while it
+app falls back to a hidden-textarea copy, which Chrome only permits while it
 is handling a user gesture:
 
 - Every **button** works, because your tap is the gesture. So does mouse
   selection, because releasing the button is one.
 - **`/copy` does not.** It arrives from the terminal with no tap behind it, so
-  the browser refuses it; the add-on says so and points at `📋`. Nothing the page
+  the browser refuses it; the app says so and points at `📋`. Nothing the page
   can do changes this — it is the browser's security model, not a bug.
 - Serving Home Assistant over HTTPS makes `/copy` work too.
 
@@ -104,14 +104,14 @@ program in the terminal cannot exfiltrate your clipboard.
 
 ### Optional Persistent Claude Code
 - **Default**: `use_persistent_claude: true`
-- When enabled, the add-on will look for a Claude Code install in `/data/npm/` and use it instead of the version baked into the image
+- When enabled, the app will look for a Claude Code install in `/data/npm/` and use it instead of the version baked into the image
 - Together with startup updates this keeps Claude Code current, which is what makes new models (e.g. Opus 5.5, Fable) available
 - Set it to `false` to stay on the version baked into the image
 
 ### Optional Startup Updates
 - **Default**: `auto_update_claude_on_start: true`
 - Only relevant if `use_persistent_claude: true`
-- When enabled, the add-on will update Claude Code in `/data/npm/` on each startup
+- When enabled, the app will update Claude Code in `/data/npm/` on each startup
 - Turn it off to update only manually, via **🔄 Update Claude Code** in the session picker
 
 **Example Configuration**:
@@ -130,9 +130,9 @@ use_persistent_claude: true
 auto_update_claude_on_start: true
 ```
 
-Your OAuth credentials are stored in the `/config/claude-config` directory and will persist across add-on updates and restarts, so you won't need to log in again.
+Your OAuth credentials are stored in the `/config/claude-config` directory and will persist across app updates and restarts, so you won't need to log in again.
 
-If you enable `use_persistent_claude`, install the persistent Claude Code version once from a shell inside the add-on:
+If you enable `use_persistent_claude`, install the persistent Claude Code version once from a shell inside the app:
 
 ```bash
 NPM_CONFIG_PREFIX=/data/npm npm install -g @anthropic-ai/claude-code@latest --prefer-online
@@ -184,9 +184,9 @@ The terminal starts directly in your `/config` directory, giving you immediate a
 ## Troubleshooting
 
 - If Claude doesn't start automatically, try running `node /usr/local/bin/claude -i` manually
-- If you see permission errors, try restarting the add-on
+- If you see permission errors, try restarting the app
 - If you have authentication issues, try logging out and back in
-- Check the add-on logs for any error messages
+- Check the app logs for any error messages
 
 ## Credits
 
@@ -194,4 +194,4 @@ The terminal starts directly in your `/config` directory, giving you immediate a
 **Upstream:** Javier Santos ([@ESJavadex](https://github.com/ESJavadex))
 **Original Creator:** Tom Cassady ([@heytcass](https://github.com/heytcass))
 
-This add-on was created and enhanced with the assistance of Claude Code itself! The development process, debugging, and documentation were all completed using Claude's AI capabilities - a perfect demonstration of what this add-on can help you accomplish.
+This app was created and enhanced with the assistance of Claude Code itself! The development process, debugging, and documentation were all completed using Claude's AI capabilities - a perfect demonstration of what this app can help you accomplish.

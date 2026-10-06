@@ -23,7 +23,7 @@ panel_admin: true
 
 # Port configuration
 #
-# No host ports are published. The add-on is reached exclusively through Home
+# No host ports are published. The app is reached exclusively through Home
 # Assistant ingress, which enforces HA authentication.
 #
 # Publishing these ports would expose an unauthenticated, writable root shell
@@ -34,7 +34,7 @@ panel_admin: true
 # lose. ttyd itself now binds to 127.0.0.1 and is only reachable through the
 # ingress web interface on port 7680.
 
-# Add-on configuration options
+# App configuration options
 options:
   auto_launch_claude: true
   remote_control: false

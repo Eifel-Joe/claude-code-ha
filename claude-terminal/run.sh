@@ -55,7 +55,7 @@ init_environment() {
     export ANTHROPIC_HOME="/data"
 
     # Disable auto-updates: binary is baked into the container image,
-    # updates are delivered via add-on releases, not CLI self-update
+    # updates are delivered via app releases, not CLI self-update
     export DISABLE_AUTOUPDATER=1
 
     # GitHub CLI persistent configuration
@@ -66,7 +66,7 @@ init_environment() {
     dangerously_skip_permissions=$(bashio::config 'dangerously_skip_permissions' 'false')
     export CLAUDE_DANGEROUS_MODE="$dangerously_skip_permissions"
 
-    # This addon always runs as root inside an HA supervisor container.
+    # This app always runs as root inside an HA supervisor container.
     # IS_SANDBOX=1 tells Claude Code that root is expected (container sandbox),
     # so it won't refuse to start. This is independent of --dangerously-skip-permissions
     # (which controls permission prompts, not whether Claude can launch).
@@ -95,7 +95,7 @@ export XDG_DATA_HOME="/data/.local/share"
 export ANTHROPIC_CONFIG_DIR="/data/.config/claude"
 export ANTHROPIC_HOME="/data"
 
-# Disable auto-updates inside container (updates via add-on releases)
+# Disable auto-updates inside container (updates via app releases)
 export DISABLE_AUTOUPDATER=1
 
 # Always running as root inside HA supervisor container — IS_SANDBOX=1 allows Claude to start
@@ -217,7 +217,7 @@ migrate_legacy_auth_files() {
 #
 # ttyd, tmux, jq and curl are all baked into the image by the Dockerfile. This
 # used to run an unconditional `apk add` on every container start, which made
-# startup depend on the Alpine mirrors being reachable and aborted the add-on
+# startup depend on the Alpine mirrors being reachable and aborted the app
 # outright when they were not. The apk path is kept purely as a fallback for
 # images built before these packages were baked in.
 install_tools() {
@@ -350,7 +350,7 @@ setup_persistent_claude() {
 
     # Smoke-test the persistent binary before trusting it: this rejects a stale
     # or wrong-architecture install (e.g. an amd64 binary left in /data on a Pi).
-    # Run under a timeout so a hung `--version` can never block add-on startup.
+    # Run under a timeout so a hung `--version` can never block app startup.
     local -a version_check=("$persistent_bin" --version)
     if command -v timeout >/dev/null 2>&1; then
         version_check=(timeout 15 "$persistent_bin" --version)
@@ -422,7 +422,7 @@ normalize_config_list() {
     fi
 }
 
-# Auto-install packages from add-on configuration
+# Auto-install packages from app configuration
 auto_install_packages() {
     local apk_packages
     local pip_packages
@@ -572,11 +572,11 @@ start_image_service() {
     fi
 
     bashio::log.error "Image service never became healthy on port ${image_port}."
-    bashio::log.error "It serves the ingress entry point, so the add-on panel would be blank."
+    bashio::log.error "It serves the ingress entry point, so the app panel would be blank."
     return 1
 }
 
-# Forward image-service output into the add-on log, one line at a time.
+# Forward image-service output into the app log, one line at a time.
 log_image_service_output() {
     local line
     while IFS= read -r line; do
@@ -585,8 +585,8 @@ log_image_service_output() {
 }
 
 # Keep the image service alive: it serves the ingress entry point and proxies
-# the terminal, so if it dies the add-on panel goes blank until someone
-# restarts the add-on by hand. Backoff is capped so a hard failure does not
+# the terminal, so if it dies the app panel goes blank until someone
+# restarts the app by hand. Backoff is capped so a hard failure does not
 # spin the CPU on a Raspberry Pi.
 run_image_service_supervised() {
     local server_file="$1"
@@ -716,7 +716,7 @@ run_health_check() {
 
 # Main execution
 main() {
-    bashio::log.info "Initializing Claude Terminal add-on..."
+    bashio::log.info "Initializing Claude Terminal app..."
 
     # Run diagnostics first (especially helpful for VirtualBox issues)
     run_health_check
