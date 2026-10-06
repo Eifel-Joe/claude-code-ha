@@ -1,6 +1,6 @@
 # Claude Terminal Pro for Home Assistant
 
-[![Version](https://img.shields.io/badge/version-2.1.0-1f6feb)](claude-terminal/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.2.0-1f6feb)](claude-terminal/CHANGELOG.md)
 [![Latest release](https://img.shields.io/github/v/release/Eifel-Joe/claude-code-ha?label=release&color=1f6feb)](https://github.com/Eifel-Joe/claude-code-ha/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-3fb950)](LICENSE)
 [![Architectures](https://img.shields.io/badge/arch-amd64%20%7C%20aarch64%20%7C%20armv7-8957e5)](#architecture-support)
@@ -28,6 +28,7 @@ A Home Assistant app that runs Anthropic's **Claude Code CLI** in a browser-base
 - **Remote Control** and access to other apps' config folders
 
 Everything collected from community forks is credited in the [changelog](claude-terminal/CHANGELOG.md).
+
 **Switching from the ESJavadex app?** Install this app next to it. On first start it
 finds the old app and, when you open the panel, offers to take over your Claude
 memories, `CLAUDE.md`, history, logins, packages and settings — via a partial
