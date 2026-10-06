@@ -54,6 +54,7 @@ async function fetchOldData(client, offer, p, date, pollMs = POLL_MS) {
   const outer = path.join(p.work, 'backup.tar');
   await client.download(`/backups/${slug}/download`, outer);
   run('tar', ['-xf', outer, '-C', p.work]);
+  fs.rmSync(outer, { force: true }); // halves peak disk use before the inner archive is unpacked
   const inner = path.join(p.work, innerArchiveName(offer.slug));
   if (!fs.existsSync(inner)) throw new Error(`backup has no ${innerArchiveName(offer.slug)}`);
   const extracted = path.join(p.work, 'app');
@@ -67,7 +68,8 @@ async function fetchOldData(client, offer, p, date, pollMs = POLL_MS) {
 function copyMissing(src, dst, filter) {
   if (!fs.existsSync(src)) return false;
   fs.mkdirSync(path.dirname(dst), { recursive: true });
-  fs.cpSync(src, dst, { recursive: true, force: false, errorOnExist: false, filter });
+  fs.cpSync(src, dst, { recursive: true, force: false, errorOnExist: false,
+    preserveTimestamps: true, verbatimSymlinks: true, filter });
   return true;
 }
 
@@ -93,9 +95,12 @@ async function apply(client, p, offer, selected, deps = {}) {
   }
 
   await step('claude', () => {
-    copyMissing(path.join(oldHome, '.claude'), path.join(p.home, '.claude'),
+    const found = copyMissing(path.join(oldHome, '.claude'), path.join(p.home, '.claude'),
       (src) => path.basename(src) !== '.credentials.json');
+    if (!found) return 'not found';
+    const keptJson = fs.existsSync(path.join(p.home, '.claude.json'));
     copyMissing(path.join(oldHome, '.claude.json'), path.join(p.home, '.claude.json'));
+    return keptJson ? 'ok (kept existing .claude.json)' : 'ok';
   });
   await step('login', () => (copyMissing(path.join(oldHome, '.claude', '.credentials.json'),
     path.join(p.home, '.claude', '.credentials.json')) ? 'ok' : 'not found'));

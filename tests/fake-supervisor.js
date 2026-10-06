@@ -22,7 +22,9 @@ function tar(args, cwd) {
 
 // Builds <dir>/backup.tar containing <slug>.tar.gz whose data/ mirrors the old
 // app's /data. Returns the path of backup.tar.
-function buildBackupFixture(dir, slug = OLD_SLUG) {
+// opts.omit: paths relative to data/ deleted before archiving; opts.mtime: Date
+// set on the memory file heating.md before archiving.
+function buildBackupFixture(dir, slug = OLD_SLUG, { omit = [], mtime } = {}) {
   const app = path.join(dir, 'app');
   const data = path.join(app, 'data');
   writeFile(path.join(app, 'addon.json'), '{}');
@@ -35,6 +37,10 @@ function buildBackupFixture(dir, slug = OLD_SLUG) {
   writeFile(path.join(data, '.config/gh/hosts.yml'), 'github.com:\n  user: old\n');
   writeFile(path.join(data, 'packages/python/venv/lib/python3.12/site-packages/requests-2.32.0.dist-info/METADATA'), '');
   writeFile(path.join(data, 'packages/python/venv/lib/python3.12/site-packages/pip-24.0.dist-info/METADATA'), '');
+  for (const rel of omit) fs.rmSync(path.join(data, rel), { recursive: true, force: true });
+  if (mtime) {
+    fs.utimesSync(path.join(data, 'home/.claude/projects/-config/memory/heating.md'), mtime, mtime);
+  }
   // Mirrors the real layout from Task 0, including the image the app was built
   // from, which the migration must not unpack.
   writeFile(path.join(app, 'image.tar'), 'not a real image');
@@ -44,7 +50,7 @@ function buildBackupFixture(dir, slug = OLD_SLUG) {
   return path.join(dir, 'backup.tar');
 }
 
-// opts: { apps, oldOptions, ownOptions, backupTar, failBackup (job 2nd poll reports an error), failStop }
+// opts: { jobNoReference (done job without slug), apps, oldOptions, ownOptions, backupTar, failBackup (job 2nd poll reports an error), failStop }
 // state: calls, ownOptions, stopped, backups (created slugs), jobPolls
 function startFakeSupervisor(opts = {}) {
   const state = {
@@ -89,6 +95,7 @@ function startFakeSupervisor(opts = {}) {
       if (m === 'GET /jobs/job1') {
         state.jobPolls += 1;
         if (state.jobPolls === 1) return ok(res, { done: false, reference: null, errors: [] });
+        if (opts.jobNoReference) return ok(res, { done: true, reference: null, errors: [] });
         if (opts.failBackup) return ok(res, { done: true, reference: null, errors: [{ message: 'backup failed' }] });
         if (!state.backups.includes('bk1')) state.backups.push('bk1');
         return ok(res, { done: true, reference: 'bk1', errors: [] });

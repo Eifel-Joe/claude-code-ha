@@ -33,14 +33,20 @@ function pickOldApp(apps, selfSlug) {
   return candidates.find((a) => a.state === 'started') || candidates[0] || null;
 }
 
+// Nothing to offer: a leftover offer.json would make the terminal show the dialog.
+function noOffer(p, reason) {
+  fs.rmSync(p.offer, { force: true });
+  return { offered: false, reason };
+}
+
 async function detect(client, p) {
-  if (['done', 'never'].includes(readState(p))) return { offered: false, reason: 'state' };
-  if (hasOwnClaudeData(p)) return { offered: false, reason: 'own-data' };
+  if (['done', 'never'].includes(readState(p))) return noOffer(p, 'state');
+  if (hasOwnClaudeData(p)) return noOffer(p, 'own-data');
 
   const self = await client.get('/addons/self/info');
   const { addons = [] } = await client.get('/addons');
   const old = pickOldApp(addons, self.slug);
-  if (!old) return { offered: false, reason: 'no-old-app' };
+  if (!old) return noOffer(p, 'no-old-app');
 
   const info = await client.get(`/addons/${old.slug}/info`);
   const options = info.options || {};

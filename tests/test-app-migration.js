@@ -71,7 +71,8 @@ const { detect } = require(path.join(MOD, 'detect'));
 
 async function withSupervisor(opts, fn) {
   const dir = tmp();
-  const sup = await startFakeSupervisor({ backupTar: buildBackupFixture(dir), ...opts });
+  const backupTar = buildBackupFixture(dir, OLD_SLUG, opts.fixture);
+  const sup = await startFakeSupervisor({ backupTar, ...opts });
   const p = migrationPaths({ MIGRATION_DATA_ROOT: path.join(dir, 'data') });
   fs.mkdirSync(path.join(p.home, '.claude', 'skills'), { recursive: true }); // what init_environment creates
   try { return await fn(createClient({ baseUrl: sup.url, token: 'test-token' }), p, sup); }
@@ -124,6 +125,29 @@ test('detect: no offer once done or declined', async () => {
       assert.equal((await detect(client, p)).reason, 'state');
     });
   }
+});
+
+test('detect: removes a stale offer when nothing is offered', async () => {
+  const stale = (p) => { fs.mkdirSync(p.dir, { recursive: true }); fs.writeFileSync(p.offer, '{}'); };
+  await withSupervisor({}, async (client, p) => {
+    fs.mkdirSync(path.join(p.home, '.claude'), { recursive: true });
+    fs.writeFileSync(path.join(p.home, '.claude', '.credentials.json'), '{}');
+    stale(p);
+    assert.equal((await detect(client, p)).reason, 'own-data');
+    assert.equal(fs.existsSync(p.offer), false);
+  });
+  const apps = [{ slug: SELF_SLUG, state: 'started' }];
+  await withSupervisor({ apps }, async (client, p) => {
+    stale(p);
+    assert.equal((await detect(client, p)).reason, 'no-old-app');
+    assert.equal(fs.existsSync(p.offer), false);
+  });
+  await withSupervisor({}, async (client, p) => {
+    stale(p);
+    fs.writeFileSync(p.state, 'never\n');
+    assert.equal((await detect(client, p)).reason, 'state');
+    assert.equal(fs.existsSync(p.offer), false);
+  });
 });
 
 test('detect: prefers a running old app over a stopped one', async () => {
@@ -208,4 +232,65 @@ test('apply: success marks done, removes the offer and the work dir', async () =
   assert.equal(fs.readFileSync(p.state, 'utf8').trim(), 'done');
   assert.equal(fs.existsSync(p.offer), false);
   assert.equal(fs.existsSync(p.work), false);
+});
+
+const MEMORY = '.claude/projects/-config/memory/heating.md';
+
+test('apply: copies keep timestamps', async () => {
+  const mtime = new Date('2025-01-02T03:04:05Z');
+  const { p } = await detectThenApply({ fixture: { mtime } }, ['claude']);
+  const got = fs.statSync(path.join(p.home, MEMORY)).mtimeMs;
+  assert.ok(Math.abs(got - mtime.getTime()) <= 2000, `mtime ${got} vs ${mtime.getTime()}`);
+});
+
+test('apply: claude step reports a missing source', async () => {
+  const { result } = await detectThenApply({ fixture: { omit: ['home/.claude'] } }, ['claude']);
+  assert.equal(result.results.claude, 'not found');
+});
+
+test('apply: claude step reports a kept existing .claude.json', async () => {
+  await withSupervisor({ oldOptions: OLD_OPTIONS }, async (client, p) => {
+    const { offer } = await detect(client, p);
+    fs.writeFileSync(path.join(p.home, '.claude.json'), '{"new":true}');
+    const r = await apply(client, p, offer, ['claude'], { today: '2026-10-06', pollMs: 1 });
+    assert.equal(r.results.claude, 'ok (kept existing .claude.json)');
+    assert.equal(fs.readFileSync(path.join(p.home, '.claude.json'), 'utf8'), '{"new":true}');
+  });
+});
+
+test('apply: outer backup.tar is removed before the inner archive is unpacked', async () => {
+  await withSupervisor({ oldOptions: OLD_OPTIONS }, async (client, p) => {
+    const { offer } = await detect(client, p);
+    await apply(client, p, offer, ['claude'], { today: '2026-10-06', pollMs: 1, keepWork: true });
+    assert.equal(fs.existsSync(path.join(p.work, 'backup.tar')), false);
+  });
+});
+
+test('apply: an existing login is not overwritten', async () => {
+  await withSupervisor({ oldOptions: OLD_OPTIONS }, async (client, p) => {
+    const { offer } = await detect(client, p);
+    fs.writeFileSync(path.join(p.home, '.claude', '.credentials.json'), '{"token":"new"}');
+    const r = await apply(client, p, offer, ['login'], { today: '2026-10-06', pollMs: 1 });
+    assert.equal(r.results.login, 'ok');
+    assert.equal(fs.readFileSync(path.join(p.home, '.claude/.credentials.json'), 'utf8'), '{"token":"new"}');
+  });
+});
+
+test('apply: login and gh report not found when the backup lacks them', async () => {
+  const { result } = await detectThenApply(
+    { fixture: { omit: ['.config/gh', 'home/.claude/.credentials.json'] } }, ['login', 'gh']);
+  assert.equal(result.results.login, 'not found');
+  assert.equal(result.results.gh, 'not found');
+});
+
+test('apply: a failed backup keeps the offer', async () => {
+  const { result, p } = await detectThenApply({ failBackup: true }, ['claude']);
+  assert.equal(result.ok, false);
+  assert.equal(fs.existsSync(p.offer), true);
+});
+
+test('apply: a finished job without a slug is fatal', async () => {
+  const { result } = await detectThenApply({ jobNoReference: true }, ['claude']);
+  assert.equal(result.ok, false);
+  assert.match(result.fatal, /without a backup slug/);
 });
