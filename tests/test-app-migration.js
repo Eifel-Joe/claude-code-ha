@@ -150,6 +150,17 @@ test('detect: removes a stale offer when nothing is offered', async () => {
   });
 });
 
+test('detect: removes a work dir left behind by an interrupted apply', async () => {
+  await withSupervisor({}, async (client, p) => {
+    const leftover = path.join(p.work, 'app', 'data', 'home', '.claude', '.credentials.json');
+    fs.mkdirSync(path.dirname(leftover), { recursive: true });
+    fs.writeFileSync(leftover, '{"token":"old"}');
+    fs.writeFileSync(path.join(p.home, '.claude', '.credentials.json'), '{}');
+    assert.equal((await detect(client, p)).reason, 'own-data');
+    assert.equal(fs.existsSync(p.work), false);
+  });
+});
+
 test('detect: prefers a running old app over a stopped one', async () => {
   const apps = [
     { slug: SELF_SLUG, state: 'started' },

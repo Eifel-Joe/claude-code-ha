@@ -40,6 +40,10 @@ function noOffer(p, reason) {
 }
 
 async function detect(client, p) {
+  // An apply killed mid-way (container restart, closed terminal) leaves the
+  // unpacked backup behind, old login included. detect runs at startup, before
+  // any dialog/apply, so nothing can be using it now.
+  fs.rmSync(p.work, { recursive: true, force: true });
   if (['done', 'never'].includes(readState(p))) return noOffer(p, 'state');
   if (hasOwnClaudeData(p)) return noOffer(p, 'own-data');
 
