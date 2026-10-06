@@ -80,4 +80,38 @@ grep -q 'run_with_timeout "$STARTUP_NPM_TIMEOUT" "Image service: npm install" np
     "$repo_root/claude-terminal/run.sh" || \
     fail "the image service's npm install must run under the time limit"
 
+# --- Package auto-install ---
+
+PERSIST_INSTALL_LOG="$tmp_dir/persist-install.log"
+export PERSIST_INSTALL_LOG
+PERSIST_INSTALL_BIN="$stub_bin/persist-install"
+cat > "$PERSIST_INSTALL_BIN" << 'STUB_EOF'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "$PERSIST_INSTALL_LOG"
+for argument in "$@"; do
+    if [ "$argument" = hang ]; then exec sleep 30; fi
+done
+STUB_EOF
+chmod +x "$PERSIST_INSTALL_BIN"
+
+config_apk_packages=$'hang\ngit'
+config_pip_packages=''
+: > "$log"
+: > "$PERSIST_INSTALL_LOG"
+started=$SECONDS
+auto_install_packages
+[ $((SECONDS - started)) -lt 10 ] || fail "a hanging apk package must not block startup"
+grep -qx 'git' "$PERSIST_INSTALL_LOG" || fail "the package after a hanging one must still be installed"
+grep -qx "warning|Auto-install of hang timed out after 1s" "$log" || \
+    fail "a hanging apk package must be logged as a timeout"
+
+config_apk_packages=''
+config_pip_packages=$'requests\nhang'
+: > "$log"
+started=$SECONDS
+auto_install_packages
+[ $((SECONDS - started)) -lt 10 ] || fail "a hanging pip install must not block startup"
+grep -qx 'warning|Auto-install of Python packages timed out after 1s' "$log" || \
+    fail "a hanging pip install must be logged as a timeout"
+
 echo "Startup timeout suite passed"

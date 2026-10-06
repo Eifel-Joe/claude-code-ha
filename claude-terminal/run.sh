@@ -469,7 +469,8 @@ auto_install_packages() {
         while IFS= read -r package; do
             if [ -n "$package" ]; then
                 bashio::log.info "  Installing: $package"
-                "$persist_install" "$package" || bashio::log.warning "Failed to install: $package"
+                run_with_timeout "$STARTUP_APK_TIMEOUT" "Auto-install of $package" \
+                    "$persist_install" "$package" || bashio::log.warning "Failed to install: $package"
             fi
         done <<< "$apk_packages"
     fi
@@ -482,7 +483,8 @@ auto_install_packages() {
 
         if [ "${#pip_package_list[@]}" -gt 0 ]; then
             bashio::log.info "  Installing: ${pip_package_list[*]}"
-            "$persist_install" --python "${pip_package_list[@]}" || \
+            run_with_timeout "$STARTUP_PIP_TIMEOUT" "Auto-install of Python packages" \
+                "$persist_install" --python "${pip_package_list[@]}" || \
                 bashio::log.warning "Failed to install Python packages"
         fi
     fi
