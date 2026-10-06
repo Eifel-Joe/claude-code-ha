@@ -65,7 +65,7 @@ claude-logout
 1. Add this repository to your Home Assistant add-on store:
    - Go to Settings → Add-ons → Add-on Store
    - Click the menu (⋮) and select Repositories
-   - Add: `https://github.com/esjavadex/claude-code-ha`
+   - Add: `https://github.com/Eifel-Joe/claude-code-ha`
 2. Install the Claude Terminal Pro add-on
 3. Start the add-on
 4. Click "OPEN WEB UI" or the sidebar icon to access

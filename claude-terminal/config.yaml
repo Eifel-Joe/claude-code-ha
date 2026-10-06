@@ -12,7 +12,7 @@ arch:
   - armv7
 
 # External resources
-url: "https://github.com/esjavadex/claude-code-ha"
+url: "https://github.com/Eifel-Joe/claude-code-ha"
 
 # Web interface configuration
 ingress: true
@@ -43,8 +43,8 @@ options:
   dangerously_skip_permissions: false
   persistent_apk_packages: []
   persistent_pip_packages: []
-  use_persistent_claude: false
-  auto_update_claude_on_start: false
+  use_persistent_claude: true
+  auto_update_claude_on_start: true
 
 schema:
   auto_launch_claude: bool?

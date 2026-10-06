@@ -1,7 +1,7 @@
 # Claude Terminal Pro for Home Assistant
 
-[![Version](https://img.shields.io/badge/version-2.0.13-1f6feb)](claude-terminal/CHANGELOG.md)
-[![Latest release](https://img.shields.io/github/v/release/ESJavadex/claude-code-ha?label=release&color=1f6feb)](https://github.com/ESJavadex/claude-code-ha/releases)
+[![Version](https://img.shields.io/badge/version-2.1.0-1f6feb)](claude-terminal/CHANGELOG.md)
+[![Latest release](https://img.shields.io/github/v/release/Eifel-Joe/claude-code-ha?label=release&color=1f6feb)](https://github.com/Eifel-Joe/claude-code-ha/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-3fb950)](LICENSE)
 [![Architectures](https://img.shields.io/badge/arch-amd64%20%7C%20aarch64%20%7C%20armv7-8957e5)](#architecture-support)
 [![Base image](https://img.shields.io/badge/base-Alpine%203.21-0db7ed)](claude-terminal/Dockerfile)
@@ -16,13 +16,13 @@ A Home Assistant add-on that runs Anthropic's **Claude Code CLI** in a browser-b
 
 ## Install
 
-[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fesjavadex%2Fclaude-code-ha)
+[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FEifel-Joe%2Fclaude-code-ha)
 
 Or add it manually:
 
 1. **Settings → Add-ons → Add-on Store**
 2. Top-right menu (⋮) → **Repositories**
-3. Add `https://github.com/esjavadex/claude-code-ha` and click **Add**
+3. Add `https://github.com/Eifel-Joe/claude-code-ha` and click **Add**
 4. Install **Claude Terminal Pro**, start it, and open the panel from the sidebar
 
 Authentication uses OAuth — no API key or config needed for a normal setup. The terminal opens in your `/config` directory.
@@ -65,8 +65,8 @@ Authentication uses OAuth — no API key or config needed for a normal setup. Th
 | `dangerously_skip_permissions` | `false` | Run Claude with unrestricted file access |
 | `persistent_apk_packages` | `[]` | Alpine (APK) packages to auto-install on startup |
 | `persistent_pip_packages` | `[]` | Python (pip) packages to auto-install on startup |
-| `use_persistent_claude` | `false` | Use a Claude Code install kept in `/data/npm` instead of the baked-in one |
-| `auto_update_claude_on_start` | `false` | When the override is enabled, update it on each start |
+| `use_persistent_claude` | `true` | Use a Claude Code install kept in `/data/npm` instead of the baked-in one |
+| `auto_update_claude_on_start` | `true` | When the override is enabled, update it on each start |
 
 **Example:**
 
@@ -145,7 +145,7 @@ This drops a `CLAUDE.md` into your config directory with context tailored for Ho
 
 ## Support
 
-Found a bug or have a request? [Open an issue](https://github.com/ESJavadex/claude-code-ha/issues).
+Found a bug or have a request? [Open an issue](https://github.com/Eifel-Joe/claude-code-ha/issues).
 
 ## Credits
 

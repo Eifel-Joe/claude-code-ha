@@ -11,7 +11,7 @@ Claude Terminal Pro is an enhanced fork of the original Claude Terminal add-on, 
 1. Add this repository to your Home Assistant add-on store:
    - Go to Settings → Add-ons → Add-on Store
    - Click the menu (⋮) and select Repositories
-   - Add: `https://github.com/esjavadex/claude-code-ha`
+   - Add: `https://github.com/Eifel-Joe/claude-code-ha`
 2. Install the Claude Terminal Pro add-on
 3. Start the add-on
 4. Click "OPEN WEB UI" to access the terminal
@@ -103,15 +103,16 @@ program in the terminal cannot exfiltrate your clipboard.
 - Packages are stored in `/data/packages` and survive restarts
 
 ### Optional Persistent Claude Code
-- **Default**: `use_persistent_claude: false`
+- **Default**: `use_persistent_claude: true`
 - When enabled, the add-on will look for a Claude Code install in `/data/npm/` and use it instead of the version baked into the image
-- This is intended for advanced users who want a persistent override without changing the default supported behavior
+- Together with startup updates this keeps Claude Code current, which is what makes new models (e.g. Opus 5.5, Fable) available
+- Set it to `false` to stay on the version baked into the image
 
 ### Optional Startup Updates
-- **Default**: `auto_update_claude_on_start: false`
+- **Default**: `auto_update_claude_on_start: true`
 - Only relevant if `use_persistent_claude: true`
 - When enabled, the add-on will update Claude Code in `/data/npm/` on each startup
-- Safer default is to keep this off and update manually only when needed
+- Turn it off to update only manually, via **🔄 Update Claude Code** in the session picker
 
 **Example Configuration**:
 ```yaml
@@ -126,7 +127,7 @@ persistent_apk_packages:
 persistent_pip_packages:
   - requests
 use_persistent_claude: true
-auto_update_claude_on_start: false
+auto_update_claude_on_start: true
 ```
 
 Your OAuth credentials are stored in the `/config/claude-config` directory and will persist across add-on updates and restarts, so you won't need to log in again.
