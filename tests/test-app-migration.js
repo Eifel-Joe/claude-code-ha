@@ -339,3 +339,47 @@ test('apply: a failed item keeps the old app running', async () => {
   assert.match(result.results.stop, /^skipped/);
   assert.deepEqual(sup.state.stopped, []);
 });
+
+const { ITEMS, render, parseInput, renderSummary } = require(path.join(MOD, 'dialog'));
+
+const OFFER = { slug: OLD_SLUG, name: 'Claude Terminal Pro', version: '2.0.13', repository: 'esjavadex',
+  apk: ['htop'], pip: ['httpx'], settings: { auto_launch_claude: false } };
+
+test('dialog: all six items, all on, packages and settings spelled out', () => {
+  const text = render(OFFER, [...ITEMS]);
+  assert.equal(ITEMS.length, 6);
+  assert.equal((text.match(/\[x\]/g) || []).length, 6);
+  assert.match(text, /Claude Terminal Pro 2\.0\.13/);
+  assert.match(text, /apk: htop/);
+  assert.match(text, /pip: httpx/);
+  assert.match(text, /auto_launch_claude=false/);
+});
+
+test('dialog: digits toggle, empty line applies, s and n', () => {
+  let r = parseInput('3', [...ITEMS]);
+  assert.equal(r.action, 'toggle');
+  assert.equal(r.selected.includes('gh'), false);
+  r = parseInput(' 3 ', r.selected);
+  assert.equal(r.selected.includes('gh'), true);
+  assert.equal(parseInput('', ITEMS).action, 'apply');
+  assert.equal(parseInput('S', ITEMS).action, 'later');
+  assert.equal(parseInput('n', ITEMS).action, 'never');
+  assert.equal(parseInput('9', ITEMS).action, 'invalid');
+});
+
+test('cli: detect exits 0 and prints the reason when nothing is offered', () => {
+  const dir = tmp();
+  const r = spawnSync(process.execPath, [path.join(MOD, 'cli.js'), 'detect'], {
+    encoding: 'utf8',
+    env: { ...process.env, MIGRATION_DATA_ROOT: dir, SUPERVISOR_API: 'http://127.0.0.1:9', SUPERVISOR_TOKEN: 'x' },
+  });
+  assert.equal(r.status, 0);
+  assert.match(r.stdout + r.stderr, /App migration: detection failed/);
+});
+
+test('summary: names failures and the kept backup', () => {
+  const text = renderSummary({ ok: true, backupSlug: 'bk1', results: { claude: 'ok', packages: 'error: could not install x' } });
+  assert.match(text, /Claude data: ok/);
+  assert.match(text, /error: could not install x/);
+  assert.match(text, /Settings → System → Backups/);
+});
