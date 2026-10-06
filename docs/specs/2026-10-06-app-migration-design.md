@@ -141,9 +141,12 @@ Automatisch (CI), gegen den Fake-Supervisor mit einem Test-Backup im realen Form
   übernommen, kein Stop.
 - Dialog-Eingabe: Ziffern schalten um, `s`/`n`/Enter.
 
-Live auf HA-Test (vor Prod): Fork-App deinstallieren, ESJavadex-App installieren,
-dort Memory, `~/.claude/CLAUDE.md`, pip-Paket und Login anlegen; Fork 2.2.0
-installieren. Erfolgskriterium: Fenster erscheint; nach Enter sind Memory und
+Live direkt auf HA-Prod (Entscheidung des Users; Backup der alten App liegt vor):
+Die ESJavadex-App mit echten Daten bleibt installiert; die Fork-App ist dort vorher
+nicht installiert bzw. ohne eigene Claude-Daten. Das Backup-Format wird vorab auf
+Prod an einem Teil-Backup der alten App verifiziert (lesend). Dann Fork 2.2.0
+installieren. Rückfall bei Fehlern: alte App bleibt unverändert und wird bei Fehlern
+nicht gestoppt. Erfolgskriterium: Fenster erscheint; nach Enter sind Memory und
 CLAUDE.md da (`/memory`), Claude startet ohne erneuten Login, pip-Paket importierbar,
 alte App gestoppt, Übernahme-Backup in der Backup-Liste.
 
