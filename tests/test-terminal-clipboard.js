@@ -80,7 +80,10 @@ function makeWindow(options) {
         overlayMessages: [],
         appendedTextareas: [],
         fits: 0,
-        scrollsToBottom: 0
+        scrollsToBottom: 0,
+        linkProviders: [],
+        openCalls: [],
+        windows: []
     };
 
     const doc = {
@@ -112,7 +115,15 @@ function makeWindow(options) {
         dispatch(type) {
             (windowListeners.get(type) || []).forEach(handler => handler({}));
         },
-        navigator: {}
+        navigator: {},
+        // window.open as the WebLinksAddon uses it: no arguments, then set
+        // opener and location on what comes back.
+        open(...args) {
+            state.openCalls.push(args);
+            const opened = { opener: 'parent', location: { href: '' } };
+            state.windows.push(opened);
+            return opened;
+        }
     };
 
     if (opts.clipboardApi) {
@@ -147,6 +158,10 @@ function makeWindow(options) {
         fit() { state.fits += 1; },
         scrollToBottom() { state.scrollsToBottom += 1; },
         onSelectionChange(handler) { selectionHandlers.push(handler); },
+        registerLinkProvider(provider) {
+            state.linkProviders.push(provider);
+            return { dispose() {} };
+        },
         buffer: {
             active: {
                 type: opts.altScreen ? 'alternate' : 'normal',
@@ -1147,6 +1162,67 @@ test('a link running into the last row read gets no spans - it may go on below',
     const edge = rows(['● https://example.com/verylong'], 30);
     assert.strictEqual(edge[0].full, true, 'fixture must fill the row');
     assert.deepStrictEqual(bridge.linkSpansInRows(edge, 30), []);
+});
+
+// --- Clickable links: the provider xterm.js asks on hover and click ---
+
+const WRAPPED_LINK = [
+    '  https://claude.ai/code/artifact',
+    '  /8f1aa329-c6ce-447f-a58c-bd14ce569558'
+];
+const FULL_LINK = 'https://claude.ai/code/artifact/8f1aa329-c6ce-447f-a58c-bd14ce569558';
+
+function provideLinks(env, bufferLineNumber) {
+    let result = 'not called';
+    env.state.linkProviders[0].provideLinks(bufferLineNumber, links => { result = links; });
+    return result;
+}
+
+test('install registers one link provider', () => {
+    const env = makeWindow({ buffer: WRAPPED_LINK, cols: 46 });
+    bridge.install(env.win);
+    assert.strictEqual(env.state.linkProviders.length, 1);
+});
+
+test('every row of a wrapped link is a link to the full URL', () => {
+    const env = makeWindow({ buffer: WRAPPED_LINK, cols: 46 });
+    bridge.install(env.win);
+
+    const first = provideLinks(env, 1);
+    assert.strictEqual(first.length, 1);
+    assert.strictEqual(first[0].text, FULL_LINK);
+    // xterm ranges: 1-based columns, end inclusive.
+    assert.deepStrictEqual(first[0].range, {
+        start: { x: 3, y: 1 }, end: { x: WRAPPED_LINK[0].length, y: 1 }
+    });
+
+    const second = provideLinks(env, 2);
+    assert.strictEqual(second[0].text, FULL_LINK);
+    assert.deepStrictEqual(second[0].range, {
+        start: { x: 3, y: 2 }, end: { x: WRAPPED_LINK[1].length, y: 2 }
+    });
+});
+
+test('a row without a link reports none', () => {
+    const env = makeWindow({ buffer: ['plain output', 'more'], cols: 46 });
+    bridge.install(env.win);
+    assert.strictEqual(provideLinks(env, 1), undefined);
+});
+
+test('clicking a link opens the full URL with the opener cleared', () => {
+    const env = makeWindow({ buffer: WRAPPED_LINK, cols: 46 });
+    bridge.install(env.win);
+
+    provideLinks(env, 2)[0].activate({}, FULL_LINK);
+    assert.strictEqual(env.state.windows.length, 1);
+    assert.strictEqual(env.state.windows[0].opener, null);
+    assert.strictEqual(env.state.windows[0].location.href, FULL_LINK);
+});
+
+test('a terminal without registerLinkProvider still installs', () => {
+    const env = makeWindow({ buffer: WRAPPED_LINK, cols: 46 });
+    delete env.win.term.registerLinkProvider;
+    assert.ok(bridge.install(env.win));
 });
 
 (async () => {

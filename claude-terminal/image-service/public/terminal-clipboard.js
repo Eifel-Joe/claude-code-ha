@@ -152,27 +152,24 @@
     /** The raw rows for a mode, each tagged with whether it filled the width. */
     function rawRows(term, mode) {
         var buffer = term.buffer.active;
-        var cols = term.cols;
-        var from;
-        var to;
-        if (mode === 'all') {
-            from = 0;
-            to = buffer.length - 1;
-        } else if (mode === 'screen-down') {
-            from = buffer.viewportY;
-            to = buffer.length - 1;
-        } else {
-            // The rows currently on screen, wherever the viewport is scrolled.
-            from = buffer.viewportY;
-            to = Math.min(from + term.rows - 1, buffer.length - 1);
-        }
+        if (mode === 'all') return rowsBetween(term, 0, buffer.length - 1);
+        if (mode === 'screen-down') return rowsBetween(term, buffer.viewportY, buffer.length - 1);
+        // The rows currently on screen, wherever the viewport is scrolled.
+        return rowsBetween(term, buffer.viewportY,
+            Math.min(buffer.viewportY + term.rows - 1, buffer.length - 1));
+    }
 
+    // y is the 0-based buffer line, so a caller can map a row back to the
+    // screen even where getLine() skipped one.
+    function rowsBetween(term, from, to) {
+        var buffer = term.buffer.active;
+        var cols = term.cols;
         var rows = [];
         for (var y = from; y <= to; y++) {
             var line = buffer.getLine(y);
             if (!line) continue;
             var text = line.translateToString(true);
-            rows.push({ text: text, full: text.length >= cols, wrapped: !!line.isWrapped });
+            rows.push({ text: text, full: text.length >= cols, wrapped: !!line.isWrapped, y: y });
         }
         return rows;
     }
@@ -504,6 +501,56 @@
         return true;
     }
 
+    // Rows read on each side of the hovered one. A login URL is a few hundred
+    // characters; 40 rows hold it even in a 20-column pane.
+    var LINK_WINDOW_ROWS = 40;
+
+    // The WebLinksAddon's own way of opening a link: a blank window first, so
+    // the opener can be cleared before the page loads.
+    function openLink(win, open, url) {
+        var opened = open.call(win);
+        if (!opened) return;
+        try { opened.opener = null; } catch (err) { /* Electron can throw */ }
+        opened.location.href = url;
+    }
+
+    /**
+     * Make every row of a wrapped link clickable. ttyd's WebLinksAddon only
+     * joins rows xterm.js wrapped itself (isWrapped); Claude Code and tmux
+     * break lines hard, so it links row 1 to a fragment and the rest not at
+     * all. Registered after the addon, so on row 1 the addon still wins -
+     * installOpenRedirect covers that row.
+     *
+     * @param open the frame's original window.open, never the redirect
+     */
+    function installLinkProvider(win, term, open) {
+        if (typeof term.registerLinkProvider !== 'function') return;
+        term.registerLinkProvider({
+            provideLinks: function (bufferLineNumber, callback) {
+                var y = bufferLineNumber - 1;
+                var buffer = term.buffer.active;
+                var rows = rowsBetween(term, Math.max(0, y - LINK_WINDOW_ROWS),
+                    Math.min(buffer.length - 1, y + LINK_WINDOW_ROWS));
+                var links = [];
+                linkSpansInRows(rows, term.cols).forEach(function (link) {
+                    link.spans.forEach(function (span) {
+                        if (rows[span.row].y !== y) return;
+                        links.push({
+                            // xterm.js ranges: 1-based columns, end inclusive.
+                            range: {
+                                start: { x: span.start + 1, y: bufferLineNumber },
+                                end: { x: span.end, y: bufferLineNumber }
+                            },
+                            text: link.url,
+                            activate: function () { openLink(win, open, link.url); }
+                        });
+                    });
+                });
+                callback(links.length ? links : undefined);
+            }
+        });
+    }
+
     function install(win, options) {
         var opts = options || {};
         var term = win.term;
@@ -646,6 +693,7 @@
 
         installTouchScroll(win, term);
         installMobileInput(win, term);
+        installLinkProvider(win, term, win.open);
 
         term[INSTALL_FLAG] = true;
         term.__claudeClipboard = controller;
