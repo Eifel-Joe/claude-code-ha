@@ -71,7 +71,8 @@ Fenster durchgereicht wird und dessen `location.href`-Setter die Ziel-URL auflö
 ist sie ein echter (kürzerer) Anfang einer URL, die `linkSpansInRows` über den
 ganzen Puffer (`rawRows(term, 'all')`) findet, wird die volle URL gesetzt — bei
 mehreren Treffern die zuletzt im Puffer stehende, wie bei `findLink` —, sonst die
-übergebene. Aufrufe mit Argumenten gehen unverändert
+übergebene. Ist die übergebene URL selbst ein vollständiger Link im Puffer, bleibt
+sie unverändert, auch wenn ein längerer Link gleich beginnt. Aufrufe mit Argumenten gehen unverändert
 an das Original. Alles läuft synchron im Klick (kein Popup-Blocker).
 
 Bekannter Schönheitsfehler: Beim Überfahren von Zeile 1 unterstreicht das Addon nur
