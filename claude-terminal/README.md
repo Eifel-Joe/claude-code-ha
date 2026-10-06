@@ -78,7 +78,7 @@ The app works out of the box, but also supports a few optional advanced settings
 - **Access**: through the Home Assistant sidebar panel (ingress) only. The app
   publishes no host port: `ttyd` runs writable with no credentials, so exposing it
   on the LAN meant an unauthenticated root shell. See CHANGELOG 2.1.0.
-- **Authentication**: OAuth with Anthropic (credentials stored securely in `/config/claude-config/`)
+- **Authentication**: OAuth with Anthropic (credentials kept in the app's private `/data`, under `/data/home/.claude`, not in `/config`)
 - **Terminal**: Full bash environment with Claude Code CLI pre-installed
 - **Persistent Claude override**: Optional `use_persistent_claude` / `auto_update_claude_on_start`
 - **Volumes**: Access to both `/config` (Home Assistant) and `/addons` (for development)

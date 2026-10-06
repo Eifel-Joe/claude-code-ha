@@ -49,4 +49,12 @@ fi
 grep -q 'interface 127.0.0.1' "$addon_dir/run.sh" || \
     fail "ttyd must bind 127.0.0.1 only; it runs --writable with no credentials"
 
+# Credentials live in the app's private /data (HOME=/data/home). The store page
+# and the project instructions kept naming /config/claude-config/.
+for doc in "$addon_dir/README.md" "$repo_root/CLAUDE.md"; do
+    if grep -nE '(stored|storage|saved)[^.]*/config/claude-config|=/config/claude-config' "$doc"; then
+        fail "$(basename "$doc") names /config/claude-config as where credentials live; they are in /data/home/.claude"
+    fi
+done
+
 echo "Release metadata suite passed (version $config_version)"
