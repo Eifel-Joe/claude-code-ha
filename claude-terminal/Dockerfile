@@ -1,5 +1,14 @@
-ARG BUILD_FROM
-FROM ${BUILD_FROM}
+# Home Assistant's multi-arch Alpine base (amd64 + arm64). Pinned here instead
+# of build.yaml, which the Supervisor deprecated. Deliberately no ARG BUILD_FROM:
+# older Supervisor versions pass their own default ({arch}-base:latest, the
+# newest Alpine) and would silently replace this base through it.
+FROM ghcr.io/home-assistant/base:3.21
+
+LABEL \
+    org.opencontainers.image.title="Home Assistant Add-on: Claude Terminal" \
+    org.opencontainers.image.description="Terminal interface for Anthropic's Claude Code CLI" \
+    org.opencontainers.image.source="https://github.com/Eifel-Joe/claude-code-ha" \
+    org.opencontainers.image.licenses="MIT"
 
 # Install packages in a single layer to minimize image size.
 # Node.js and npm are kept for the image-service dependency.

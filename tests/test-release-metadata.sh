@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Enforces the release rule stated in CLAUDE.md: every change ships with a
-# version bump and a matching changelog entry. Three files have to agree, and
-# nothing checked this before, so they drifted silently.
+# version bump and a matching changelog entry. config.yaml and CHANGELOG.md
+# have to agree, and nothing checked this before, so they drifted silently.
 
 repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 addon_dir="$repo_root/claude-terminal"
@@ -21,9 +21,21 @@ case "$config_version" in
     *) fail "config.yaml version '$config_version' is not semver" ;;
 esac
 
-label_version=$(sed -n 's/^ *org.opencontainers.image.version: *"\{0,1\}\([^"]*\)"\{0,1\}$/\1/p' "$addon_dir/build.yaml")
-[ "$label_version" = "$config_version" ] || \
-    fail "build.yaml image version '$label_version' does not match config.yaml '$config_version'"
+# build.yaml is deprecated: the Supervisor warns on every build and will stop
+# reading it. The Dockerfile carries the base image and labels, the version
+# lives only in config.yaml (the Supervisor labels the image with it).
+[ ! -e "$addon_dir/build.yaml" ] || \
+    fail "claude-terminal/build.yaml exists; build parameters belong in the Dockerfile"
+
+dockerfile="$addon_dir/Dockerfile"
+grep -qE '^FROM ghcr\.io/home-assistant/base:[0-9]+\.[0-9]+' "$dockerfile" || \
+    fail "Dockerfile must start from a tagged ghcr.io/home-assistant/base image"
+# Without build.yaml, older Supervisor versions still pass BUILD_FROM
+# ({arch}-base:latest, the newest Alpine). An ARG would let that replace the
+# pinned base without anyone noticing.
+if grep -nE '^ARG BUILD_FROM' "$dockerfile"; then
+    fail "Dockerfile declares ARG BUILD_FROM; a Supervisor-supplied value would swap the base image"
+fi
 
 grep -qx "## $config_version" "$addon_dir/CHANGELOG.md" || \
     fail "CHANGELOG.md has no '## $config_version' section for the current version"
@@ -33,12 +45,6 @@ grep -qx "## $config_version" "$addon_dir/CHANGELOG.md" || \
 newest=$(grep -m1 '^## ' "$addon_dir/CHANGELOG.md" | sed 's/^## //')
 [ "$newest" = "$config_version" ] || \
     fail "newest CHANGELOG entry is '$newest' but config.yaml is at '$config_version'"
-
-# Every architecture the add-on claims must have a base image to build from.
-while IFS= read -r arch; do
-    grep -q "^  ${arch}: " "$addon_dir/build.yaml" || \
-        fail "arch '$arch' is declared in config.yaml but has no build_from in build.yaml"
-done < <(sed -n '/^arch:/,/^[a-z]/{s/^  - //p;}' "$addon_dir/config.yaml")
 
 # Publishing a host port would bypass Home Assistant ingress authentication and
 # expose ttyd's unauthenticated root shell on the LAN. Keep that closed.
