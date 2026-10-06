@@ -452,6 +452,19 @@ test('dialog: digits toggle, empty line applies, s and n', () => {
   assert.equal(parseInput('9', ITEMS).action, 'invalid');
 });
 
+test('dialog: Enter with nothing selected does not apply', () => {
+  assert.equal(parseInput('', []).action, 'invalid');
+});
+
+test('dialog: string settings are quoted, a notice is shown', () => {
+  const offer = { ...OFFER, settings: { auto_launch_claude: false, remote_control_session_name: '' } };
+  const text = render(offer, [...ITEMS], 'Type 1–6 to toggle, Enter to take over, s or n.');
+  assert.match(text, /remote_control_session_name=""/);
+  assert.match(text, /auto_launch_claude=false/);
+  assert.match(text, /Type 1–6 to toggle/);
+  assert.doesNotMatch(render(offer, [...ITEMS]), /Type 1–6 to toggle/);
+});
+
 test('cli: detect exits 0 and prints the reason when nothing is offered', () => {
   const dir = tmp();
   const r = spawnSync(process.execPath, [path.join(MOD, 'cli.js'), 'detect'], {

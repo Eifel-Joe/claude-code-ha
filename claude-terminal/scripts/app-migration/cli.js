@@ -25,11 +25,13 @@ async function runDialog() {
   const offer = JSON.parse(fs.readFileSync(p.offer, 'utf8'));
   let rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   let selected = [...ITEMS];
+  let notice;
   try {
     for (;;) {
-      process.stdout.write('\x1b[2J\x1b[H' + render(offer, selected));
+      process.stdout.write('\x1b[2J\x1b[H' + render(offer, selected, notice));
       const r = parseInput(await rl.question('  > '), selected);
       selected = r.selected;
+      notice = r.action === 'invalid' ? 'Type 1–6 to toggle, Enter to take over, s or n.' : undefined;
       if (r.action === 'later') return;
       if (r.action === 'never') {
         fs.writeFileSync(p.state, 'never\n');

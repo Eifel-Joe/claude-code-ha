@@ -14,14 +14,16 @@ function label(item, offer) {
     }
     case 'stop': return 'Stop the old app afterwards';
     case 'settings': {
-      const s = Object.entries(offer.settings).map(([k, v]) => `${k}=${v}`).join(', ') || '-';
+      // JSON.stringify: an empty name must show as "" rather than vanish.
+      const s = Object.entries(offer.settings).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(', ') || '-';
       return `Settings: ${s} (applies after the next restart)`;
     }
     default: return item;
   }
 }
 
-function render(offer, selected) {
+// notice: optional hint line, e.g. after invalid input.
+function render(offer, selected, notice) {
   const lines = [
     '',
     `  Found another app: ${offer.name} ${offer.version}${offer.repository ? ` (${offer.repository})` : ''}`,
@@ -33,13 +35,16 @@ function render(offer, selected) {
     '  (it includes the old app image, typically several hundred MB).',
     '  Enter = take over    s = ask again next start    n = never ask',
     '',
+    ...(notice ? [`  ${notice}`, ''] : []),
   ];
   return lines.join('\n');
 }
 
 function parseInput(line, selected) {
   const s = line.trim().toLowerCase();
-  if (s === '') return { action: 'apply', selected };
+  // With nothing selected, Enter would only create a backup and mark the
+  // migration done.
+  if (s === '') return { action: selected.length ? 'apply' : 'invalid', selected };
   if (s === 's') return { action: 'later', selected };
   if (s === 'n') return { action: 'never', selected };
   const n = Number(s);
