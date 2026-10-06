@@ -76,4 +76,28 @@ for doc in "$addon_dir/README.md" "$repo_root/CLAUDE.md"; do
     fi
 done
 
+# Local builds need no build argument any more; docs and tooling that still
+# pass the old one send developers to a base image the app no longer uses.
+for f in "$repo_root/CLAUDE.md" "$repo_root/DEVELOPMENT.md" "$repo_root/flake.nix" \
+         "$repo_root/.github/workflows/ci.yml"; do
+    if grep -n 'BUILD_FROM' "$f"; then
+        fail "$(basename "$f") still passes BUILD_FROM; the Dockerfile pins the base image"
+    fi
+done
+
+# The developer guide set up credentials and options under /config; both live
+# in /data (credentials in /data/home/.claude, options in /data/options.json).
+if grep -n 'claude-config' "$repo_root/DEVELOPMENT.md"; then
+    fail "DEVELOPMENT.md still uses /config/claude-config; credentials live in /data/home/.claude"
+fi
+
+# README keeps one sentence saying armv7 is unsupported, so only its
+# architecture table is checked; DOCS.md must not mention armv7 at all.
+if grep -nE '^\| `armv7`' "$repo_root/README.md"; then
+    fail "README.md still lists armv7 in the architecture table"
+fi
+if grep -niE 'armv7' "$addon_dir/DOCS.md"; then
+    fail "DOCS.md still describes armv7, which is no longer built"
+fi
+
 echo "Release metadata suite passed (version $config_version)"

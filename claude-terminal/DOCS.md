@@ -50,7 +50,7 @@ The app offers several configuration options:
 - When enabled, the auto-launched Claude session starts with the `--remote-control` flag, pairing it with [claude.ai/code](https://claude.ai/code) and the Claude mobile app so you can drive the session from your phone, tablet, or another browser without opening the web terminal first (equivalent to running `claude --remote-control`)
 - Only applies while `auto_launch_claude: true`; it has no effect on the interactive session picker
 - Optionally set `remote_control_session_name` to give the session a fixed title in the session list; leave it empty to let Claude auto-generate one
-- **Requires** a claude.ai OAuth login (API keys are not supported) and Claude Code v2.1.51 or later. It is therefore not available on the ARMv7 build, which pins the portable `1.0.128` release
+- **Requires** a claude.ai OAuth login (API keys are not supported) and Claude Code v2.1.51 or later
 - See Anthropic's [Remote Control guide](https://code.claude.com/docs/en/remote-control) for details
 
 ### Dangerously Skip Permissions
@@ -157,13 +157,6 @@ If you enable `use_persistent_claude`, install the persistent Claude Code versio
 
 ```bash
 NPM_CONFIG_PREFIX=/data/npm npm install -g @anthropic-ai/claude-code@latest --prefer-online
-```
-
-On ARMv7, use the final portable JavaScript release because current Claude Code
-native releases do not publish ARM32 binaries:
-
-```bash
-NPM_CONFIG_PREFIX=/data/npm npm install -g @anthropic-ai/claude-code@1.0.128 --prefer-online
 ```
 
 After that, restarts will continue using the persistent version automatically.
