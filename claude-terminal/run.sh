@@ -309,7 +309,7 @@ setup_persistent_claude() {
     # The native binary's symlink lives in $HOME/.local/bin, which init_environment
     # puts ahead of /usr/local/bin on PATH. Overwrite it too, or "claude" keeps
     # resolving to the stale build-time binary even after this override activates.
-    local native_bin_link="/data/home/.local/bin/claude"
+    local native_bin_link="${CLAUDE_NATIVE_BIN_LINK:-/data/home/.local/bin/claude}"
     local claude_npm_spec="@anthropic-ai/claude-code@latest"
 
     use_persistent_claude=$(bashio::config 'use_persistent_claude' 'false')

@@ -193,7 +193,7 @@ launch_update_claude() {
     # Same link run.sh's setup_persistent_claude overrides: $HOME/.local/bin is
     # earlier on PATH than $claude_link, so without it a plain "claude" typed in
     # the bash shell keeps resolving to the build-time binary after an update.
-    local native_bin_link="/data/home/.local/bin/claude"
+    local native_bin_link="${CLAUDE_NATIVE_BIN_LINK:-/data/home/.local/bin/claude}"
 
     echo "🔄 Updating Claude Code (${claude_npm_spec})..."
     if NPM_CONFIG_PREFIX="$persistent_root" npm install -g "$claude_npm_spec" --prefer-online; then

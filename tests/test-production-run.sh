@@ -74,6 +74,10 @@ grep -q 'interactive-widget=resizes-content' "$terminal_page" || \
 
 PERSISTENT_CLAUDE_ROOT="$tmp_dir/npm"
 CLAUDE_BIN_LINK="$tmp_dir/claude"
+# $HOME/.local/bin precedes /usr/local/bin on PATH, so the override must
+# replace the native link too or a plain "claude" keeps the baked binary.
+CLAUDE_NATIVE_BIN_LINK="$tmp_dir/native-bin/claude"
+mkdir -p "$tmp_dir/native-bin"
 mkdir -p "$PERSISTENT_CLAUDE_ROOT/bin" \
     "$PERSISTENT_CLAUDE_ROOT/lib/node_modules/@anthropic-ai/claude-code"
 printf '#!/bin/sh\n' > "$PERSISTENT_CLAUDE_ROOT/bin/claude"
@@ -82,6 +86,8 @@ printf '{}\n' > "$PERSISTENT_CLAUDE_ROOT/lib/node_modules/@anthropic-ai/claude-c
 setup_persistent_claude
 [ "$(readlink "$CLAUDE_BIN_LINK")" = "$PERSISTENT_CLAUDE_ROOT/bin/claude" ] || \
     fail "current npm Claude layout was not activated"
+[ "$(readlink "$CLAUDE_NATIVE_BIN_LINK")" = "$PERSISTENT_CLAUDE_ROOT/bin/claude" ] || \
+    fail "persistent Claude must also replace the native link that is earlier on PATH"
 
 rm "$PERSISTENT_CLAUDE_ROOT/bin/claude"
 printf '#!/usr/bin/env node\n' > "$PERSISTENT_CLAUDE_ROOT/lib/node_modules/@anthropic-ai/claude-code/cli.js"
@@ -92,11 +98,12 @@ setup_persistent_claude
     fail "legacy npm Claude layout was not activated"
 
 # A package can look installed while its architecture-specific binary is absent.
-rm "$CLAUDE_BIN_LINK" "$PERSISTENT_CLAUDE_ROOT/bin/claude"
+rm "$CLAUDE_BIN_LINK" "$CLAUDE_NATIVE_BIN_LINK" "$PERSISTENT_CLAUDE_ROOT/bin/claude"
 printf '#!/bin/sh\nexit 1\n' > "$PERSISTENT_CLAUDE_ROOT/bin/claude"
 chmod +x "$PERSISTENT_CLAUDE_ROOT/bin/claude"
 setup_persistent_claude
 [ ! -e "$CLAUDE_BIN_LINK" ] || fail "non-working persistent Claude should not replace the baked binary"
+[ ! -e "$CLAUDE_NATIVE_BIN_LINK" ] || fail "non-working persistent Claude should not replace the native link"
 
 PERSIST_INSTALL_LOG="$tmp_dir/persist-install.log"
 PERSIST_INSTALL_BIN="$tmp_dir/persist-install"
