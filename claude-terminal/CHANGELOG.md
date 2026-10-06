@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.2.2
+
+### 🐛 Bug Fix - A hung download could keep the panel blank
+- Before the terminal starts, the app updates Claude Code (on by default) and
+  installs the packages from `persistent_apk_packages` / `persistent_pip_packages`.
+  None of these had a time limit, so a stuck npm registry or package mirror left
+  the panel blank with nothing in the log saying why.
+- They now give up and log `… timed out after Ns`: 300 s for the Claude Code
+  update and for each apk package, 900 s for the pip install (a Pi may compile
+  packages on first install). The app then starts as usual, with the built-in
+  Claude Code if the update did not finish.
+
+### 📚 Documentation
+- The app description said credentials are stored in `/config/claude-config/`.
+  They are in the app's private `/data` (`/data/home/.claude`), as the
+  documentation already said.
+
 ## 2.2.1
 
 ### 🐛 Bug Fix - Clicking a wrapped link opened only part of it

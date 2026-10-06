@@ -64,8 +64,11 @@ printf '#!/bin/sh\nexec sleep 30\n' > "$stub_bin/npm"
 chmod +x "$stub_bin/npm"
 PATH="$stub_bin:$PATH"
 
+# shellcheck disable=SC2034  # read by the sourced run.sh
 PERSISTENT_CLAUDE_ROOT="$tmp_dir/npm"
+# shellcheck disable=SC2034
 CLAUDE_BIN_LINK="$tmp_dir/claude"
+# shellcheck disable=SC2034
 CLAUDE_NATIVE_BIN_LINK="$tmp_dir/native/claude"
 : > "$log"
 started=$SECONDS
