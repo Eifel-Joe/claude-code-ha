@@ -307,11 +307,12 @@ test('apply: a finished job without a slug is fatal', async () => {
 });
 
 // A persist-install stand-in that logs its arguments and fails for "badpkg".
-function fakePersistInstall(dir) {
+// sleepMs: hangs that long before exiting (for the timeout test).
+function fakePersistInstall(dir, { sleepMs = 0 } = {}) {
   const log = path.join(dir, 'persist.log');
   const bin = path.join(dir, 'persist-install.js');
   fs.writeFileSync(bin, `require('fs').appendFileSync(${JSON.stringify(log)}, process.argv.slice(2).join(' ') + '\\n');
-process.exit(process.argv.includes('badpkg') ? 1 : 0);\n`);
+setTimeout(() => process.exit(process.argv.includes('badpkg') ? 1 : 0), ${sleepMs});\n`);
   return { log, deps: { persistInstall: process.execPath, persistInstallArgs: [bin] } };
 }
 
@@ -349,6 +350,17 @@ test('apply: a failed item keeps the old app running', async () => {
   assert.equal(result.results.claude, 'ok');
   assert.match(result.results.stop, /^skipped/);
   assert.deepEqual(sup.state.stopped, []);
+});
+
+test('apply: a hanging persist-install is killed and counts as failed', async () => {
+  const fake = fakePersistInstall(tmp(), { sleepMs: 5000 });
+  const oldOptions = { ...OLD_OPTIONS, persistent_apk_packages: ['slowpkg'], persistent_pip_packages: [] };
+  const started = Date.now();
+  const { result, sup } = await detectThenApply({ oldOptions }, ['packages'],
+    { ...fake.deps, installTimeoutMs: 200 });
+  assert.ok(Date.now() - started < 4000, 'apply waited for the hanging install');
+  assert.match(result.results.packages, /^error: .*slowpkg/);
+  assert.equal((sup.state.ownOptions.persistent_apk_packages || []).includes('slowpkg'), false);
 });
 
 const { ITEMS, render, parseInput, renderSummary } = require(path.join(MOD, 'dialog'));

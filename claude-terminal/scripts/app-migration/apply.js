@@ -19,6 +19,7 @@ function today() { return new Date().toISOString().slice(0, 10); }
 
 const POLL_MS = 2000;
 const BACKUP_TIMEOUT_MS = 60 * 60 * 1000;
+const INSTALL_TIMEOUT_MS = 15 * 60 * 1000; // per persist-install call
 
 // A synchronous backup request only answers once the backup is written; with the
 // app image inside that can take longer than fetch's 300 s header timeout on slow
@@ -135,7 +136,14 @@ async function apply(client, p, offer, selected, deps = {}) {
 
   const persistInstall = deps.persistInstall || '/usr/local/bin/persist-install';
   const persistArgs = deps.persistInstallArgs || [];
-  const install = (args) => spawnSync(persistInstall, [...persistArgs, ...args], { stdio: 'inherit' }).status === 0;
+  // Bounded: a hanging apk/pip (mirror down, prompt) must not keep the dialog,
+  // and with it Claude, blocked forever. A killed run has status null.
+  const installTimeoutMs = deps.installTimeoutMs || INSTALL_TIMEOUT_MS;
+  const install = (args) => {
+    const r = spawnSync(persistInstall, [...persistArgs, ...args],
+      { stdio: 'inherit', timeout: installTimeoutMs, killSignal: 'SIGKILL' });
+    return !r.error && r.status === 0;
+  };
 
   await step('packages', async () => {
     const failed = [];

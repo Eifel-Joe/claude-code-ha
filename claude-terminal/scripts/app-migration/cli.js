@@ -23,7 +23,7 @@ async function runDialog() {
   const p = migrationPaths();
   if (!fs.existsSync(p.offer)) return;
   const offer = JSON.parse(fs.readFileSync(p.offer, 'utf8'));
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  let rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   let selected = [...ITEMS];
   try {
     for (;;) {
@@ -37,15 +37,21 @@ async function runDialog() {
         return;
       }
       if (r.action === 'apply') {
+        // Close readline first: it keeps the terminal in raw mode, where Ctrl+C
+        // is a keypress, not a SIGINT for persist-install/tar. A fresh
+        // interface asks for the final Enter.
+        rl.close();
+        rl = null;
         console.log('\n  Creating a backup of the old app and taking over, this can take a few minutes...\n');
         const result = await apply(createClient(), p, offer, selected);
         console.log(renderSummary(result));
+        rl = readline.createInterface({ input: process.stdin, output: process.stdout });
         await rl.question('  Press Enter to continue ');
         return;
       }
     }
   } finally {
-    rl.close();
+    if (rl) rl.close();
   }
 }
 
