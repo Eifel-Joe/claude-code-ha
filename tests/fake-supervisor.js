@@ -44,12 +44,15 @@ function buildBackupFixture(dir, slug = OLD_SLUG) {
   return path.join(dir, 'backup.tar');
 }
 
-// opts: { apps, oldOptions, ownOptions, backupTar, failBackup, failStop }
+// opts: { apps, oldOptions, ownOptions, backupTar, failBackup (job 2nd poll reports an error), failStop }
+// state: calls, ownOptions, stopped, backups (created slugs), jobPolls
 function startFakeSupervisor(opts = {}) {
   const state = {
     calls: [],
     ownOptions: { ...(opts.ownOptions || {}) },
     stopped: [],
+    backups: [],
+    jobPolls: 0,
   };
   const apps = opts.apps || [
     { slug: SELF_SLUG, name: 'Claude Terminal Pro', version: '2.2.0', state: 'started' },
@@ -67,7 +70,8 @@ function startFakeSupervisor(opts = {}) {
     let body = '';
     req.on('data', (c) => { body += c; });
     req.on('end', () => {
-      const json = body ? JSON.parse(body) : undefined;
+      let json;
+      try { json = body ? JSON.parse(body) : undefined; } catch { return err(res, 400, 'bad json'); }
       state.calls.push({ method: req.method, url: req.url, body: json });
       if (req.headers.authorization !== 'Bearer test-token') return err(res, 401, 'unauthorized');
       const m = `${req.method} ${req.url}`;
@@ -78,10 +82,20 @@ function startFakeSupervisor(opts = {}) {
           repository: 'esjavadex', options: opts.oldOptions || {} });
       }
       if (m === 'POST /backups/new/partial') {
-        if (opts.failBackup) return err(res, 500, 'backup failed');
-        return ok(res, { slug: 'bk1' });
+        if (!json || json.background !== true) return err(res, 400, 'expected background: true');
+        state.jobPolls = 0;
+        return ok(res, { job_id: 'job1' });
+      }
+      if (m === 'GET /jobs/job1') {
+        state.jobPolls += 1;
+        if (state.jobPolls === 1) return ok(res, { done: false, reference: null, errors: [] });
+        if (opts.failBackup) return ok(res, { done: true, reference: null, errors: [{ message: 'backup failed' }] });
+        if (!state.backups.includes('bk1')) state.backups.push('bk1');
+        return ok(res, { done: true, reference: 'bk1', errors: [] });
       }
       if (m === 'GET /backups/bk1/download') {
+        if (!state.backups.includes('bk1')) return err(res, 404, 'no such backup');
+        if (!opts.backupTar) return err(res, 500, 'no backupTar configured');
         res.writeHead(200, { 'Content-Type': 'application/x-tar' });
         return fs.createReadStream(opts.backupTar).pipe(res);
       }
