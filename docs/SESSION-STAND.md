@@ -14,7 +14,7 @@
 - HA-Test auf 2.2.1 aktualisiert; Live-Test vom User bestätigt: alle drei Zeilen
   des `/login`-Links öffnen die korrekte, vollständige URL.
 - Offen: HA-Prod steht auf 2.2.0 — Update nur nach ausdrücklicher Freigabe.
-- Kein Tag/GitHub-Release für 2.2.1 angelegt.
+- Tag `v2.2.1` und GitHub-Release angelegt (Release-Notes `docs/release-notes-2.2.1.md`).
 
 ### Verworfen
 - Nur `window.open` umleiten: Folgezeilen blieben unklickbar.
