@@ -129,6 +129,9 @@ function pipNamesFromVenv(oldData) {
 }
 
 // Supervisor replaces the whole option set, so merge into the current one.
+// Known and accepted: /addons/self/info returns the options with the schema
+// defaults merged in, so writing them back pins today's defaults as if the
+// user had set them. There is no API that returns only user-set options.
 async function mergeOwnOptions(client, change) {
   const self = await client.get('/addons/self/info');
   const current = self.options || {};

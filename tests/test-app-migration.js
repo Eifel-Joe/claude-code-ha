@@ -337,12 +337,14 @@ const SITE_PACKAGES = 'packages/python/venv/lib/python3.12/site-packages';
 
 test('apply: reinstalls packages from old options plus the old venv, records them', async () => {
   const fake = fakePersistInstall(tmp());
-  const { result, sup } = await detectThenApply({ ownOptions: { persistent_apk_packages: ['git'] } }, ['packages'], fake.deps);
+  const ownOptions = { persistent_apk_packages: ['git'], auto_launch_claude: true };
+  const { result, sup } = await detectThenApply({ ownOptions }, ['packages'], fake.deps);
   assert.equal(result.results.packages, 'ok');
   // One pip call for all; idna is only a dependency (no REQUESTED), so pip pulls it in itself.
   assert.deepEqual(persistCalls(fake), ['htop', '--python httpx requests']);
   assert.deepEqual(sup.state.ownOptions.persistent_apk_packages, ['git', 'htop']);
   assert.deepEqual(sup.state.ownOptions.persistent_pip_packages, ['httpx', 'requests']);
+  assert.equal(sup.state.ownOptions.auto_launch_claude, true, 'unrelated own options must survive');
 });
 
 test('apply: without any REQUESTED marker every venv package is taken', async () => {
@@ -397,6 +399,19 @@ test('apply: a failed item keeps the old app running', async () => {
   assert.equal(result.results.claude, 'ok');
   assert.match(result.results.stop, /^skipped/);
   assert.deepEqual(sup.state.stopped, []);
+  assert.equal(sup.state.ownOptions.persistent_apk_packages.includes('badpkg'), false);
+});
+
+test('apply: a failing stop is reported as an error', async () => {
+  const { result } = await detectThenApply({ failStop: true }, ['claude', 'stop']);
+  assert.match(result.results.stop, /^error:/);
+});
+
+test('apply: a "not found" item does not block stopping the old app', async () => {
+  const { result, sup } = await detectThenApply({ fixture: { omit: ['.config/gh'] } }, ['gh', 'stop']);
+  assert.equal(result.results.gh, 'not found');
+  assert.equal(result.results.stop, 'ok');
+  assert.deepEqual(sup.state.stopped, [OLD_SLUG]);
 });
 
 test('apply: a hanging persist-install is killed and counts as failed', async () => {
