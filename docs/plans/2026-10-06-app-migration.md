@@ -516,7 +516,7 @@ async function detectThenApply(opts, selected, deps = {}) {
   return withSupervisor({ oldOptions: OLD_OPTIONS, ...opts }, async (client, p, sup) => {
     const { offer } = await detect(client, p);
     const result = await apply(client, p, offer, selected,
-      { today: '2026-10-06', persistInstall: deps.persistInstall || 'false-bin', ...deps });
+      { today: '2026-10-06', pollMs: 1, persistInstall: deps.persistInstall || 'false-bin', ...deps });
     return { result, p, sup };
   });
 }
@@ -525,7 +525,7 @@ test('apply: creates a named partial backup of only the old app', async () => {
   const { sup } = await detectThenApply({}, []);
   const call = sup.state.calls.find((c) => c.url === '/backups/new/partial');
   assert.deepEqual(call.body, {
-    name: 'Claude Terminal Pro – Übernahme 2026-10-06', addons: [OLD_SLUG], homeassistant: false,
+    name: 'Claude Terminal Pro – Übernahme 2026-10-06', addons: [OLD_SLUG], homeassistant: false, background: true,
   });
 });
 
@@ -552,7 +552,7 @@ test('apply: never overwrites files this app already has', async () => {
     const { offer } = await detect(client, p);
     fs.mkdirSync(path.join(p.home, '.claude/skills/shared'), { recursive: true });
     fs.writeFileSync(path.join(p.home, '.claude/skills/shared/SKILL.md'), 'new skill\n');
-    await apply(client, p, offer, ['claude'], { today: '2026-10-06', persistInstall: 'false-bin' });
+    await apply(client, p, offer, ['claude'], { today: '2026-10-06', pollMs: 1, persistInstall: 'false-bin' });
     assert.equal(fs.readFileSync(path.join(p.home, '.claude/skills/shared/SKILL.md'), 'utf8'), 'new skill\n');
   });
 });
@@ -569,7 +569,7 @@ test('apply: backup failure takes over nothing and stops nothing', async () => {
 test('apply: unpacks only data/, not the app image', async () => {
   await withSupervisor({ oldOptions: OLD_OPTIONS }, async (client, p) => {
     const { offer } = await detect(client, p);
-    await apply(client, p, offer, ['claude'], { today: '2026-10-06', persistInstall: 'false-bin', keepWork: true });
+    await apply(client, p, offer, ['claude'], { today: '2026-10-06', pollMs: 1, persistInstall: 'false-bin', keepWork: true });
     assert.ok(fs.existsSync(path.join(p.work, 'app', 'data', 'home', '.claude')));
     assert.equal(fs.existsSync(path.join(p.work, 'app', 'image.tar')), false);
   });
@@ -608,12 +608,38 @@ function run(cmd, args) {
 
 function today() { return new Date().toISOString().slice(0, 10); }
 
-async function fetchOldData(client, offer, p, date) {
-  const { slug } = await client.post('/backups/new/partial', {
+const POLL_MS = 2000;
+const BACKUP_TIMEOUT_MS = 60 * 60 * 1000;
+
+// A synchronous backup request only answers once the backup is written; with the
+// app image inside that can take longer than fetch's 300 s header timeout on slow
+// hardware. So run it as a Supervisor background job and poll /jobs/<id>, whose
+// "reference" is the backup slug once done (supervisor api/backups.py, jobs).
+async function createBackup(client, offer, date, pollMs) {
+  const created = await client.post('/backups/new/partial', {
     name: `Claude Terminal Pro – Übernahme ${date}`,
     addons: [offer.slug],
     homeassistant: false,
+    background: true,
   });
+  if (created.slug) return created.slug; // finished before the request returned
+  const deadline = Date.now() + BACKUP_TIMEOUT_MS;
+  for (;;) {
+    const job = await client.get(`/jobs/${created.job_id}`);
+    if (job.done) {
+      if (job.errors && job.errors.length) {
+        throw new Error(`backup failed: ${job.errors.map((e) => e.message).join('; ')}`);
+      }
+      if (!job.reference) throw new Error('backup finished without a backup slug');
+      return job.reference;
+    }
+    if (Date.now() > deadline) throw new Error('backup still running after 60 minutes');
+    await new Promise((resolve) => setTimeout(resolve, pollMs));
+  }
+}
+
+async function fetchOldData(client, offer, p, date, pollMs = POLL_MS) {
+  const slug = await createBackup(client, offer, date, pollMs);
   fs.rmSync(p.work, { recursive: true, force: true });
   fs.mkdirSync(p.work, { recursive: true });
   const outer = path.join(p.work, 'backup.tar');
@@ -640,7 +666,7 @@ async function apply(client, p, offer, selected, deps = {}) {
   const results = {};
   let old;
   try {
-    old = await fetchOldData(client, offer, p, deps.today || today());
+    old = await fetchOldData(client, offer, p, deps.today || today(), deps.pollMs);
   } catch (e) {
     fs.rmSync(p.work, { recursive: true, force: true });
     return { ok: false, fatal: e.message, results };
