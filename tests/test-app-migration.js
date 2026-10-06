@@ -294,3 +294,48 @@ test('apply: a finished job without a slug is fatal', async () => {
   assert.equal(result.ok, false);
   assert.match(result.fatal, /without a backup slug/);
 });
+
+// A persist-install stand-in that logs its arguments and fails for "badpkg".
+function fakePersistInstall(dir) {
+  const log = path.join(dir, 'persist.log');
+  const bin = path.join(dir, 'persist-install.js');
+  fs.writeFileSync(bin, `require('fs').appendFileSync(${JSON.stringify(log)}, process.argv.slice(2).join(' ') + '\\n');
+process.exit(process.argv.includes('badpkg') ? 1 : 0);\n`);
+  return { log, deps: { persistInstall: process.execPath, persistInstallArgs: [bin] } };
+}
+
+test('apply: reinstalls packages from old options plus the old venv, records them', async () => {
+  const fake = fakePersistInstall(tmp());
+  const { result, sup } = await detectThenApply({ ownOptions: { persistent_apk_packages: ['git'] } }, ['packages'], fake.deps);
+  assert.equal(result.results.packages, 'ok');
+  assert.deepEqual(fs.readFileSync(fake.log, 'utf8').trim().split('\n'), ['htop', '--python httpx', '--python requests']);
+  assert.deepEqual(sup.state.ownOptions.persistent_apk_packages, ['git', 'htop']);
+  assert.deepEqual(sup.state.ownOptions.persistent_pip_packages, ['httpx', 'requests']);
+});
+
+test('apply: settings are merged into this app\'s options, excluded keys untouched', async () => {
+  const own = { auto_launch_claude: true, use_persistent_claude: true, auto_update_claude_on_start: true };
+  const { result, sup } = await detectThenApply({ ownOptions: own }, ['settings']);
+  assert.equal(result.results.settings, 'ok');
+  assert.deepEqual(sup.state.ownOptions, {
+    auto_launch_claude: false, dangerously_skip_permissions: true, tmux_mouse: false,
+    use_persistent_claude: true, auto_update_claude_on_start: true,
+  });
+});
+
+test('apply: stops the old app last when everything succeeded', async () => {
+  const { result, sup } = await detectThenApply({}, ['claude', 'stop']);
+  assert.equal(result.results.stop, 'ok');
+  assert.deepEqual(sup.state.stopped, [OLD_SLUG]);
+  assert.equal(sup.state.calls.at(-1).url, `/addons/${OLD_SLUG}/stop`);
+});
+
+test('apply: a failed item keeps the old app running', async () => {
+  const fake = fakePersistInstall(tmp());
+  const oldOptions = { ...OLD_OPTIONS, persistent_apk_packages: ['badpkg'] };
+  const { result, sup } = await detectThenApply({ oldOptions }, ['claude', 'packages', 'stop'], fake.deps);
+  assert.match(result.results.packages, /^error: .*badpkg/);
+  assert.equal(result.results.claude, 'ok');
+  assert.match(result.results.stop, /^skipped/);
+  assert.deepEqual(sup.state.stopped, []);
+});

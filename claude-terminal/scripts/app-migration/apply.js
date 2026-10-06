@@ -73,6 +73,32 @@ function copyMissing(src, dst, filter) {
   return true;
 }
 
+const PIP_BOOTSTRAP = new Set(['pip', 'setuptools', 'wheel']);
+const unique = (list) => [...new Set(list)];
+
+// Package names from the old venv's *.dist-info directories.
+function pipNamesFromVenv(oldData) {
+  const lib = path.join(oldData, 'packages', 'python', 'venv', 'lib');
+  if (!fs.existsSync(lib)) return [];
+  const names = [];
+  for (const py of fs.readdirSync(lib)) {
+    const sitePackages = path.join(lib, py, 'site-packages');
+    if (!fs.existsSync(sitePackages)) continue;
+    for (const entry of fs.readdirSync(sitePackages)) {
+      const m = /^(.+?)-[^-]+\.dist-info$/.exec(entry);
+      if (m && !PIP_BOOTSTRAP.has(m[1].toLowerCase())) names.push(m[1]);
+    }
+  }
+  return names;
+}
+
+// Supervisor replaces the whole option set, so merge into the current one.
+async function mergeOwnOptions(client, change) {
+  const self = await client.get('/addons/self/info');
+  const current = self.options || {};
+  await client.post('/addons/self/options', { options: { ...current, ...change(current) } });
+}
+
 async function apply(client, p, offer, selected, deps = {}) {
   const results = {};
   let old;
@@ -106,6 +132,33 @@ async function apply(client, p, offer, selected, deps = {}) {
     path.join(p.home, '.claude', '.credentials.json')) ? 'ok' : 'not found'));
   await step('gh', () => (copyMissing(path.join(old.oldData, '.config', 'gh'),
     path.join(p.dataRoot, '.config', 'gh')) ? 'ok' : 'not found'));
+
+  const persistInstall = deps.persistInstall || '/usr/local/bin/persist-install';
+  const persistArgs = deps.persistInstallArgs || [];
+  const install = (args) => spawnSync(persistInstall, [...persistArgs, ...args], { stdio: 'inherit' }).status === 0;
+
+  await step('packages', async () => {
+    const failed = [];
+    const apk = offer.apk.filter((pkg) => install([pkg]) || (failed.push(pkg), false));
+    const pip = unique([...offer.pip, ...pipNamesFromVenv(old.oldData)])
+      .filter((pkg) => install(['--python', pkg]) || (failed.push(pkg), false));
+    await mergeOwnOptions(client, (cur) => ({
+      persistent_apk_packages: unique([...(cur.persistent_apk_packages || []), ...apk]),
+      persistent_pip_packages: unique([...(cur.persistent_pip_packages || []), ...pip]),
+    }));
+    if (failed.length) throw new Error(`could not install ${failed.join(', ')}`);
+  });
+
+  await step('settings', () => mergeOwnOptions(client, () => offer.settings));
+
+  // Last, and only if nothing failed: the old app is the fallback.
+  if (selected.includes('stop')) {
+    if (Object.values(results).some((r) => r.startsWith('error'))) {
+      results.stop = 'skipped: an earlier item failed, the old app keeps running';
+    } else {
+      await step('stop', () => client.post(`/addons/${offer.slug}/stop`));
+    }
+  }
 
   if (!deps.keepWork) fs.rmSync(p.work, { recursive: true, force: true }); // keepWork: tests only
   fs.writeFileSync(p.state, 'done\n');
