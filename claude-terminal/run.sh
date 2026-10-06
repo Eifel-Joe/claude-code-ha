@@ -646,11 +646,9 @@ with_migration_dialog() {
     local offer="${APP_MIGRATION_OFFER:-/data/migration/offer.json}"
     local cli="${APP_MIGRATION_CLI:-/opt/scripts/app-migration/cli.js}"
     if [ -f "$offer" ]; then
-        printf 'node %s dialog; %s
-' "$cli" "$launch_command"
+        printf 'node %s dialog; %s\n' "$cli" "$launch_command"
     else
-        printf '%s
-' "$launch_command"
+        printf '%s\n' "$launch_command"
     fi
 }
 

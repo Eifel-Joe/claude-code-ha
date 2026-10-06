@@ -152,9 +152,10 @@ cmp -s "$tmp_dir/expected.log" "$PERSIST_INSTALL_LOG" || fail "package failure d
 # A pending migration offer puts the selection window in front of Claude.
 APP_MIGRATION_OFFER="$tmp_dir/offer.json"
 APP_MIGRATION_CLI="/opt/scripts/app-migration/cli.js"
-[ "$(with_migration_dialog 'clear && picker')" = 'clear && picker' ] ||     fail "launch command must stay unchanged without a migration offer"
-printf '{}
-' > "$APP_MIGRATION_OFFER"
-[ "$(with_migration_dialog 'clear && picker')" = 'node /opt/scripts/app-migration/cli.js dialog; clear && picker' ] ||     fail "a pending migration offer must show the dialog before the launch command"
+[ "$(with_migration_dialog 'clear && picker')" = 'clear && picker' ] || \
+    fail "launch command must stay unchanged without a migration offer"
+printf '{}\n' > "$APP_MIGRATION_OFFER"
+[ "$(with_migration_dialog 'clear && picker')" = "node $APP_MIGRATION_CLI dialog; clear && picker" ] || \
+    fail "a pending migration offer must show the dialog before the launch command"
 
 echo "Production run.sh regression suite passed"
