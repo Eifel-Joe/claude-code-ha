@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.2.1
+
+### 🐛 Bug Fix - Clicking a wrapped link opened only part of it
+- Claude Code and tmux break a long URL (such as the login link) across rows. The
+  terminal's built-in link detection only joins rows it wrapped itself, so a click
+  on the first row opened a cut-off URL and the other rows were not clickable.
+- Every row of such a link is now clickable and opens the full URL, rebuilt the
+  same way **🔗 Copy link** rebuilds it. Not with `tmux_mouse` enabled (clicks go to
+  tmux then) and not by tapping on a phone - use **🔗 Copy link** there.
+
 ## 2.2.0
 
 ### ✨ New Feature - Switch from another Claude Terminal Pro app in one step

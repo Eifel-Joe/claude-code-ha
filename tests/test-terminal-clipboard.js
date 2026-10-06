@@ -80,7 +80,10 @@ function makeWindow(options) {
         overlayMessages: [],
         appendedTextareas: [],
         fits: 0,
-        scrollsToBottom: 0
+        scrollsToBottom: 0,
+        linkProviders: [],
+        openCalls: [],
+        windows: []
     };
 
     const doc = {
@@ -112,7 +115,15 @@ function makeWindow(options) {
         dispatch(type) {
             (windowListeners.get(type) || []).forEach(handler => handler({}));
         },
-        navigator: {}
+        navigator: {},
+        // window.open as the WebLinksAddon uses it: no arguments, then set
+        // opener and location on what comes back.
+        open(...args) {
+            state.openCalls.push(args);
+            const opened = { opener: 'parent', location: { href: '' } };
+            state.windows.push(opened);
+            return opened;
+        }
     };
 
     if (opts.clipboardApi) {
@@ -147,6 +158,10 @@ function makeWindow(options) {
         fit() { state.fits += 1; },
         scrollToBottom() { state.scrollsToBottom += 1; },
         onSelectionChange(handler) { selectionHandlers.push(handler); },
+        registerLinkProvider(provider) {
+            state.linkProviders.push(provider);
+            return { dispose() {} };
+        },
         buffer: {
             active: {
                 type: opts.altScreen ? 'alternate' : 'normal',
@@ -1093,6 +1108,236 @@ test('a throwing fit() does not stop the scroll', () => {
 
     controller.scrollToBottom();
     assert.strictEqual(env.state.scrollsToBottom, 1);
+});
+
+// --- Clickable links: which cells belong to which rebuilt URL ---
+
+test('a one-row link gets one span covering exactly the URL', () => {
+    const line = 'see https://example.com/a. ok';
+    const links = bridge.linkSpansInRows(rows([line]), 46);
+    const start = line.indexOf('https');
+    assert.deepStrictEqual(links, [{
+        url: 'https://example.com/a',
+        spans: [{ row: 0, start, end: start + 'https://example.com/a'.length }]
+    }]);
+});
+
+test('every URL on a line is linked, not only the last', () => {
+    const links = bridge.linkSpansInRows(rows(['https://a.example.com/x and https://b.example.com/y']), 80);
+    assert.deepStrictEqual(links.map(l => l.url), ['https://a.example.com/x', 'https://b.example.com/y']);
+});
+
+test('a hard-wrapped link spans both rows, skipping the continuation indent', () => {
+    const captured = rows([
+        '  ⎿  $ echo "PROBE https://claude.ai/code/arti',
+        '     fact/8f1aa329-c6ce-447f-a58c-bd14ce569558',
+        '     END"'
+    ]);
+    const links = bridge.linkSpansInRows(captured, 46);
+    assert.strictEqual(links.length, 1);
+    assert.strictEqual(links[0].url, 'https://claude.ai/code/artifact/8f1aa329-c6ce-447f-a58c-bd14ce569558');
+    assert.deepStrictEqual(links[0].spans, [
+        { row: 0, start: captured[0].text.indexOf('https'), end: captured[0].text.length },
+        { row: 1, start: 5, end: captured[1].text.length }
+    ]);
+});
+
+test('a link broken at a slash spans the short row and the next', () => {
+    const rendered = rows([
+        '  https://claude.ai/code/artifact',
+        '  /8f1aa329-c6ce-447f-a58c-bd14ce569558'
+    ]);
+    const links = bridge.linkSpansInRows(rendered, 46);
+    assert.deepStrictEqual(links[0].spans, [
+        { row: 0, start: 2, end: rendered[0].text.length },
+        { row: 1, start: 2, end: rendered[1].text.length }
+    ]);
+});
+
+test('a truncated link gets no spans', () => {
+    assert.deepStrictEqual(bridge.linkSpansInRows(rows(['https://example.com/a?x=']), 46), []);
+});
+
+test('a link running into the last row read gets no spans - it may go on below', () => {
+    const edge = rows(['● https://example.com/verylong'], 30);
+    assert.strictEqual(edge[0].full, true, 'fixture must fill the row');
+    assert.deepStrictEqual(bridge.linkSpansInRows(edge, 30), []);
+});
+
+// --- Clickable links: the provider xterm.js asks on hover and click ---
+
+const WRAPPED_LINK = [
+    '  https://claude.ai/code/artifact',
+    '  /8f1aa329-c6ce-447f-a58c-bd14ce569558'
+];
+const FULL_LINK = 'https://claude.ai/code/artifact/8f1aa329-c6ce-447f-a58c-bd14ce569558';
+
+function provideLinks(env, bufferLineNumber) {
+    let result = 'not called';
+    env.state.linkProviders[0].provideLinks(bufferLineNumber, links => { result = links; });
+    return result;
+}
+
+test('install registers one link provider', () => {
+    const env = makeWindow({ buffer: WRAPPED_LINK, cols: 46 });
+    bridge.install(env.win);
+    assert.strictEqual(env.state.linkProviders.length, 1);
+});
+
+test('every row of a wrapped link is a link to the full URL', () => {
+    const env = makeWindow({ buffer: WRAPPED_LINK, cols: 46 });
+    bridge.install(env.win);
+
+    const first = provideLinks(env, 1);
+    assert.strictEqual(first.length, 1);
+    assert.strictEqual(first[0].text, FULL_LINK);
+    // xterm ranges: 1-based columns, end inclusive.
+    assert.deepStrictEqual(first[0].range, {
+        start: { x: 3, y: 1 }, end: { x: WRAPPED_LINK[0].length, y: 1 }
+    });
+
+    const second = provideLinks(env, 2);
+    assert.strictEqual(second[0].text, FULL_LINK);
+    assert.deepStrictEqual(second[0].range, {
+        start: { x: 3, y: 2 }, end: { x: WRAPPED_LINK[1].length, y: 2 }
+    });
+});
+
+test('a row without a link reports none', () => {
+    const env = makeWindow({ buffer: ['plain output', 'more'], cols: 46 });
+    bridge.install(env.win);
+    assert.strictEqual(provideLinks(env, 1), undefined);
+});
+
+test('clicking a link opens the full URL with the opener cleared', () => {
+    const env = makeWindow({ buffer: WRAPPED_LINK, cols: 46 });
+    bridge.install(env.win);
+
+    provideLinks(env, 2)[0].activate({}, FULL_LINK);
+    assert.strictEqual(env.state.windows.length, 1);
+    assert.strictEqual(env.state.windows[0].opener, null);
+    assert.strictEqual(env.state.windows[0].location.href, FULL_LINK);
+});
+
+test('a terminal without registerLinkProvider still installs', () => {
+    const env = makeWindow({ buffer: WRAPPED_LINK, cols: 46 });
+    delete env.win.term.registerLinkProvider;
+    assert.ok(bridge.install(env.win));
+});
+
+test("the addon's fragment on row 1 opens the full URL", () => {
+    const env = makeWindow({ buffer: WRAPPED_LINK, cols: 46 });
+    bridge.install(env.win);
+
+    // Exactly what WebLinksAddon's handleLink does.
+    const opened = env.win.open();
+    opened.opener = null;
+    opened.location.href = 'https://claude.ai/code/artifact';
+
+    assert.strictEqual(env.state.windows.length, 1);
+    assert.strictEqual(env.state.windows[0].opener, null);
+    assert.strictEqual(env.state.windows[0].location.href, FULL_LINK);
+});
+
+test('a URL that is not the start of a rebuilt link is opened unchanged', () => {
+    const env = makeWindow({ buffer: WRAPPED_LINK, cols: 46 });
+    bridge.install(env.win);
+
+    env.win.open().location.href = 'https://other.example.com/x';
+    assert.strictEqual(env.state.windows[0].location.href, 'https://other.example.com/x');
+});
+
+test('a complete link is not stretched to a longer one that starts the same', () => {
+    const env = makeWindow({
+        buffer: ['https://example.com/a', 'https://example.com/ab'], cols: 80
+    });
+    bridge.install(env.win);
+
+    // "/a" is a link of its own on screen, not a fragment of "/ab".
+    env.win.open().location.href = 'https://example.com/a';
+    assert.strictEqual(env.state.windows[0].location.href, 'https://example.com/a');
+});
+
+test('window.open with arguments goes straight through', () => {
+    const env = makeWindow({ buffer: WRAPPED_LINK, cols: 46 });
+    bridge.install(env.win);
+
+    const opened = env.win.open('https://claude.ai/code/artifact', '_blank');
+    assert.deepStrictEqual(env.state.openCalls, [['https://claude.ai/code/artifact', '_blank']]);
+    assert.strictEqual(opened, env.state.windows[0]);
+});
+
+test('the link provider opens through the original window.open, not the redirect', () => {
+    const env = makeWindow({ buffer: WRAPPED_LINK, cols: 46 });
+    const original = env.win.open;
+    let originalCalls = 0;
+    env.win.open = function (...args) { originalCalls++; return original.apply(this, args); };
+    const counted = env.win.open;
+    bridge.install(env.win);
+    assert.notStrictEqual(env.win.open, counted, 'open must be wrapped');
+
+    provideLinks(env, 2)[0].activate({}, FULL_LINK);
+    assert.strictEqual(originalCalls, 1);
+    assert.strictEqual(env.state.windows[0].location.href, FULL_LINK);
+});
+
+test('a link wrapped one column short of the pane spans every row from column 0', () => {
+    // Claude Code's login URL layout, measured live: 45-column rows at 46.
+    const url = 'https://claude.com/cai/oauth/authorize?code=true&client_id=9d1c250a' +
+        '&scope=org%3Acreate_api_key&code_challenge=hjWXYekQj00Wfyv1dC3CF414TPcRB5EIEB7tUV2Ov-s';
+    const wrapped = [];
+    for (let at = 0; at < url.length; at += 45) wrapped.push(url.slice(at, at + 45));
+    const rendered = rows(['  Use the url below to sign in', ''].concat(wrapped, ['', '  Paste code here >']), 46);
+
+    const links = bridge.linkSpansInRows(rendered, 46);
+    assert.strictEqual(links.length, 1);
+    assert.strictEqual(links[0].url, url);
+    assert.deepStrictEqual(links[0].spans,
+        wrapped.map((text, k) => ({ row: 2 + k, start: 0, end: text.length })));
+});
+
+test('installing twice neither wraps window.open again nor adds a provider', () => {
+    const env = makeWindow({ buffer: WRAPPED_LINK, cols: 46 });
+    bridge.install(env.win);
+    const wrappedOpen = env.win.open;
+    bridge.install(env.win);
+    assert.strictEqual(env.win.open, wrappedOpen);
+    assert.strictEqual(env.state.linkProviders.length, 1);
+});
+
+// Two logins: the old link is still in the scrollback above the new one.
+const TWO_LINKS = [
+    '  https://claude.ai/code/artifact',
+    '  /aaaa1111-c6ce-447f-a58c-bd14ce569558',
+    '  login again',
+    '  https://claude.ai/code/artifact',
+    '  /bbbb2222-c6ce-447f-a58c-bd14ce569558'
+];
+
+test('row 1 of an older link opens that link, not a newer one starting the same', () => {
+    const env = makeWindow({ buffer: TWO_LINKS, cols: 46 });
+    bridge.install(env.win);
+
+    // xterm.js asks every provider for the hovered line before the click
+    // (checked against real xterm.js 5.5), even where the addon's link wins.
+    provideLinks(env, 1);
+    env.win.open().location.href = 'https://claude.ai/code/artifact';
+    assert.strictEqual(env.state.windows[0].location.href,
+        'https://claude.ai/code/artifact/aaaa1111-c6ce-447f-a58c-bd14ce569558');
+
+    provideLinks(env, 4);
+    env.win.open().location.href = 'https://claude.ai/code/artifact';
+    assert.strictEqual(env.state.windows[1].location.href,
+        'https://claude.ai/code/artifact/bbbb2222-c6ce-447f-a58c-bd14ce569558');
+});
+
+test('a failing lookup still opens the URL the addon asked for', () => {
+    const env = makeWindow({ buffer: WRAPPED_LINK, cols: 46 });
+    bridge.install(env.win);
+    env.win.term.buffer.active.getLine = () => { throw new Error('buffer gone'); };
+
+    env.win.open().location.href = 'https://claude.ai/code/artifact';
+    assert.strictEqual(env.state.windows[0].location.href, 'https://claude.ai/code/artifact');
 });
 
 (async () => {

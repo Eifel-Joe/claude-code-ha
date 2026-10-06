@@ -152,27 +152,24 @@
     /** The raw rows for a mode, each tagged with whether it filled the width. */
     function rawRows(term, mode) {
         var buffer = term.buffer.active;
-        var cols = term.cols;
-        var from;
-        var to;
-        if (mode === 'all') {
-            from = 0;
-            to = buffer.length - 1;
-        } else if (mode === 'screen-down') {
-            from = buffer.viewportY;
-            to = buffer.length - 1;
-        } else {
-            // The rows currently on screen, wherever the viewport is scrolled.
-            from = buffer.viewportY;
-            to = Math.min(from + term.rows - 1, buffer.length - 1);
-        }
+        if (mode === 'all') return rowsBetween(term, 0, buffer.length - 1);
+        if (mode === 'screen-down') return rowsBetween(term, buffer.viewportY, buffer.length - 1);
+        // The rows currently on screen, wherever the viewport is scrolled.
+        return rowsBetween(term, buffer.viewportY,
+            Math.min(buffer.viewportY + term.rows - 1, buffer.length - 1));
+    }
 
+    // y is the 0-based buffer line, so a caller can map a row back to the
+    // screen even where getLine() skipped one.
+    function rowsBetween(term, from, to) {
+        var buffer = term.buffer.active;
+        var cols = term.cols;
         var rows = [];
         for (var y = from; y <= to; y++) {
             var line = buffer.getLine(y);
             if (!line) continue;
             var text = line.translateToString(true);
-            rows.push({ text: text, full: text.length >= cols, wrapped: !!line.isWrapped });
+            rows.push({ text: text, full: text.length >= cols, wrapped: !!line.isWrapped, y: y });
         }
         return rows;
     }
@@ -216,25 +213,13 @@
         return null;
     }
 
-    /**
-     * The last usable URL in terminal text, or null.
-     *
-     * @param {string} text
-     * @param {boolean} [reportProblem] return {url, problem} instead of a string
-     */
-    function findLastUrl(text, reportProblem) {
-        var fail = function (problem) {
-            return reportProblem ? { url: null, problem: problem } : null;
-        };
-        if (!text) return fail('none');
-        var matches = text.match(URL_PATTERN);
-        if (!matches) return fail('none');
-
-        var raw = matches[matches.length - 1];
+    // Strip what a sentence or bracket put after the link, then judge it.
+    // Returns {url, problem}; url is null when the candidate is not usable.
+    function cleanUrl(raw) {
         // Checked before punctuation is stripped: "…" and "..." are how a TUI
         // says "cut off here", and stripping them first would turn a truncated
         // link into a plausible one. A single trailing dot is just a full stop.
-        if (/(…|\.\.\.)$/.test(raw)) return fail('truncated');
+        if (/(…|\.\.\.)$/.test(raw)) return { url: null, problem: 'truncated' };
 
         var url = raw.replace(TRAILING_PUNCTUATION, '');
         // A closing bracket belongs to the URL only if it was opened inside it,
@@ -250,8 +235,26 @@
         }
 
         var problem = urlProblem(url);
-        if (problem) return fail(problem);
-        return reportProblem ? { url: url, problem: null } : url;
+        return problem ? { url: null, problem: problem } : { url: url, problem: null };
+    }
+
+    /**
+     * The last usable URL in terminal text, or null.
+     *
+     * @param {string} text
+     * @param {boolean} [reportProblem] return {url, problem} instead of a string
+     */
+    function findLastUrl(text, reportProblem) {
+        var fail = function (problem) {
+            return reportProblem ? { url: null, problem: problem } : null;
+        };
+        if (!text) return fail('none');
+        var matches = text.match(URL_PATTERN);
+        if (!matches) return fail('none');
+
+        var cleaned = cleanUrl(matches[matches.length - 1]);
+        if (cleaned.problem) return fail(cleaned.problem);
+        return reportProblem ? cleaned : cleaned.url;
     }
 
     // What a wrapped URL may resume with. Letters are out: a row starting with
@@ -278,9 +281,12 @@
 
     // Rebuild the lines the terminal broke into rows. Three splits, each with
     // its own trace: see CHANGELOG 2.1.0. The glue per boundary is nothing, one
-    // space, or a line break.
-    function joinRows(rows, cols, join) {
+    // space, or a line break. withMap adds, per line, where each character came
+    // from ({row, col}, null for a glue space) - what a click needs to find
+    // the rebuilt URL under the mouse.
+    function joinRows(rows, cols, join, withMap) {
         var lines = [];
+        var maps = [];
         var previousFull = false;
         var previousLength = 0;
         var width = wrapWidth(rows, cols);
@@ -316,14 +322,71 @@
 
             if (glue === null) {
                 lines.push(row.text);
+                if (withMap) maps.push(sourceMap(i, 0, row.text.length));
             } else {
                 lines[lines.length - 1] += glue + chunk;
+                if (withMap) {
+                    var map = maps[maps.length - 1];
+                    if (glue) map.push(null);
+                    // chunk is row.text minus its indent.
+                    var offset = row.text.length - chunk.length;
+                    Array.prototype.push.apply(map, sourceMap(i, offset, chunk.length));
+                }
             }
             previousFull = row.full;
             previousLength = row.text.length;
         }
 
-        return { lines: lines, lastRowFull: previousFull };
+        return { lines: lines, lastRowFull: previousFull, maps: withMap ? maps : null };
+    }
+
+    function sourceMap(row, offset, length) {
+        var map = [];
+        for (var k = 0; k < length; k++) map.push({ row: row, col: offset + k });
+        return map;
+    }
+
+    // Consecutive cells of one row become one span; end is exclusive.
+    function spansFor(map, start, end) {
+        var spans = [];
+        var current = null;
+        for (var k = start; k < end; k++) {
+            var cell = map[k];
+            if (!cell) continue;
+            if (current && current.row === cell.row && current.end === cell.col) {
+                current.end += 1;
+            } else {
+                current = { row: cell.row, start: cell.col, end: cell.col + 1 };
+                spans.push(current);
+            }
+        }
+        return spans;
+    }
+
+    /**
+     * Every usable URL in the rows, rebuilt the way "Copy link" rebuilds it,
+     * with the cells it occupies: [{url, spans: [{row, start, end}]}].
+     * row indexes `rows`; start/end are 0-based columns, end exclusive.
+     */
+    function linkSpansInRows(rows, cols) {
+        var joined = joinRows(rows, cols, true, true);
+        var links = [];
+        var last = joined.lines.length - 1;
+        for (var i = 0; i <= last; i++) {
+            var line = joined.lines[i];
+            var pattern = new RegExp(URL_PATTERN.source, 'g');
+            var match;
+            while ((match = pattern.exec(line)) !== null) {
+                var cleaned = cleanUrl(match[0]);
+                if (!cleaned.url) continue;
+                var end = match.index + cleaned.url.length;
+                // Same rule as findLinkInRows' atEdge: still growing when the
+                // rows ran out, so half a link - better none.
+                if (i === last && joined.lastRowFull && end === line.length) continue;
+                links.push({ url: cleaned.url, spans: spansFor(joined.maps[i], match.index, end) });
+            }
+        }
+        return links;
     }
 
     // atEdge means the link runs off the rows given - widen, do not copy it.
@@ -436,6 +499,131 @@
         // so clearing on `input` deleted the word being typed. The repeated
         // text is xtermjs/xterm.js#6060 and has to be fixed there.
         return true;
+    }
+
+    // Rows read on each side of the hovered one. A login URL is a few hundred
+    // characters; 40 rows hold it even in a 20-column pane.
+    var LINK_WINDOW_ROWS = 40;
+
+    // The WebLinksAddon's own way of opening a link: a blank window first, so
+    // the opener can be cleared before the page loads.
+    function openLink(win, open, url) {
+        var opened = open.call(win);
+        if (!opened) return;
+        try { opened.opener = null; } catch (err) { /* Electron can throw */ }
+        opened.location.href = url;
+    }
+
+    /**
+     * Make every row of a wrapped link clickable. ttyd's WebLinksAddon only
+     * joins rows xterm.js wrapped itself (isWrapped); Claude Code and tmux
+     * break lines hard, so it links row 1 to a fragment and the rest not at
+     * all. Registered after the addon, so on row 1 the addon still wins -
+     * installOpenRedirect covers that row.
+     *
+     * @param open the frame's original window.open, never the redirect
+     * @param hover records the line xterm.js last asked about, for the redirect
+     */
+    function installLinkProvider(win, term, open, hover) {
+        if (typeof term.registerLinkProvider !== 'function') return;
+        term.registerLinkProvider({
+            provideLinks: function (bufferLineNumber, callback) {
+                var y = bufferLineNumber - 1;
+                hover.y = y;
+                var links = [];
+                linksOnLine(term, y).forEach(function (found) {
+                    var span = found.span;
+                    var url = found.url;
+                    links.push({
+                        // xterm.js ranges: 1-based columns, end inclusive.
+                        range: {
+                            start: { x: span.start + 1, y: bufferLineNumber },
+                            end: { x: span.end, y: bufferLineNumber }
+                        },
+                        text: url,
+                        activate: function () { openLink(win, open, url); }
+                    });
+                });
+                callback(links.length ? links : undefined);
+            }
+        });
+    }
+
+    // The rebuilt links with a span on buffer line y: [{url, span}].
+    function linksOnLine(term, y) {
+        var buffer = term.buffer.active;
+        var rows = rowsBetween(term, Math.max(0, y - LINK_WINDOW_ROWS),
+            Math.min(buffer.length - 1, y + LINK_WINDOW_ROWS));
+        var found = [];
+        linkSpansInRows(rows, term.cols).forEach(function (link) {
+            link.spans.forEach(function (span) {
+                if (rows[span.row].y === y) found.push({ url: link.url, span: span });
+            });
+        });
+        return found;
+    }
+
+    // url itself if it is a complete link, else the rebuilt link it is a
+    // proper start of, else url. Looked up on the hovered line when known:
+    // matching by prefix across the whole buffer picks the newest link, and
+    // after a second /login that is not the one clicked.
+    function fullLinkFor(term, url, y) {
+        var urls;
+        if (y === null) {
+            urls = linkSpansInRows(rawRows(term, 'all'), term.cols)
+                .map(function (link) { return link.url; });
+        } else {
+            urls = linksOnLine(term, y).map(function (found) { return found.url; });
+        }
+        if (urls.indexOf(url) !== -1) return url;
+        // Newest first, as findLink does.
+        for (var i = urls.length - 1; i >= 0; i--) {
+            if (urls[i].length > url.length && urls[i].indexOf(url) === 0) return urls[i];
+        }
+        return url;
+    }
+
+    /**
+     * Row 1 of a wrapped link belongs to ttyd's WebLinksAddon: xterm.js asks
+     * link providers in registration order and the addon came first. Its
+     * handler calls window.open() with no arguments and then sets
+     * location.href to the fragment it saw, so the fragment is swapped for the
+     * rebuilt URL on its way in. Everything stays inside the click, so no
+     * popup blocker steps in. Calls with arguments are not the addon's and go
+     * through untouched. Rejected: disposing the addon via xterm.js private
+     * fields (_core, _addonManager), which breaks silently on an update.
+     *
+     * The returned stand-in carries only what handleLink touches (opener,
+     * location.href) plus close; no other caller in the ttyd frame opens a
+     * window without arguments.
+     *
+     * @param hover the line the link provider was last asked about
+     * @returns the original window.open, or null if there is none
+     */
+    function installOpenRedirect(win, term, hover) {
+        var originalOpen = win.open;
+        if (typeof originalOpen !== 'function') return null;
+        win.open = function () {
+            if (arguments.length) return originalOpen.apply(win, arguments);
+            var opened = originalOpen.call(win);
+            if (!opened) return opened;
+            return {
+                get opener() { return opened.opener; },
+                set opener(value) { opened.opener = value; },
+                location: {
+                    get href() { return opened.location.href; },
+                    set href(url) {
+                        var target = url;
+                        // The tab is already open: a failed lookup must not
+                        // leave it blank.
+                        try { target = fullLinkFor(term, url, hover.y); } catch (err) { /* keep url */ }
+                        opened.location.href = target;
+                    }
+                },
+                close: function () { opened.close(); }
+            };
+        };
+        return originalOpen;
     }
 
     function install(win, options) {
@@ -580,6 +768,9 @@
 
         installTouchScroll(win, term);
         installMobileInput(win, term);
+        var hover = { y: null };
+        var originalOpen = installOpenRedirect(win, term, hover);
+        if (originalOpen) installLinkProvider(win, term, originalOpen, hover);
 
         term[INSTALL_FLAG] = true;
         term.__claudeClipboard = controller;
@@ -647,6 +838,7 @@
         readTerminalText: readTerminalText,
         findLastUrl: findLastUrl,
         findLinkInRows: findLinkInRows,
+        linkSpansInRows: linkSpansInRows,
         installMobileInput: installMobileInput,
         urlProblem: urlProblem,
         decodeBase64Utf8: decodeBase64Utf8,
