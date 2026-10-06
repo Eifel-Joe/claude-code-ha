@@ -190,12 +190,17 @@ launch_update_claude() {
     local claude_link="${CLAUDE_BIN_LINK:-/usr/local/bin/claude}"
     local claude_npm_spec="${CLAUDE_NPM_SPEC:-@anthropic-ai/claude-code@latest}"
     local persistent_bin="$persistent_root/bin/claude"
+    # Same link run.sh's setup_persistent_claude overrides: $HOME/.local/bin is
+    # earlier on PATH than $claude_link, so without it a plain "claude" typed in
+    # the bash shell keeps resolving to the build-time binary after an update.
+    local native_bin_link="/data/home/.local/bin/claude"
 
     echo "🔄 Updating Claude Code (${claude_npm_spec})..."
     if NPM_CONFIG_PREFIX="$persistent_root" npm install -g "$claude_npm_spec" --prefer-online; then
         rm -f "$LATEST_VERSION_CACHE"
         if [ -x "$persistent_bin" ]; then
             ln -sf "$persistent_bin" "$claude_link"
+            ln -sf "$persistent_bin" "$native_bin_link"
             local new_version
             new_version=$("$claude_link" --version 2>/dev/null || echo "unknown")
             echo "✅ Claude Code updated: $new_version"
