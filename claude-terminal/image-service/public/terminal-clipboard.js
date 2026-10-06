@@ -216,25 +216,13 @@
         return null;
     }
 
-    /**
-     * The last usable URL in terminal text, or null.
-     *
-     * @param {string} text
-     * @param {boolean} [reportProblem] return {url, problem} instead of a string
-     */
-    function findLastUrl(text, reportProblem) {
-        var fail = function (problem) {
-            return reportProblem ? { url: null, problem: problem } : null;
-        };
-        if (!text) return fail('none');
-        var matches = text.match(URL_PATTERN);
-        if (!matches) return fail('none');
-
-        var raw = matches[matches.length - 1];
+    // Strip what a sentence or bracket put after the link, then judge it.
+    // Returns {url, problem}; url is null when the candidate is not usable.
+    function cleanUrl(raw) {
         // Checked before punctuation is stripped: "…" and "..." are how a TUI
         // says "cut off here", and stripping them first would turn a truncated
         // link into a plausible one. A single trailing dot is just a full stop.
-        if (/(…|\.\.\.)$/.test(raw)) return fail('truncated');
+        if (/(…|\.\.\.)$/.test(raw)) return { url: null, problem: 'truncated' };
 
         var url = raw.replace(TRAILING_PUNCTUATION, '');
         // A closing bracket belongs to the URL only if it was opened inside it,
@@ -250,8 +238,26 @@
         }
 
         var problem = urlProblem(url);
-        if (problem) return fail(problem);
-        return reportProblem ? { url: url, problem: null } : url;
+        return problem ? { url: null, problem: problem } : { url: url, problem: null };
+    }
+
+    /**
+     * The last usable URL in terminal text, or null.
+     *
+     * @param {string} text
+     * @param {boolean} [reportProblem] return {url, problem} instead of a string
+     */
+    function findLastUrl(text, reportProblem) {
+        var fail = function (problem) {
+            return reportProblem ? { url: null, problem: problem } : null;
+        };
+        if (!text) return fail('none');
+        var matches = text.match(URL_PATTERN);
+        if (!matches) return fail('none');
+
+        var cleaned = cleanUrl(matches[matches.length - 1]);
+        if (cleaned.problem) return fail(cleaned.problem);
+        return reportProblem ? cleaned : cleaned.url;
     }
 
     // What a wrapped URL may resume with. Letters are out: a row starting with
@@ -278,9 +284,12 @@
 
     // Rebuild the lines the terminal broke into rows. Three splits, each with
     // its own trace: see CHANGELOG 2.1.0. The glue per boundary is nothing, one
-    // space, or a line break.
-    function joinRows(rows, cols, join) {
+    // space, or a line break. withMap adds, per line, where each character came
+    // from ({row, col}, null for a glue space) - what a click needs to find
+    // the rebuilt URL under the mouse.
+    function joinRows(rows, cols, join, withMap) {
         var lines = [];
+        var maps = [];
         var previousFull = false;
         var previousLength = 0;
         var width = wrapWidth(rows, cols);
@@ -316,14 +325,71 @@
 
             if (glue === null) {
                 lines.push(row.text);
+                if (withMap) maps.push(sourceMap(i, 0, row.text.length));
             } else {
                 lines[lines.length - 1] += glue + chunk;
+                if (withMap) {
+                    var map = maps[maps.length - 1];
+                    if (glue) map.push(null);
+                    // chunk is row.text minus its indent.
+                    var offset = row.text.length - chunk.length;
+                    Array.prototype.push.apply(map, sourceMap(i, offset, chunk.length));
+                }
             }
             previousFull = row.full;
             previousLength = row.text.length;
         }
 
-        return { lines: lines, lastRowFull: previousFull };
+        return { lines: lines, lastRowFull: previousFull, maps: withMap ? maps : null };
+    }
+
+    function sourceMap(row, offset, length) {
+        var map = [];
+        for (var k = 0; k < length; k++) map.push({ row: row, col: offset + k });
+        return map;
+    }
+
+    // Consecutive cells of one row become one span; end is exclusive.
+    function spansFor(map, start, end) {
+        var spans = [];
+        var current = null;
+        for (var k = start; k < end; k++) {
+            var cell = map[k];
+            if (!cell) continue;
+            if (current && current.row === cell.row && current.end === cell.col) {
+                current.end += 1;
+            } else {
+                current = { row: cell.row, start: cell.col, end: cell.col + 1 };
+                spans.push(current);
+            }
+        }
+        return spans;
+    }
+
+    /**
+     * Every usable URL in the rows, rebuilt the way "Copy link" rebuilds it,
+     * with the cells it occupies: [{url, spans: [{row, start, end}]}].
+     * row indexes `rows`; start/end are 0-based columns, end exclusive.
+     */
+    function linkSpansInRows(rows, cols) {
+        var joined = joinRows(rows, cols, true, true);
+        var links = [];
+        var last = joined.lines.length - 1;
+        for (var i = 0; i <= last; i++) {
+            var line = joined.lines[i];
+            var pattern = new RegExp(URL_PATTERN.source, 'g');
+            var match;
+            while ((match = pattern.exec(line)) !== null) {
+                var cleaned = cleanUrl(match[0]);
+                if (!cleaned.url) continue;
+                var end = match.index + cleaned.url.length;
+                // Same rule as findLinkInRows' atEdge: still growing when the
+                // rows ran out, so half a link - better none.
+                if (i === last && joined.lastRowFull && end === line.length) continue;
+                links.push({ url: cleaned.url, spans: spansFor(joined.maps[i], match.index, end) });
+            }
+        }
+        return links;
     }
 
     // atEdge means the link runs off the rows given - widen, do not copy it.
@@ -647,6 +713,7 @@
         readTerminalText: readTerminalText,
         findLastUrl: findLastUrl,
         findLinkInRows: findLinkInRows,
+        linkSpansInRows: linkSpansInRows,
         installMobileInput: installMobileInput,
         urlProblem: urlProblem,
         decodeBase64Utf8: decodeBase64Utf8,

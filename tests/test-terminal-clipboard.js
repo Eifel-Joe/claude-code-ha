@@ -1095,6 +1095,60 @@ test('a throwing fit() does not stop the scroll', () => {
     assert.strictEqual(env.state.scrollsToBottom, 1);
 });
 
+// --- Clickable links: which cells belong to which rebuilt URL ---
+
+test('a one-row link gets one span covering exactly the URL', () => {
+    const line = 'see https://example.com/a. ok';
+    const links = bridge.linkSpansInRows(rows([line]), 46);
+    const start = line.indexOf('https');
+    assert.deepStrictEqual(links, [{
+        url: 'https://example.com/a',
+        spans: [{ row: 0, start, end: start + 'https://example.com/a'.length }]
+    }]);
+});
+
+test('every URL on a line is linked, not only the last', () => {
+    const links = bridge.linkSpansInRows(rows(['https://a.example.com/x and https://b.example.com/y']), 80);
+    assert.deepStrictEqual(links.map(l => l.url), ['https://a.example.com/x', 'https://b.example.com/y']);
+});
+
+test('a hard-wrapped link spans both rows, skipping the continuation indent', () => {
+    const captured = rows([
+        '  ⎿  $ echo "PROBE https://claude.ai/code/arti',
+        '     fact/8f1aa329-c6ce-447f-a58c-bd14ce569558',
+        '     END"'
+    ]);
+    const links = bridge.linkSpansInRows(captured, 46);
+    assert.strictEqual(links.length, 1);
+    assert.strictEqual(links[0].url, 'https://claude.ai/code/artifact/8f1aa329-c6ce-447f-a58c-bd14ce569558');
+    assert.deepStrictEqual(links[0].spans, [
+        { row: 0, start: captured[0].text.indexOf('https'), end: captured[0].text.length },
+        { row: 1, start: 5, end: captured[1].text.length }
+    ]);
+});
+
+test('a link broken at a slash spans the short row and the next', () => {
+    const rendered = rows([
+        '  https://claude.ai/code/artifact',
+        '  /8f1aa329-c6ce-447f-a58c-bd14ce569558'
+    ]);
+    const links = bridge.linkSpansInRows(rendered, 46);
+    assert.deepStrictEqual(links[0].spans, [
+        { row: 0, start: 2, end: rendered[0].text.length },
+        { row: 1, start: 2, end: rendered[1].text.length }
+    ]);
+});
+
+test('a truncated link gets no spans', () => {
+    assert.deepStrictEqual(bridge.linkSpansInRows(rows(['https://example.com/a?x=']), 46), []);
+});
+
+test('a link running into the last row read gets no spans - it may go on below', () => {
+    const edge = rows(['● https://example.com/verylong'], 30);
+    assert.strictEqual(edge[0].full, true, 'fixture must fill the row');
+    assert.deepStrictEqual(bridge.linkSpansInRows(edge, 30), []);
+});
+
 (async () => {
     for (const [name, fn] of tests) {
         try {
