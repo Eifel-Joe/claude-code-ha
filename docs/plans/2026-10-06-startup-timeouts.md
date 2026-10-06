@@ -421,8 +421,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 6: Review, CI, HA-Test (je Schritt Freigabe)
 
 - [x] **Step 1:** `superpowers:requesting-code-review` auf `main..fix/startup-timeouts`.
-- [ ] **Step 2:** Freigabe → Branch pushen, CI abwarten (`gh … --repo Eifel-Joe/claude-code-ha`).
-- [ ] **Step 3:** Freigabe → Merge nach `main`, Push.
-- [ ] **Step 4:** Freigabe → HA-Test: `check_updates`, Update auf 2.2.2; im App-Log `Persistent Claude override: update completed` und kein `timed out`; Panel startet (Supervisor `state: started`, Ingress liefert `/terminal-clipboard.js` mit 200).
-- [ ] **Step 5:** Release-Notes/Tag/GitHub-Release nur nach Freigabe des Textes; HA-Prod nur nach ausdrücklicher Freigabe.
-- [ ] **Step 6:** `docs/SESSION-STAND.md`, Memory `claude-code-ha-followups` (Punkte 4 und 6) aktualisieren.
+- [x] **Step 2:** Freigabe → Branch pushen, CI abwarten (`gh … --repo Eifel-Joe/claude-code-ha`).
+- [x] **Step 3:** Freigabe → Merge nach `main`, Push.
+- [x] **Step 4:** Freigabe → HA-Test: `check_updates`, Update auf 2.2.2; im App-Log `Persistent Claude override: update completed` und kein `timed out`; Panel startet (Supervisor `state: started`, Ingress liefert `/terminal-clipboard.js` mit 200).
+- [x] **Step 5:** Release-Notes/Tag/GitHub-Release nur nach Freigabe des Textes; HA-Prod nur nach ausdrücklicher Freigabe.
+- [x] **Step 6:** `docs/SESSION-STAND.md`, Memory `claude-code-ha-followups` (Punkte 4 und 6) aktualisieren.
