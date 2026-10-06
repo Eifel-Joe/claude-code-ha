@@ -1,0 +1,107 @@
+'use strict';
+// In-process stand-in for the Home Assistant Supervisor API, plus a builder
+// for a partial-backup tarball in the format verified on HA-Test (Task 0).
+const fs = require('node:fs');
+const path = require('node:path');
+const http = require('node:http');
+const { spawnSync } = require('node:child_process');
+
+const SELF_SLUG = '6ef0b4d0_claude_terminal_pro';
+const OLD_SLUG = 'a1b2c3d4_claude_terminal_pro';
+
+function writeFile(file, content, mode) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, content);
+  if (mode) fs.chmodSync(file, mode);
+}
+
+function tar(args, cwd) {
+  const r = spawnSync('tar', args, { cwd, encoding: 'utf8' });
+  if (r.status !== 0) throw new Error(`tar ${args.join(' ')}: ${r.stderr}`);
+}
+
+// Builds <dir>/backup.tar containing <slug>.tar.gz whose data/ mirrors the old
+// app's /data. Returns the path of backup.tar.
+function buildBackupFixture(dir, slug = OLD_SLUG) {
+  const app = path.join(dir, 'app');
+  const data = path.join(app, 'data');
+  writeFile(path.join(app, 'addon.json'), '{}');
+  writeFile(path.join(data, 'home/.claude/projects/-config/memory/MEMORY.md'), '- [Heating](heating.md)\n');
+  writeFile(path.join(data, 'home/.claude/projects/-config/memory/heating.md'), 'old memory\n');
+  writeFile(path.join(data, 'home/.claude/CLAUDE.md'), 'old global instructions\n');
+  writeFile(path.join(data, 'home/.claude/skills/shared/SKILL.md'), 'old skill\n');
+  writeFile(path.join(data, 'home/.claude/.credentials.json'), '{"token":"old"}', 0o600);
+  writeFile(path.join(data, 'home/.claude.json'), '{"oauthAccount":{"email":"x"}}');
+  writeFile(path.join(data, '.config/gh/hosts.yml'), 'github.com:\n  user: old\n');
+  writeFile(path.join(data, 'packages/python/venv/lib/python3.12/site-packages/requests-2.32.0.dist-info/METADATA'), '');
+  writeFile(path.join(data, 'packages/python/venv/lib/python3.12/site-packages/pip-24.0.dist-info/METADATA'), '');
+  // Mirrors the real layout from Task 0, including the image the app was built
+  // from, which the migration must not unpack.
+  writeFile(path.join(app, 'image.tar'), 'not a real image');
+  tar(['-czf', path.join(dir, `${slug}.tar.gz`), '-C', app, 'addon.json', 'image.tar', 'data'], dir);
+  writeFile(path.join(dir, 'backup.json'), '{}');
+  tar(['-cf', path.join(dir, 'backup.tar'), '-C', dir, 'backup.json', `${slug}.tar.gz`], dir);
+  return path.join(dir, 'backup.tar');
+}
+
+// opts: { apps, oldOptions, ownOptions, backupTar, failBackup, failStop }
+function startFakeSupervisor(opts = {}) {
+  const state = {
+    calls: [],
+    ownOptions: { ...(opts.ownOptions || {}) },
+    stopped: [],
+  };
+  const apps = opts.apps || [
+    { slug: SELF_SLUG, name: 'Claude Terminal Pro', version: '2.2.0', state: 'started' },
+    { slug: OLD_SLUG, name: 'Claude Terminal Pro', version: '2.0.13', state: 'started' },
+  ];
+  const ok = (res, data = {}) => {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ result: 'ok', data }));
+  };
+  const err = (res, code, message) => {
+    res.writeHead(code, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ result: 'error', message }));
+  };
+  const server = http.createServer((req, res) => {
+    let body = '';
+    req.on('data', (c) => { body += c; });
+    req.on('end', () => {
+      const json = body ? JSON.parse(body) : undefined;
+      state.calls.push({ method: req.method, url: req.url, body: json });
+      if (req.headers.authorization !== 'Bearer test-token') return err(res, 401, 'unauthorized');
+      const m = `${req.method} ${req.url}`;
+      if (m === 'GET /addons') return ok(res, { addons: apps });
+      if (m === 'GET /addons/self/info') return ok(res, { slug: SELF_SLUG, options: state.ownOptions });
+      if (m === `GET /addons/${OLD_SLUG}/info`) {
+        return ok(res, { slug: OLD_SLUG, name: 'Claude Terminal Pro', version: '2.0.13',
+          repository: 'esjavadex', options: opts.oldOptions || {} });
+      }
+      if (m === 'POST /backups/new/partial') {
+        if (opts.failBackup) return err(res, 500, 'backup failed');
+        return ok(res, { slug: 'bk1' });
+      }
+      if (m === 'GET /backups/bk1/download') {
+        res.writeHead(200, { 'Content-Type': 'application/x-tar' });
+        return fs.createReadStream(opts.backupTar).pipe(res);
+      }
+      if (m === 'POST /addons/self/options') { state.ownOptions = json.options; return ok(res); }
+      if (m === `POST /addons/${OLD_SLUG}/stop`) {
+        if (opts.failStop) return err(res, 500, 'stop failed');
+        state.stopped.push(OLD_SLUG); return ok(res);
+      }
+      return err(res, 404, `unexpected ${m}`);
+    });
+  });
+  return new Promise((resolve) => {
+    server.listen(0, '127.0.0.1', () => {
+      resolve({
+        url: `http://127.0.0.1:${server.address().port}`,
+        state,
+        close: () => new Promise((r) => server.close(r)),
+      });
+    });
+  });
+}
+
+module.exports = { buildBackupFixture, startFakeSupervisor, SELF_SLUG, OLD_SLUG };
