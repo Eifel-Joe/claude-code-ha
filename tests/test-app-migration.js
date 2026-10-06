@@ -445,6 +445,15 @@ test('apply: a "not found" item does not block stopping the old app', async () =
   assert.deepEqual(sup.state.stopped, [OLD_SLUG]);
 });
 
+test('apply: Claude data or login not found keeps the old app running', async () => {
+  for (const selected of [['claude', 'stop'], ['login', 'stop']]) {
+    const { result, sup } = await detectThenApply({ fixture: { omit: ['home/.claude'] } }, selected);
+    assert.equal(result.results[selected[0]], 'not found');
+    assert.equal(result.results.stop, 'skipped: Claude data or login not found in the backup, the old app keeps running');
+    assert.deepEqual(sup.state.stopped, []);
+  }
+});
+
 test('apply: a hanging persist-install is killed and counts as failed', async () => {
   const fake = fakePersistInstall(tmp(), { sleepMs: 5000 });
   const oldOptions = { ...OLD_OPTIONS, persistent_apk_packages: ['slowpkg'], persistent_pip_packages: [] };

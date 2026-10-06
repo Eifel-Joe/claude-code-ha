@@ -224,10 +224,15 @@ async function apply(client, p, offer, selected, deps = {}) {
 
   await step('settings', () => mergeOwnOptions(client, () => offer.settings));
 
-  // Last, and only if nothing failed: the old app is the fallback.
+  // Last, and only if nothing failed: the old app is the fallback. A selected
+  // Claude data/login item that found nothing means the backup did not hold
+  // what the user came for (other layout, empty app), so keep it too.
   if (selected.includes('stop')) {
+    const missing = ['claude', 'login'].some((k) => results[k] === 'not found');
     if (Object.values(results).some((r) => r.startsWith('error'))) {
       results.stop = 'skipped: an earlier item failed, the old app keeps running';
+    } else if (missing) {
+      results.stop = 'skipped: Claude data or login not found in the backup, the old app keeps running';
     } else {
       await step('stop', () => client.post(`/addons/${offer.slug}/stop`));
     }

@@ -115,7 +115,8 @@ g. `/data/migration/work` löschen, Zustand `done`, Zusammenfassung mit Ergebnis
   nennt die Meldung das Backup, damit man es von Hand löschen kann.
 - Ein Punkt in c–e schlägt fehl → übrige Punkte laufen weiter; Zusammenfassung
   nennt den Fehler. Punkt 5 wird dann **nicht** ausgeführt (alte App bleibt als
-  Rückfall verfügbar), Meldung sagt das.
+  Rückfall verfügbar), Meldung sagt das. Ebenso, wenn Punkt 1 oder 2 gewählt war und
+  im Backup nichts gefunden wurde.
 - Die alte App wird außer beim Stoppen nie verändert.
 - Login-Daten berühren nie `/config`; Zwischendateien nur in `/data/migration/work`.
 - Das Übernahme-Backup enthält Login-Token (wie jedes HA-Backup der alten App) und
