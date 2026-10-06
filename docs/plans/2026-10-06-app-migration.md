@@ -11,7 +11,7 @@
 **Spec:** `docs/specs/2026-10-06-app-migration-design.md`
 
 **Commands:**
-- Node suite: `node --test tests/test-app-migration.js`
+- Node suite: `node --test tests/test-app-migration.js` (locally in Git Bash: `PATH="/c/WINDOWS/system32:$PATH" node --test tests/test-app-migration.js` — Git's GNU tar reads `C:` in paths as a remote host; Linux/CI unaffected)
 - Full suite (Linux/CI only — needs symlinks): `./tests/run-tests.sh`
 - Release metadata check: `bash tests/test-release-metadata.sh`
 
