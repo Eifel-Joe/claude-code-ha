@@ -36,6 +36,9 @@ function buildBackupFixture(dir, slug = OLD_SLUG, { omit = [], mtime } = {}) {
   writeFile(path.join(data, 'home/.claude.json'), '{"oauthAccount":{"email":"x"}}');
   writeFile(path.join(data, '.config/gh/hosts.yml'), 'github.com:\n  user: old\n');
   writeFile(path.join(data, 'packages/python/venv/lib/python3.12/site-packages/requests-2.32.0.dist-info/METADATA'), '');
+  // pip writes REQUESTED for packages installed by name; idna is only a dependency.
+  writeFile(path.join(data, 'packages/python/venv/lib/python3.12/site-packages/requests-2.32.0.dist-info/REQUESTED'), '');
+  writeFile(path.join(data, 'packages/python/venv/lib/python3.12/site-packages/idna-3.7.dist-info/METADATA'), '');
   writeFile(path.join(data, 'packages/python/venv/lib/python3.12/site-packages/pip-24.0.dist-info/METADATA'), '');
   for (const rel of omit) fs.rmSync(path.join(data, rel), { recursive: true, force: true });
   if (mtime) {

@@ -320,22 +320,55 @@ test('apply: a finished job without a slug is fatal', async () => {
   assert.match(result.fatal, /without a backup slug/);
 });
 
-// A persist-install stand-in that logs its arguments and fails for "badpkg".
+// A persist-install stand-in that logs its arguments and fails for "badpkg"
+// (apk) or "badpy" (pip).
 // sleepMs: hangs that long before exiting (for the timeout test).
 function fakePersistInstall(dir, { sleepMs = 0 } = {}) {
   const log = path.join(dir, 'persist.log');
   const bin = path.join(dir, 'persist-install.js');
   fs.writeFileSync(bin, `require('fs').appendFileSync(${JSON.stringify(log)}, process.argv.slice(2).join(' ') + '\\n');
-setTimeout(() => process.exit(process.argv.includes('badpkg') ? 1 : 0), ${sleepMs});\n`);
+const bad = ['badpkg', 'badpy'].some((b) => process.argv.includes(b));
+setTimeout(() => process.exit(bad ? 1 : 0), ${sleepMs});\n`);
   return { log, deps: { persistInstall: process.execPath, persistInstallArgs: [bin] } };
 }
+
+const persistCalls = (fake) => fs.readFileSync(fake.log, 'utf8').trim().split('\n');
+const SITE_PACKAGES = 'packages/python/venv/lib/python3.12/site-packages';
 
 test('apply: reinstalls packages from old options plus the old venv, records them', async () => {
   const fake = fakePersistInstall(tmp());
   const { result, sup } = await detectThenApply({ ownOptions: { persistent_apk_packages: ['git'] } }, ['packages'], fake.deps);
   assert.equal(result.results.packages, 'ok');
-  assert.deepEqual(fs.readFileSync(fake.log, 'utf8').trim().split('\n'), ['htop', '--python httpx', '--python requests']);
+  // One pip call for all; idna is only a dependency (no REQUESTED), so pip pulls it in itself.
+  assert.deepEqual(persistCalls(fake), ['htop', '--python httpx requests']);
   assert.deepEqual(sup.state.ownOptions.persistent_apk_packages, ['git', 'htop']);
+  assert.deepEqual(sup.state.ownOptions.persistent_pip_packages, ['httpx', 'requests']);
+});
+
+test('apply: without any REQUESTED marker every venv package is taken', async () => {
+  const fake = fakePersistInstall(tmp());
+  const fixture = { omit: [`${SITE_PACKAGES}/requests-2.32.0.dist-info/REQUESTED`] };
+  const { sup } = await detectThenApply({ fixture }, ['packages'], fake.deps);
+  assert.deepEqual(persistCalls(fake), ['htop', '--python httpx idna requests']);
+  assert.deepEqual(sup.state.ownOptions.persistent_pip_packages, ['httpx', 'idna', 'requests']);
+});
+
+test('apply: pip names are compared normalised, the old options spelling wins', async () => {
+  const fake = fakePersistInstall(tmp());
+  const oldOptions = { ...OLD_OPTIONS, persistent_pip_packages: ['httpx', 'Requests'] };
+  const { sup } = await detectThenApply({ oldOptions }, ['packages'], fake.deps);
+  assert.deepEqual(persistCalls(fake), ['htop', '--python httpx Requests']);
+  assert.deepEqual(sup.state.ownOptions.persistent_pip_packages, ['httpx', 'Requests']);
+});
+
+test('apply: a failing pip batch is retried one by one, only the good ones are recorded', async () => {
+  const fake = fakePersistInstall(tmp());
+  const oldOptions = { ...OLD_OPTIONS, persistent_pip_packages: ['httpx', 'badpy'] };
+  const { result, sup } = await detectThenApply({ oldOptions }, ['packages'], fake.deps);
+  assert.deepEqual(persistCalls(fake), [
+    'htop', '--python httpx badpy requests', '--python httpx', '--python badpy', '--python requests',
+  ]);
+  assert.match(result.results.packages, /^error: could not install badpy$/);
   assert.deepEqual(sup.state.ownOptions.persistent_pip_packages, ['httpx', 'requests']);
 });
 

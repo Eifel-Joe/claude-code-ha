@@ -90,20 +90,42 @@ function copyMissing(src, dst, filter) {
 const PIP_BOOTSTRAP = new Set(['pip', 'setuptools', 'wheel']);
 const unique = (list) => [...new Set(list)];
 
-// Package names from the old venv's *.dist-info directories.
+// PEP 503: "Foo_Bar", "foo.bar" and "foo-bar" are the same project.
+const normalisePip = (name) => name.toLowerCase().replace(/[-_.]+/g, '-');
+
+// First spelling wins, duplicates by normalised name dropped.
+function uniquePip(list) {
+  const seen = new Set();
+  return list.filter((name) => {
+    const key = normalisePip(name);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+// Package names (normalised) from the old venv's *.dist-info directories.
+// pip marks packages installed by name with a REQUESTED file; their
+// dependencies lack it and are pulled in again by pip itself. A venv without
+// any marker (older pip, other installer) falls back to every package.
 function pipNamesFromVenv(oldData) {
   const lib = path.join(oldData, 'packages', 'python', 'venv', 'lib');
   if (!fs.existsSync(lib)) return [];
-  const names = [];
+  const all = [];
   for (const py of fs.readdirSync(lib)) {
     const sitePackages = path.join(lib, py, 'site-packages');
     if (!fs.existsSync(sitePackages)) continue;
     for (const entry of fs.readdirSync(sitePackages)) {
       const m = /^(.+?)-[^-]+\.dist-info$/.exec(entry);
-      if (m && !PIP_BOOTSTRAP.has(m[1].toLowerCase())) names.push(m[1]);
+      if (!m) continue;
+      const name = normalisePip(m[1]);
+      if (PIP_BOOTSTRAP.has(name)) continue;
+      all.push({ name, requested: fs.existsSync(path.join(sitePackages, entry, 'REQUESTED')) });
     }
   }
-  return names;
+  const requested = all.filter((d) => d.requested);
+  // readdir order is not sorted on every filesystem (ext4).
+  return (requested.length ? requested : all).map((d) => d.name).sort();
 }
 
 // Supervisor replaces the whole option set, so merge into the current one.
@@ -166,13 +188,17 @@ async function apply(client, p, offer, selected, deps = {}) {
 
   await step('packages', async () => {
     const failed = [];
-    const pipWanted = unique([...offer.pip, ...pipNamesFromVenv(old.oldData)]);
+    const pipWanted = uniquePip([...offer.pip, ...pipNamesFromVenv(old.oldData)]);
     log(`  Installing packages: apk: ${offer.apk.join(' ') || '-'} | pip: ${pipWanted.join(' ') || '-'}`);
     const apk = offer.apk.filter((pkg) => install([pkg]) || (failed.push(pkg), false));
-    const pip = pipWanted.filter((pkg) => install(['--python', pkg]) || (failed.push(pkg), false));
+    // One pip run resolves all versions together and is much faster; only if
+    // it fails, retry one by one to find the culprit(s).
+    const pip = pipWanted.length && install(['--python', ...pipWanted])
+      ? pipWanted
+      : pipWanted.filter((pkg) => install(['--python', pkg]) || (failed.push(pkg), false));
     await mergeOwnOptions(client, (cur) => ({
       persistent_apk_packages: unique([...(cur.persistent_apk_packages || []), ...apk]),
-      persistent_pip_packages: unique([...(cur.persistent_pip_packages || []), ...pip]),
+      persistent_pip_packages: uniquePip([...(cur.persistent_pip_packages || []), ...pip]),
     }));
     if (failed.length) throw new Error(`could not install ${failed.join(', ')}`);
   });
