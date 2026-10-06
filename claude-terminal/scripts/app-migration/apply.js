@@ -233,10 +233,14 @@ async function apply(client, p, offer, selected, deps = {}) {
     const pip = pipWanted.length && install(['--python', ...pipWanted])
       ? pipWanted
       : pipWanted.filter((pkg) => install(['--python', pkg]) || (failed.push(pkg), false));
-    await mergeOwnOptions(client, (cur) => ({
-      persistent_apk_packages: unique([...(cur.persistent_apk_packages || []), ...apk]),
-      persistent_pip_packages: uniquePip([...(cur.persistent_pip_packages || []), ...pip]),
-    }));
+    // Nothing installed: writing the options back would only pin today's
+    // schema defaults (see mergeOwnOptions) for no gain.
+    if (apk.length || pip.length) {
+      await mergeOwnOptions(client, (cur) => ({
+        persistent_apk_packages: unique([...(cur.persistent_apk_packages || []), ...apk]),
+        persistent_pip_packages: uniquePip([...(cur.persistent_pip_packages || []), ...pip]),
+      }));
+    }
     if (failed.length) throw new Error(`could not install ${failed.join(', ')}`);
   });
 

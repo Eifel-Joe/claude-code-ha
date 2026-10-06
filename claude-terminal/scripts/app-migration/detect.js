@@ -58,7 +58,8 @@ async function detect(client, p) {
     slug: old.slug,
     name: info.name || old.name || old.slug,
     version: info.version || old.version || '',
-    repository: info.repository || '',
+    // info.repository is the store's repository hash; url is the app's homepage.
+    repository: info.url || info.repository || '',
     apk: listOption(options.persistent_apk_packages),
     pip: listOption(options.persistent_pip_packages),
     settings: Object.fromEntries(SETTING_KEYS.filter((k) => k in options).map((k) => [k, options[k]])),

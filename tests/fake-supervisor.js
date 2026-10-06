@@ -94,7 +94,8 @@ function startFakeSupervisor(opts = {}) {
       if (m === 'GET /addons/self/info') return ok(res, { slug: SELF_SLUG, options: state.ownOptions });
       if (m === `GET /addons/${OLD_SLUG}/info`) {
         return ok(res, { slug: OLD_SLUG, name: 'Claude Terminal Pro', version: '2.0.13',
-          repository: 'esjavadex', options: opts.oldOptions || {} });
+          repository: 'a1b2c3d4', url: 'https://github.com/ESJavadex/claude-code-ha',
+          options: opts.oldOptions || {} });
       }
       if (m === 'POST /backups/new/partial') {
         if (!json || json.background !== true) return err(res, 400, 'expected background: true');

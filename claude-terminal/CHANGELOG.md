@@ -6,9 +6,10 @@
 - On first start the app looks for another installed Claude Terminal Pro app (for
   example the ESJavadex original). When you open the panel, a window offers to take
   over Claude data (memories, `CLAUDE.md`, history, settings), the Claude and GitHub
-  logins, packages (reinstalled, not copied; only explicitly installed pip packages)
-  and app settings, and to stop the old app and disable its autostart (both apps
-  share one Claude login, which a restarted old app could refresh).
+  logins, packages (reinstalled, not copied; only explicitly installed pip packages,
+  all packages if the old pip did not mark them) and app settings, and to stop the
+  old app and disable its autostart (both apps share one Claude login, which a
+  restarted old app could refresh).
 - Works through a partial backup of the old app, created via the Supervisor API
   (progress is shown while it runs) and kept as a fallback; apart from being stopped
   (if chosen), the old app is never modified. The backup includes the old app's

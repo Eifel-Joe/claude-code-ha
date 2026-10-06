@@ -103,6 +103,7 @@ test('detect: offers the old app with its packages and settings', async () => {
     const offer = JSON.parse(fs.readFileSync(p.offer, 'utf8'));
     assert.equal(offer.slug, OLD_SLUG);
     assert.equal(offer.version, '2.0.13');
+    assert.equal(offer.repository, 'https://github.com/ESJavadex/claude-code-ha');
     assert.deepEqual(offer.apk, ['htop']);
     assert.deepEqual(offer.pip, ['httpx']);
     assert.deepEqual(offer.settings, { auto_launch_claude: false, dangerously_skip_permissions: true, tmux_mouse: false });
@@ -434,6 +435,14 @@ test('apply: a failing pip batch is retried one by one, only the good ones are r
   assert.deepEqual(sup.state.ownOptions.persistent_pip_packages, ['httpx', 'requests']);
 });
 
+test('apply: no package installed means this app\'s options are not written', async () => {
+  const fake = fakePersistInstall(tmp());
+  const oldOptions = { ...OLD_OPTIONS, persistent_apk_packages: ['badpkg'], persistent_pip_packages: ['badpy'] };
+  const { result, sup } = await detectThenApply({ oldOptions, fixture: { omit: ['packages'] } }, ['packages'], fake.deps);
+  assert.match(result.results.packages, /^error: could not install badpkg, badpy$/);
+  assert.equal(sup.state.calls.some((c) => c.url === '/addons/self/options'), false);
+});
+
 test('apply: settings are merged into this app\'s options, excluded keys untouched', async () => {
   const own = { auto_launch_claude: true, use_persistent_claude: true, auto_update_claude_on_start: true };
   const { result, sup } = await detectThenApply({ ownOptions: own }, ['settings']);
@@ -509,7 +518,8 @@ test('apply: a hanging persist-install is killed and counts as failed', async ()
 
 const { ITEMS, render, parseInput, renderSummary } = require(path.join(MOD, 'dialog'));
 
-const OFFER = { slug: OLD_SLUG, name: 'Claude Terminal Pro', version: '2.0.13', repository: 'esjavadex',
+const OFFER = { slug: OLD_SLUG, name: 'Claude Terminal Pro', version: '2.0.13',
+  repository: 'https://github.com/ESJavadex/claude-code-ha',
   apk: ['htop'], pip: ['httpx'], settings: { auto_launch_claude: false } };
 
 test('dialog: all six items, all on, packages and settings spelled out', () => {
@@ -517,7 +527,7 @@ test('dialog: all six items, all on, packages and settings spelled out', () => {
   assert.match(text, /Stop the old app and disable its autostart/);
   assert.equal(ITEMS.length, 6);
   assert.equal((text.match(/\[x\]/g) || []).length, 6);
-  assert.match(text, /Claude Terminal Pro 2\.0\.13/);
+  assert.match(text, /Claude Terminal Pro 2\.0\.13 \(https:\/\/github\.com\/ESJavadex\/claude-code-ha\)/);
   assert.match(text, /apk: htop/);
   assert.match(text, /pip: httpx/);
   assert.match(text, /auto_launch_claude=false/);
