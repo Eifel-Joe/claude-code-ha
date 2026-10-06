@@ -6,7 +6,11 @@ FROM ${BUILD_FROM}
 # ttyd and tmux are baked in on purpose: they used to be installed by run.sh on
 # every container start, which made startup depend on the Alpine mirrors being
 # reachable and aborted the add-on when they were not.
+# coreutils for GNU timeout: run.sh puts startup downloads under a time limit,
+# and BusyBox timeout signals only the process it started, so an `apk add` run
+# by persist-install would outlive the cut-off and keep the apk database locked.
 RUN apk add --no-cache \
+    coreutils \
     nodejs \
     npm \
     ttyd \

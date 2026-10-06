@@ -70,13 +70,13 @@ a real multi-arch image build.
 
 ### Key Components
 1. **Web Terminal**: Uses ttyd to provide browser-based terminal access
-2. **Credential Management**: Persistent authentication storage in `/config/claude-config/`
+2. **Credential Management**: Credentials live in the app's private `/data` (`/data/home/.claude`)
 3. **Service Integration**: Home Assistant ingress support with panel icon
 4. **Multi-Architecture**: Supports amd64, aarch64, armv7 platforms
 
 ### Credential System
 The add-on implements a sophisticated credential management system:
-- **Persistent Storage**: Credentials saved to `/config/claude-config/` (survives restarts)
+- **Persistent Storage**: Credentials live in `/data/home/.claude` (survives restarts and updates); an older release's `/config/claude-config` is copied into `/data` once on start
 - **Multiple Locations**: Handles various Claude credential file locations
 - **Background Service**: Continuous credential monitoring and saving
 - **Security**: Proper file permissions (600) and safe directory operations
@@ -155,9 +155,9 @@ podman exec test-claude-dev chmod +x /opt/scripts/claude-session-picker.sh
 - **Permissions**: Credential files must have 600 permissions
 
 ### Key Environment Variables
-- `CLAUDE_CREDENTIALS_DIRECTORY=/config/claude-config`
-- `ANTHROPIC_CONFIG_DIR=/config/claude-config`
-- `HOME=/root`
+- `HOME=/data/home`
+- `ANTHROPIC_CONFIG_DIR=/data/.config/claude`
+- `ANTHROPIC_HOME=/data`
 
 ### Important Constraints
 - No sudo privileges available in development environment

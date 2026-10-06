@@ -4,6 +4,36 @@
 set -e
 set -o pipefail
 
+# Time limits for startup steps that touch the network. They all run before the
+# web terminal starts, so a hung registry or mirror would leave the panel blank
+# for good. pip gets longer: on a Pi it may compile wheels on first install.
+# Overridable only so the tests can use a 1 s limit.
+STARTUP_NPM_TIMEOUT="${STARTUP_NPM_TIMEOUT:-300}"
+STARTUP_APK_TIMEOUT="${STARTUP_APK_TIMEOUT:-300}"
+STARTUP_PIP_TIMEOUT="${STARTUP_PIP_TIMEOUT:-900}"
+
+# Run a startup step under a time limit and return its own status. A cut-off is
+# told by the elapsed time, not the exit code: GNU timeout returns 124, BusyBox
+# timeout (Alpine) does not promise that.
+run_with_timeout() {
+    local seconds="$1"
+    local label="$2"
+    local started=$SECONDS
+    local status=0
+    shift 2
+
+    if command -v timeout >/dev/null 2>&1; then
+        timeout "$seconds" "$@" || status=$?
+    else
+        "$@" || status=$?
+    fi
+
+    if [ "$status" -ne 0 ] && [ $((SECONDS - started)) -ge "$seconds" ]; then
+        bashio::log.warning "$label timed out after ${seconds}s"
+    fi
+    return "$status"
+}
+
 # Initialize environment for Claude Code CLI using /data (HA best practice)
 init_environment() {
     # Use /data exclusively - guaranteed writable by HA Supervisor
@@ -234,7 +264,8 @@ install_tools() {
     fi
 
     bashio::log.warning "Tools missing from image, installing at runtime: ${missing[*]}"
-    if ! apk add --no-cache "${missing[@]}"; then
+    if ! run_with_timeout "$STARTUP_APK_TIMEOUT" "Installing missing tools" \
+            apk add --no-cache "${missing[@]}"; then
         bashio::log.error "Failed to install required tools: ${missing[*]}"
         exit 1
     fi
@@ -341,10 +372,13 @@ setup_persistent_claude() {
 
     if [ "$auto_update_claude_on_start" = "true" ]; then
         bashio::log.info "Persistent Claude override: updating Claude Code in /data/npm..."
-        if NPM_CONFIG_PREFIX="$persistent_root" npm install -g "$claude_npm_spec" --prefer-online; then
+        if run_with_timeout "$STARTUP_NPM_TIMEOUT" "Persistent Claude override: npm update" \
+                env NPM_CONFIG_PREFIX="$persistent_root" npm install -g "$claude_npm_spec" --prefer-online; then
             bashio::log.info "Persistent Claude override: update completed"
         else
-            bashio::log.warning "Persistent Claude override: update failed, continuing with existing version if present"
+            # A cut-off npm can leave /data/npm half-replaced, and later updates
+            # may then keep failing; a fresh install is the way out.
+            bashio::log.warning "Persistent Claude override: update failed, continuing with existing version if present. If this keeps happening, delete /data/npm and restart the app to reinstall"
         fi
     fi
 
@@ -438,7 +472,8 @@ auto_install_packages() {
         while IFS= read -r package; do
             if [ -n "$package" ]; then
                 bashio::log.info "  Installing: $package"
-                "$persist_install" "$package" || bashio::log.warning "Failed to install: $package"
+                run_with_timeout "$STARTUP_APK_TIMEOUT" "Auto-install of $package" \
+                    "$persist_install" "$package" || bashio::log.warning "Failed to install: $package"
             fi
         done <<< "$apk_packages"
     fi
@@ -451,7 +486,8 @@ auto_install_packages() {
 
         if [ "${#pip_package_list[@]}" -gt 0 ]; then
             bashio::log.info "  Installing: ${pip_package_list[*]}"
-            "$persist_install" --python "${pip_package_list[@]}" || \
+            run_with_timeout "$STARTUP_PIP_TIMEOUT" "Auto-install of Python packages" \
+                "$persist_install" --python "${pip_package_list[@]}" || \
                 bashio::log.warning "Failed to install Python packages"
         fi
     fi
@@ -548,7 +584,9 @@ start_image_service() {
     if [ ! -d "${service_dir}/node_modules" ]; then
         bashio::log.error "node_modules not found in ${service_dir}"
         bashio::log.info "Attempting to install dependencies..."
-        cd "${service_dir}" && npm install || bashio::log.error "npm install failed"
+        cd "${service_dir}" && \
+            run_with_timeout "$STARTUP_NPM_TIMEOUT" "Image service: npm install" npm install || \
+            bashio::log.error "npm install failed"
         cd - > /dev/null
     fi
 
