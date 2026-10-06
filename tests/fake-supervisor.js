@@ -54,7 +54,8 @@ function buildBackupFixture(dir, slug = OLD_SLUG, { omit = [], mtime } = {}) {
 }
 
 // opts: { jobNoReference (done job without slug), apps, oldOptions, ownOptions, backupTar, failBackup (job 2nd poll reports an error), failStop,
-//   failDownload, failDelete, failOldOptions, backupSizeMb (size in /backups/bk1/info, default 1) }
+//   failDownload, failDelete, failOldOptions, backupSizeMb (size in /backups/bk1/info, default 1),
+//   hangOn (URL path that never gets an answer) }
 // state: calls, ownOptions, stopped, backups (existing slugs), deletedBackups, jobPolls,
 //   oldOptionsPosted (body of the last POST /addons/<old>/options)
 function startFakeSupervisor(opts = {}) {
@@ -86,6 +87,7 @@ function startFakeSupervisor(opts = {}) {
       let json;
       try { json = body ? JSON.parse(body) : undefined; } catch { return err(res, 400, 'bad json'); }
       state.calls.push({ method: req.method, url: req.url, body: json });
+      if (opts.hangOn === req.url) return undefined; // never answers
       if (req.headers.authorization !== 'Bearer test-token') return err(res, 401, 'unauthorized');
       const m = `${req.method} ${req.url}`;
       if (m === 'GET /addons') return ok(res, { addons: apps });
@@ -141,7 +143,7 @@ function startFakeSupervisor(opts = {}) {
       resolve({
         url: `http://127.0.0.1:${server.address().port}`,
         state,
-        close: () => new Promise((r) => server.close(r)),
+        close: () => new Promise((r) => { server.close(r); server.closeAllConnections(); }),
       });
     });
   });

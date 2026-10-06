@@ -158,4 +158,19 @@ printf '{}\n' > "$APP_MIGRATION_OFFER"
 [ "$(with_migration_dialog 'clear && picker')" = "node $APP_MIGRATION_CLI dialog; clear && picker" ] || \
     fail "a pending migration offer must show the dialog before the launch command"
 
+# Detection output: "WARNING:" lines become log warnings (prefix stripped).
+APP_MIGRATION_CLI="$tmp_dir/cli.js"
+: > "$APP_MIGRATION_CLI"
+node() { printf '%s\n' 'App migration: nothing to offer (state)' 'WARNING: App migration: detection failed, skipping (x)'; }
+bashio::log.info() { printf 'info|%s\n' "$*" >> "$tmp_dir/migration.log"; }
+bashio::log.warning() { printf 'warning|%s\n' "$*" >> "$tmp_dir/migration.log"; }
+detect_app_migration
+unset -f node
+bashio::log.info() { :; }
+bashio::log.warning() { :; }
+printf '%s\n' 'info|App migration: nothing to offer (state)' \
+    'warning|App migration: detection failed, skipping (x)' > "$tmp_dir/migration.expected"
+cmp -s "$tmp_dir/migration.expected" "$tmp_dir/migration.log" || \
+    fail "detect_app_migration must log WARNING: lines as warnings"
+
 echo "Production run.sh regression suite passed"

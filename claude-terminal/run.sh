@@ -636,7 +636,10 @@ detect_app_migration() {
     [ -f "$cli" ] || return 0
     local line
     while IFS= read -r line; do
-        bashio::log.info "$line"
+        case "$line" in
+            WARNING:*) bashio::log.warning "${line#WARNING: }" ;;
+            *) bashio::log.info "$line" ;;
+        esac
     done < <(node "$cli" detect 2>&1 || true)
 }
 

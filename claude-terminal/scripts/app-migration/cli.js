@@ -8,14 +8,21 @@ const { detect } = require('./detect');
 const { apply } = require('./apply');
 const { ITEMS, render, parseInput, renderSummary } = require('./dialog');
 
+// Runs during the app's start: bounded, so a stuck Supervisor cannot hold it up.
+const DETECT_TIMEOUT_MS = 10000;
+
+// Lines starting with "WARNING:" are logged as warnings by run.sh.
 async function runDetect() {
+  const p = migrationPaths();
   try {
-    const r = await detect(createClient(), migrationPaths());
+    const r = await detect(createClient({ timeoutMs: DETECT_TIMEOUT_MS }), p);
     console.log(r.offered
       ? `App migration: offering data from ${r.offer.name} ${r.offer.version} (${r.offer.slug})`
       : `App migration: nothing to offer (${r.reason})`);
   } catch (e) {
-    console.log(`App migration: detection failed, skipping (${e.message})`);
+    // An offer from an earlier start may point at an app that is gone now.
+    fs.rmSync(p.offer, { force: true });
+    console.log(`WARNING: App migration: detection failed, skipping (${e.message})`);
   }
 }
 

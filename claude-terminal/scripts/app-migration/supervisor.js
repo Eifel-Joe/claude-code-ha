@@ -5,9 +5,12 @@ const { pipeline } = require('node:stream/promises');
 
 // Minimal Supervisor API client. Responses are {result: "ok", data: {...}};
 // anything else throws with the HTTP status and Supervisor's message.
+// timeoutMs: optional limit per request (detect at startup must not hang the
+// app's start); left unset for apply, whose backup download can take minutes.
 function createClient({
   baseUrl = process.env.SUPERVISOR_API || 'http://supervisor',
   token = process.env.SUPERVISOR_TOKEN || '',
+  timeoutMs,
 } = {}) {
   const auth = { Authorization: `Bearer ${token}` };
 
@@ -15,7 +18,8 @@ function createClient({
   // name the request and the underlying cause instead.
   async function send(method, urlPath, init) {
     try {
-      return await fetch(baseUrl + urlPath, { method, ...init });
+      const signal = timeoutMs ? AbortSignal.timeout(timeoutMs) : undefined;
+      return await fetch(baseUrl + urlPath, { method, signal, ...init });
     } catch (e) {
       throw new Error(`${method} ${urlPath} -> ${e.cause?.code || e.cause?.message || e.message}`);
     }

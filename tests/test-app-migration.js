@@ -67,6 +67,17 @@ test('client: network errors name the request', async () => {
     /GET \/addons -> /);
 });
 
+test('client: timeoutMs aborts a request that never gets an answer, naming it', async () => {
+  const sup = await startFakeSupervisor({ hangOn: '/addons' });
+  try {
+    const started = Date.now();
+    await assert.rejects(
+      createClient({ baseUrl: sup.url, token: 'test-token', timeoutMs: 200 }).get('/addons'),
+      /^Error: GET \/addons -> /);
+    assert.ok(Date.now() - started < 3000, 'request was not aborted');
+  } finally { await sup.close(); }
+});
+
 const { detect } = require(path.join(MOD, 'detect'));
 
 async function withSupervisor(opts, fn) {
@@ -545,6 +556,20 @@ test('cli: detect exits 0 and prints the reason when nothing is offered', () => 
   });
   assert.equal(r.status, 0);
   assert.match(r.stdout + r.stderr, /App migration: detection failed/);
+});
+
+test('cli: a failed detect warns and removes a stale offer', () => {
+  const dir = tmp();
+  const p = migrationPaths({ MIGRATION_DATA_ROOT: dir });
+  fs.mkdirSync(p.dir, { recursive: true });
+  fs.writeFileSync(p.offer, '{}');
+  const r = spawnSync(process.execPath, [path.join(MOD, 'cli.js'), 'detect'], {
+    encoding: 'utf8',
+    env: { ...process.env, MIGRATION_DATA_ROOT: dir, SUPERVISOR_API: 'http://127.0.0.1:9', SUPERVISOR_TOKEN: 'x' },
+  });
+  assert.equal(r.status, 0);
+  assert.match(r.stdout, /^WARNING: App migration: /);
+  assert.equal(fs.existsSync(p.offer), false);
 });
 
 test('summary: a fatal result says whether the backup was removed', () => {
