@@ -73,9 +73,12 @@ Liegt ein Angebot vor, zeigt der Startbefehl vor Claude bzw. dem Menü:
   Enter = übernehmen   s = später fragen   n = nie fragen
 ```
 
-- Alle Punkte standardmäßig an. Punkte ohne Inhalt (z. B. keine Pakete) werden
-  ausgeblendet. Bei Punkt 6 der Hinweis „gilt ab dem nächsten Neustart".
-- `s`: nichts tun, beim nächsten Öffnen erneut fragen.
+- Alle sechs Punkte werden immer angezeigt und sind standardmäßig an (ob die alte
+  venv pip-Pakete enthält, ist erst nach dem Backup bekannt). Bei Punkt 6 der
+  Hinweis „gilt ab dem nächsten Neustart". Texte im Fenster auf Englisch, wie die
+  übrige App-Oberfläche.
+- `s`: nichts tun, beim nächsten Start der App erneut fragen (das Fenster läuft in
+  der tmux-Sitzung, die über Browser-Neuladen hinweg bestehen bleibt).
 - `n`: Zustand `never`, nie wieder fragen.
 - Enter: Übernahme (unten), danach Zusammenfassung, dann weiter wie gewohnt.
 
@@ -107,7 +110,7 @@ g. `/data/migration/work` löschen, Zustand `done`, Zusammenfassung mit Ergebnis
 ## Fehlerverhalten
 
 - a oder b schlägt fehl → nichts übernehmen, alte App nicht stoppen, Meldung,
-  Zustand bleibt offen (nächstes Öffnen fragt erneut).
+  Zustand bleibt offen (nächster Start der App fragt erneut).
 - Ein Punkt in c–e schlägt fehl → übrige Punkte laufen weiter; Zusammenfassung
   nennt den Fehler. Punkt 5 wird dann **nicht** ausgeführt (alte App bleibt als
   Rückfall verfügbar), Meldung sagt das.
@@ -120,11 +123,17 @@ g. `/data/migration/work` löschen, Zustand `done`, Zusammenfassung mit Ergebnis
 
 | Datei | Aufgabe |
 |---|---|
-| `claude-terminal/scripts/app-migration.sh` (neu) | `detect` und `apply <auswahl>`; Supervisor-Basis-URL und Datenwurzel per Umgebungsvariable überschreibbar (`SUPERVISOR_API`, `MIGRATION_DATA_ROOT`) für Tests |
-| `claude-terminal/scripts/app-migration-dialog.sh` (neu) | Fenster anzeigen, Eingabe auswerten (Auswertung als testbare Funktion), `apply` aufrufen |
-| `claude-terminal/run.sh` | `detect` beim Start; bei Angebot Dialog vor den Startbefehl setzen (Auto-Launch und Session-Picker) |
-| `claude-terminal/Dockerfile` | neue Skripte nach `/opt/scripts` kopieren |
-| `tests/test-app-migration.sh`, `tests/fake-supervisor.js` (neu) | Fake-Supervisor + Tests, in `tests/run-tests.sh` eingebunden |
+| `claude-terminal/scripts/app-migration/supervisor.js` (neu) | kleiner Supervisor-API-Client (`get`, `post`, `download`); Basis-URL per `SUPERVISOR_API` überschreibbar |
+| `claude-terminal/scripts/app-migration/paths.js` (neu) | alle Pfade unter `MIGRATION_DATA_ROOT` (Standard `/data`) |
+| `claude-terminal/scripts/app-migration/detect.js` (neu) | Erkennung, schreibt `offer.json` |
+| `claude-terminal/scripts/app-migration/apply.js` (neu) | Backup, Download, Übernahme der Punkte, Fehlerregeln |
+| `claude-terminal/scripts/app-migration/dialog.js` (neu) | Fenster rendern, Eingabe auswerten (reine Funktionen) |
+| `claude-terminal/scripts/app-migration/cli.js` (neu) | Einstieg `node cli.js detect` / `node cli.js dialog` |
+| `claude-terminal/run.sh` | `detect_app_migration` beim Start; `with_migration_dialog` setzt den Dialog vor den Startbefehl |
+| `tests/fake-supervisor.js`, `tests/test-app-migration.js` (neu) | Fake-Supervisor, Test-Backup, `node:test`-Suite |
+
+Umsetzung in Node statt Bash: Node ist im Image vorhanden (image-service), JSON und
+HTTP sind direkt verfügbar, und die Tests laufen auch lokal unter Windows.
 
 ## Tests
 
