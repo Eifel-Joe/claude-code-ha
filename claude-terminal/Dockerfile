@@ -1,5 +1,14 @@
-ARG BUILD_FROM
-FROM ${BUILD_FROM}
+# Home Assistant's multi-arch Alpine base (amd64 + arm64). Pinned here instead
+# of build.yaml, which the Supervisor deprecated. Deliberately no ARG BUILD_FROM:
+# older Supervisor versions pass their own default ({arch}-base:latest, the
+# newest Alpine) and would silently replace this base through it.
+FROM ghcr.io/home-assistant/base:3.21
+
+LABEL \
+    org.opencontainers.image.title="Home Assistant Add-on: Claude Terminal" \
+    org.opencontainers.image.description="Terminal interface for Anthropic's Claude Code CLI" \
+    org.opencontainers.image.source="https://github.com/Eifel-Joe/claude-code-ha" \
+    org.opencontainers.image.licenses="MIT"
 
 # Install packages in a single layer to minimize image size.
 # Node.js and npm are kept for the image-service dependency.
@@ -37,100 +46,63 @@ RUN apk add --no-cache \
 # installed by the layer above, so it is available from here on.
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Home Assistant Supervisor always passes BUILD_ARCH (amd64|aarch64|armv7|armhf|i386)
-# as a --build-arg. TARGETARCH/TARGETVARIANT are the automatic BuildKit values and
-# only appear when building with `docker buildx --platform ...`. IMPORTANT: BuildKit
-# never sets TARGETARCH to "arm/v7" — for 32-bit ARM it is "arm" with TARGETVARIANT
-# "v7". Relying on TARGETARCH="arm/v7" silently breaks every ARMv7 build, so we
-# resolve a single canonical arch from the most reliable source available.
+# The Supervisor passes BUILD_ARCH (amd64|aarch64) as a --build-arg. A plain
+# `docker build` falls back to BuildKit's TARGETARCH, then to the build host.
+# Only 64-bit targets exist: Home Assistant ended 32-bit support with 2025.12,
+# and the base image above covers amd64 and arm64 only.
 ARG BUILD_ARCH
 ARG TARGETARCH
-ARG TARGETVARIANT
 
 RUN ADDON_ARCH="${BUILD_ARCH}"; \
     if [ -z "${ADDON_ARCH}" ]; then \
-        case "${TARGETARCH}/${TARGETVARIANT}" in \
-            amd64/*)      ADDON_ARCH="amd64" ;; \
-            arm64/*)      ADDON_ARCH="aarch64" ;; \
-            arm/v7)       ADDON_ARCH="armv7" ;; \
-            arm/v6)       ADDON_ARCH="armhf" ;; \
-            arm/)         ADDON_ARCH="armv7" ;; \
-            386/*)        ADDON_ARCH="i386" ;; \
+        case "${TARGETARCH}" in \
+            amd64) ADDON_ARCH="amd64" ;; \
+            arm64) ADDON_ARCH="aarch64" ;; \
         esac; \
     fi; \
     if [ -z "${ADDON_ARCH}" ]; then \
         case "$(uname -m)" in \
             x86_64)        ADDON_ARCH="amd64" ;; \
             aarch64|arm64) ADDON_ARCH="aarch64" ;; \
-            armv7l)        ADDON_ARCH="armv7" ;; \
-            armv6l)        ADDON_ARCH="armhf" ;; \
-            i386|i686)     ADDON_ARCH="i386" ;; \
         esac; \
     fi; \
-    if [ -z "${ADDON_ARCH}" ]; then \
-        echo "Cannot determine target architecture (BUILD_ARCH='${BUILD_ARCH}' TARGETARCH='${TARGETARCH}' TARGETVARIANT='${TARGETVARIANT}' uname='$(uname -m)')" && exit 1; \
-    fi; \
+    case "${ADDON_ARCH}" in \
+        amd64|aarch64) ;; \
+        *) echo "Unsupported architecture (BUILD_ARCH='${BUILD_ARCH}' TARGETARCH='${TARGETARCH}' uname='$(uname -m)'); only amd64 and aarch64 are built" && exit 1 ;; \
+    esac; \
     printf '%s\n' "${ADDON_ARCH}" > /etc/addon-arch && \
-    echo "Resolved add-on architecture: ${ADDON_ARCH} (BUILD_ARCH='${BUILD_ARCH}' TARGETARCH='${TARGETARCH}/${TARGETVARIANT}' uname='$(uname -m)')"
+    echo "Resolved add-on architecture: ${ADDON_ARCH} (BUILD_ARCH='${BUILD_ARCH}' TARGETARCH='${TARGETARCH}' uname='$(uname -m)')"
 
-# Install Claude Code CLI. Current native releases do not publish a 32-bit ARM
-# binary, so armv7/armhf use the final portable 1.x JavaScript release. Supported
-# 64-bit targets keep the native-latest path with the existing npm fallback.
+# Install Claude Code CLI: native latest, npm as fallback.
 # install.sh ends by running "claude install", an interactive TUI that never
 # finishes without a TTY, so the build hung forever and the npm fallback never
 # ran (upstream issue #44). The timeout turns that hang into a failure the ||
 # catches; 300s leaves room for the binary download on slow hosts. A
 # half-finished native install is removed before the fallback, because run.sh
 # links /root/.local/bin/claude onto PATH ahead of the npm binary.
-RUN ADDON_ARCH=$(cat /etc/addon-arch); \
-    if [ "${ADDON_ARCH}" = "armv7" ] || [ "${ADDON_ARCH}" = "armhf" ]; then \
-        echo "32-bit ARM (${ADDON_ARCH}): installing portable Claude Code 1.0.128"; \
-        npm install -g @anthropic-ai/claude-code@1.0.128; \
-    else \
-        (timeout 300 bash -c "curl -fsSL https://claude.ai/install.sh | bash" \
-        && ln -sf /root/.local/bin/claude /usr/local/bin/claude) \
-        || { rm -f /root/.local/bin/claude; npm install -g @anthropic-ai/claude-code; }; \
-    fi
+RUN (timeout 300 bash -c "curl -fsSL https://claude.ai/install.sh | bash" \
+    && ln -sf /root/.local/bin/claude /usr/local/bin/claude) \
+    || { rm -f /root/.local/bin/claude; npm install -g @anthropic-ai/claude-code; }
 
-# Install Home Assistant CLI (ha command)
-# 64-bit targets track latest; 4.46.0 is the last release that still ships the
-# ha_armv7 / ha_armhf / ha_i386 assets (latest dropped them and would 404).
-RUN ADDON_ARCH=$(cat /etc/addon-arch); \
-    case "${ADDON_ARCH}" in \
-        amd64)   HA_ARCH="amd64";   HA_VERSION="latest" ;; \
-        aarch64) HA_ARCH="aarch64"; HA_VERSION="latest" ;; \
-        armv7)   HA_ARCH="armv7";   HA_VERSION="4.46.0" ;; \
-        armhf)   HA_ARCH="armhf";   HA_VERSION="4.46.0" ;; \
-        i386)    HA_ARCH="i386";    HA_VERSION="4.46.0" ;; \
-        *)       echo "Unsupported architecture: ${ADDON_ARCH}" && exit 1 ;; \
-    esac && \
-    if [ "${HA_VERSION}" = "latest" ]; then \
-        echo "Fetching latest Home Assistant CLI version..."; \
-        HA_VERSION=$(curl -fsSL https://api.github.com/repos/home-assistant/cli/releases/latest | jq -r '.tag_name'); \
-    fi && \
+# Install Home Assistant CLI (ha command), latest release. Its asset names use
+# the same arch names as the add-on (ha_amd64, ha_aarch64).
+RUN HA_ARCH=$(cat /etc/addon-arch) && \
+    echo "Fetching latest Home Assistant CLI version..." && \
+    HA_VERSION=$(curl -fsSL https://api.github.com/repos/home-assistant/cli/releases/latest | jq -r '.tag_name') && \
     echo "Installing Home Assistant CLI ${HA_VERSION} for ${HA_ARCH}..." && \
     curl -fsSL -o /usr/bin/ha \
         "https://github.com/home-assistant/cli/releases/download/${HA_VERSION}/ha_${HA_ARCH}" && \
     chmod +x /usr/bin/ha && \
     echo "Home Assistant CLI ${HA_VERSION} installed successfully"
 
-# Install GitHub CLI (gh command)
-# 32-bit ARM has no upstream armv7 build; the armv6 binary runs on armv7. gh is
-# pinned to the last release verified to publish linux_armv6 so a future upstream
-# drop cannot break 32-bit builds without a deliberate bump here.
-RUN ADDON_ARCH=$(cat /etc/addon-arch); \
-    case "${ADDON_ARCH}" in \
-        amd64)   GH_ARCH="amd64"; GH_VERSION="latest" ;; \
-        aarch64) GH_ARCH="arm64"; GH_VERSION="latest" ;; \
-        armv7)   GH_ARCH="armv6"; GH_VERSION="2.96.0" ;; \
-        armhf)   GH_ARCH="armv6"; GH_VERSION="2.96.0" ;; \
-        i386)    GH_ARCH="386";   GH_VERSION="latest" ;; \
-        *)       echo "Unsupported architecture for gh: ${ADDON_ARCH}" && exit 1 ;; \
+# Install GitHub CLI (gh command), latest release.
+RUN case "$(cat /etc/addon-arch)" in \
+        amd64)   GH_ARCH="amd64" ;; \
+        aarch64) GH_ARCH="arm64" ;; \
+        *)       echo "Unsupported architecture for gh: $(cat /etc/addon-arch)" && exit 1 ;; \
     esac && \
-    if [ "${GH_VERSION}" = "latest" ]; then \
-        echo "Fetching latest GitHub CLI version..."; \
-        GH_VERSION=$(curl -fsSL https://api.github.com/repos/cli/cli/releases/latest | jq -r '.tag_name' | sed 's/^v//'); \
-    fi && \
+    echo "Fetching latest GitHub CLI version..." && \
+    GH_VERSION=$(curl -fsSL https://api.github.com/repos/cli/cli/releases/latest | jq -r '.tag_name' | sed 's/^v//') && \
     echo "Installing GitHub CLI v${GH_VERSION} for ${GH_ARCH}..." && \
     curl -fsSL -o /tmp/gh.tar.gz \
         "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_${GH_ARCH}.tar.gz" && \

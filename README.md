@@ -1,9 +1,9 @@
 # Claude Terminal Pro for Home Assistant
 
-[![Version](https://img.shields.io/badge/version-2.2.0-1f6feb)](claude-terminal/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.3.0-1f6feb)](claude-terminal/CHANGELOG.md)
 [![Latest release](https://img.shields.io/github/v/release/Eifel-Joe/claude-code-ha?label=release&color=1f6feb)](https://github.com/Eifel-Joe/claude-code-ha/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-3fb950)](LICENSE)
-[![Architectures](https://img.shields.io/badge/arch-amd64%20%7C%20aarch64%20%7C%20armv7-8957e5)](#architecture-support)
+[![Architectures](https://img.shields.io/badge/arch-amd64%20%7C%20aarch64-8957e5)](#architecture-support)
 [![Base image](https://img.shields.io/badge/base-Alpine%203.21-0db7ed)](claude-terminal/Dockerfile)
 
 A Home Assistant app that runs Anthropic's **Claude Code CLI** in a browser-based terminal, right inside your dashboard. It ships the tools you actually need for HA work — the `ha` and `gh` CLIs, git, Python — keeps your session alive across restarts with tmux, and lets you install extra packages that survive reboots.
@@ -137,13 +137,8 @@ gh repo list
 | --- | --- | --- | --- |
 | `amd64` | native, latest | latest | latest |
 | `aarch64` | native, latest | latest | latest |
-| `armv7` | portable JS `1.0.128` ¹ | `4.46.0` ² | `armv6` build ³ |
 
-¹ Current Claude Code native releases do not publish a 32-bit ARM binary, so armv7 uses the last portable JavaScript release.
-² `4.46.0` is the last HA CLI release that still ships the `ha_armv7` asset (later releases dropped it).
-³ GitHub CLI has no armv7 build; the armv6 binary runs on armv7 and is pinned to a version verified to publish it.
-
-The target architecture is resolved from Home Assistant's `BUILD_ARCH` build argument, so the image builds correctly on each device without relying on BuildKit-specific variables.
+32-bit systems (armv7, armhf, i386) are not supported: Home Assistant ended support for them with 2025.12, and the Supervisor there no longer offers app updates. Version 2.2.2 was the last release built for armv7.
 
 ---
 

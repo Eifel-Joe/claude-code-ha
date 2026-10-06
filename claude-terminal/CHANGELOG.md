@@ -1,5 +1,29 @@
 # Changelog
 
+## 2.3.0
+
+### 🔧 Technical - Build parameters moved into the Dockerfile
+- The Supervisor warned on every install and update that `build.yaml` is
+  deprecated and will stop reading it. The Dockerfile now names the base image
+  (`ghcr.io/home-assistant/base:3.21`, multi-arch) and the image labels itself;
+  `build.yaml` is gone. Nothing changes in how the app runs.
+
+### 🔧 Technical - armv7 is no longer built (breaking for 32-bit systems)
+- Home Assistant ended support for 32-bit systems with 2025.12; the Supervisor
+  there no longer offers app updates, and the new base image has no armv7
+  variant. 2.2.2 stays the last release for armv7; existing installations keep
+  running on it.
+- The pinned 32-bit tool versions (Claude Code 1.0.128, HA CLI 4.46.0, gh armv6)
+  are removed from the image build.
+
+### 📚 Documentation
+- The development guide and project notes build without a base-image argument
+  and keep test credentials under `/data`, where the app reads them. They no
+  longer suggest an `options.json` for local runs: bashio reads options from the
+  Supervisor API, so a run without the Supervisor uses the defaults.
+  The stale `DEVELOPMENT_STATUS.md` and an unlinked old copy of `DOCS.md` are
+  removed.
+
 ## 2.2.2
 
 ### 🐛 Bug Fix - A hung download could keep the panel blank

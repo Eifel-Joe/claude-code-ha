@@ -16,12 +16,13 @@ The fastest way to test changes without publishing new versions:
 
 ```bash
 # 1. Build test container
-podman build --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.21 \
-  -t local/claude-terminal:test ./claude-terminal
+podman build -t local/claude-terminal:test ./claude-terminal
 
-# 2. Create test configuration
-mkdir -p /tmp/test-config/claude-config
-echo '{"auto_launch_claude": false}' > /tmp/test-config/options.json
+# 2. Create test directories. /config is Home Assistant's configuration,
+#    /data is the app's private storage (credentials in /data/home/.claude).
+# App options: bashio reads them from the Supervisor API, not from a file, so a
+# local run without the Supervisor uses the defaults in run.sh (auto-launch on).
+mkdir -p /tmp/test-config /tmp/test-data
 
 # 3. Run test container
 # Publish 7680 (the image service / ingress entry point), not 7681.
@@ -30,6 +31,7 @@ echo '{"auto_launch_claude": false}' > /tmp/test-config/options.json
 podman run -d --name test-claude-dev \
   -p 7680:7680 \
   -v /tmp/test-config:/config \
+  -v /tmp/test-data:/data \
   local/claude-terminal:test
 
 # 4. Check startup logs
@@ -50,15 +52,14 @@ podman stop test-claude-dev && podman rm test-claude-dev
 vim claude-terminal/scripts/claude-session-picker.sh
 
 # Rebuild image
-podman build --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.21 \
-  -t local/claude-terminal:test ./claude-terminal
+podman build -t local/claude-terminal:test ./claude-terminal
 
 # Stop old container
 podman stop test-claude-dev && podman rm test-claude-dev
 
 # Start new container with changes
 podman run -d --name test-claude-dev -p 7680:7680 \
-  -v /tmp/test-config:/config local/claude-terminal:test
+  -v /tmp/test-config:/config -v /tmp/test-data:/data local/claude-terminal:test
 
 # Test changes
 open http://localhost:7680
@@ -85,31 +86,29 @@ podman exec -it test-claude-dev /opt/scripts/claude-session-picker.sh
 #### Session Picker Testing
 
 ```bash
-# Test with auto-launch disabled
-echo '{"auto_launch_claude": false}' > /tmp/test-config/options.json
-
-# Test with auto-launch enabled (default)
-echo '{"auto_launch_claude": true}' > /tmp/test-config/options.json
-# OR
-rm /tmp/test-config/options.json
+# App options: bashio reads them from the Supervisor API, not from a file, so a
+# local run without the Supervisor uses the defaults in run.sh (auto-launch on).
+# Run the picker directly instead of switching auto_launch_claude off:
+podman exec -it test-claude-dev /opt/scripts/claude-session-picker.sh
 ```
 
 #### Authentication Testing
 
 ```bash
 # Start with clean credentials
-rm -rf /tmp/test-config/claude-config/*
+rm -rf /tmp/test-data/home/.claude
 
 # Pre-populate credentials for testing
-cp ~/.config/anthropic/* /tmp/test-config/claude-config/
+mkdir -p /tmp/test-data/home/.claude
+cp ~/.claude/.credentials.json /tmp/test-data/home/.claude/
 ```
 
 #### Multi-session Testing
 
 ```bash
 # Run multiple containers on different ports
-podman run -d --name test-claude-dev-8680 -p 8680:7680 -v /tmp/test-config-2:/config local/claude-terminal:test
-podman run -d --name test-claude-dev-9680 -p 9680:7680 -v /tmp/test-config-3:/config local/claude-terminal:test
+podman run -d --name test-claude-dev-8680 -p 8680:7680 -v /tmp/test-config-2:/config -v /tmp/test-data-2:/data local/claude-terminal:test
+podman run -d --name test-claude-dev-9680 -p 9680:7680 -v /tmp/test-config-3:/config -v /tmp/test-data-3:/data local/claude-terminal:test
 ```
 
 ### Debugging Techniques
@@ -141,7 +140,7 @@ podman exec test-claude-dev /usr/local/bin/claude-session-picker
 
 # Check file permissions and locations
 podman exec test-claude-dev ls -la /opt/scripts/
-podman exec test-claude-dev ls -la /config/claude-config/
+podman exec test-claude-dev ls -la /data/home/.claude/
 ```
 
 #### Network Testing
@@ -193,24 +192,23 @@ wait
 sudo lsof -ti:7680 | xargs kill -9
 
 # Or use different port
-podman run -d --name test-claude-dev -p 7682:7680 -v /tmp/test-config:/config local/claude-terminal:test
+podman run -d --name test-claude-dev -p 7682:7680 -v /tmp/test-config:/config -v /tmp/test-data:/data local/claude-terminal:test
 ```
 
 #### Volume Mount Issues
 ```bash
 # Ensure directory exists and has correct permissions
-mkdir -p /tmp/test-config/claude-config
-chmod 755 /tmp/test-config/claude-config
+mkdir -p /tmp/test-config /tmp/test-data
+chmod 755 /tmp/test-config /tmp/test-data
 
 # Check SELinux labels (if applicable)
-ls -laZ /tmp/test-config/
+ls -laZ /tmp/test-config/ /tmp/test-data/
 ```
 
 #### Build Cache Issues
 ```bash
 # Force rebuild without cache
-podman build --no-cache --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.21 \
-  -t local/claude-terminal:test ./claude-terminal
+podman build --no-cache -t local/claude-terminal:test ./claude-terminal
 
 # Clean up unused images
 podman image prune
@@ -224,7 +222,7 @@ podman image prune
 podman stop test-claude-dev && podman rm test-claude-dev
 
 # Remove test configurations
-rm -rf /tmp/test-config*
+rm -rf /tmp/test-config* /tmp/test-data*
 
 # Clean up test images
 podman rmi local/claude-terminal:test
@@ -247,18 +245,18 @@ podman volume prune
 Once testing is complete:
 
 ```bash
-# Commit changes
-git add .
-git commit -m "feature: description of changes"
+# Bump the version in claude-terminal/config.yaml and add a matching section
+# at the top of claude-terminal/CHANGELOG.md; tests/test-release-metadata.sh
+# fails the build if they disagree.
+./tests/run-tests.sh
 
-# Update version in config.yaml
-vim claude-terminal/config.yaml
-
-# Push to main branch
-git push origin main
+# Stage deliberately and commit on a branch, then open a pull request.
+git status
+git add <changed files>
+git commit
 ```
 
-The changes will automatically be built and distributed to Home Assistant users.
+Home Assistant rebuilds the app on each device once `version` in `config.yaml` changes.
 
 ## Advanced Testing
 
@@ -266,26 +264,19 @@ The changes will automatically be built and distributed to Home Assistant users.
 
 ```bash
 # Test with real Home Assistant config structure
-mkdir -p /tmp/ha-config/{.storage,claude-config}
-echo '{"auto_launch_claude": false}' > /tmp/ha-config/options.json
+mkdir -p /tmp/ha-config/.storage /tmp/ha-data
 
 podman run -d --name test-ha-claude -p 7680:7680 \
-  -v /tmp/ha-config:/config local/claude-terminal:test
+  -v /tmp/ha-config:/config -v /tmp/ha-data:/data local/claude-terminal:test
 ```
 
 ### Cross-Platform Testing
 
 ```bash
-# Test different base images. Home Assistant Supervisor always passes BUILD_ARCH;
-# reproduce that locally so the Dockerfile resolves the right architecture. For a
-# real cross-build add --platform so the emulated toolchain matches.
+# The base image is multi-arch (amd64, arm64). Home Assistant Supervisor always
+# passes BUILD_ARCH; reproduce that locally so the Dockerfile resolves the right
+# architecture, and add --platform so the emulated toolchain matches.
 podman build --platform linux/arm64 \
   --build-arg BUILD_ARCH=aarch64 \
-  --build-arg BUILD_FROM=ghcr.io/home-assistant/aarch64-base:3.21 \
   -t local/claude-terminal:arm64 ./claude-terminal
-
-podman build --platform linux/arm/v7 \
-  --build-arg BUILD_ARCH=armv7 \
-  --build-arg BUILD_FROM=ghcr.io/home-assistant/armv7-base:3.21 \
-  -t local/claude-terminal:armv7 ./claude-terminal
 ```

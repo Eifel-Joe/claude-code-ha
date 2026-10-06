@@ -28,10 +28,10 @@ direnv allow
 ### Manual Commands (without aliases)
 ```bash
 # Build
-podman build --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.21 -t local/claude-terminal-pro ./claude-terminal
+podman build -t local/claude-terminal-pro ./claude-terminal
 
 # Run locally
-podman run -p 7680:7680 -v $(pwd)/config:/config local/claude-terminal-pro
+podman run -p 7680:7680 -v $(pwd)/config:/config -v $(pwd)/data:/data local/claude-terminal-pro
 
 # Lint
 hadolint ./claude-terminal/Dockerfile
@@ -59,12 +59,11 @@ container holding `/config` read-write and `SUPERVISOR_TOKEN`.
 Run `./tests/run-tests.sh` before committing. It covers release metadata, the
 production `run.sh`, startup hardening and the Node image service. CI
 (`.github/workflows/ci.yml`) runs the same suites plus shellcheck, hadolint and
-a real multi-arch image build.
+real image builds for amd64 and aarch64.
 
 ### Add-on Structure (claude-terminal/)
-- **config.yaml** - Home Assistant add-on configuration (multi-arch, ingress, ports)
-- **Dockerfile** - Alpine-based container with Node.js and Claude Code CLI
-- **build.yaml** - Multi-architecture build configuration (amd64, aarch64, armv7)
+- **config.yaml** - Home Assistant add-on configuration (version, arch list, ingress, options)
+- **Dockerfile** - Alpine-based container with Node.js and Claude Code CLI; pins the base image (`FROM ghcr.io/home-assistant/base:3.21`) and the image labels. There is no build.yaml (deprecated by the Supervisor).
 - **run.sh** - Main startup script with credential management and ttyd terminal
 - **scripts/** - Modular credential management scripts
 
@@ -72,7 +71,7 @@ a real multi-arch image build.
 1. **Web Terminal**: Uses ttyd to provide browser-based terminal access
 2. **Credential Management**: Credentials live in the app's private `/data` (`/data/home/.claude`)
 3. **Service Integration**: Home Assistant ingress support with panel icon
-4. **Multi-Architecture**: Supports amd64, aarch64, armv7 platforms
+4. **Architectures**: amd64 and aarch64 (Home Assistant ended 32-bit support with 2025.12)
 
 ### Credential System
 The add-on implements a sophisticated credential management system:
@@ -96,16 +95,16 @@ For rapid development and debugging without pushing new versions:
 #### Quick Build & Test
 ```bash
 # Build test version
-podman build --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.21 -t local/claude-terminal:test ./claude-terminal
+podman build -t local/claude-terminal:test ./claude-terminal
 
-# Create test config directory
-mkdir -p /tmp/test-config/claude-config
+# Create test directories (/config = HA configuration, /data = app storage)
+mkdir -p /tmp/test-config /tmp/test-data
 
-# Configure session picker (optional)
-echo '{"auto_launch_claude": false}' > /tmp/test-config/options.json
+# App options: bashio reads them from the Supervisor API, not from a file, so a
+# local run without the Supervisor uses the defaults in run.sh (auto-launch on).
 
 # Run test container
-podman run -d --name test-claude-dev -p 7680:7680 -v /tmp/test-config:/config local/claude-terminal:test
+podman run -d --name test-claude-dev -p 7680:7680 -v /tmp/test-config:/config -v /tmp/test-data:/data local/claude-terminal:test
 
 # Check logs
 podman logs test-claude-dev
@@ -141,7 +140,7 @@ podman exec test-claude-dev chmod +x /opt/scripts/claude-session-picker.sh
 - **Check container logs**: `podman logs -f test-claude-dev` (follow mode)
 - **Inspect running processes**: `podman exec test-claude-dev ps aux`
 - **Test individual scripts**: `podman exec test-claude-dev /opt/scripts/script-name.sh`
-- **Volume contents**: `ls -la /tmp/test-config/` to verify persistence
+- **Volume contents**: `ls -la /tmp/test-data/` to verify persistence
 
 ### Production Testing
 - **Local Testing**: Use `run-addon` to test on localhost:7680
@@ -163,7 +162,7 @@ podman exec test-claude-dev chmod +x /opt/scripts/claude-session-picker.sh
 - No sudo privileges available in development environment
 - Add-on targets Home Assistant OS (Alpine Linux base)
 - Must handle credential persistence across container restarts
-- Requires multi-architecture compatibility
+- Builds for amd64 and aarch64 only
 
 ## Release Management
 
