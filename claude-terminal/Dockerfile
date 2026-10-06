@@ -61,14 +61,20 @@ RUN ADDON_ARCH="${BUILD_ARCH}"; \
 # Install Claude Code CLI. Current native releases do not publish a 32-bit ARM
 # binary, so armv7/armhf use the final portable 1.x JavaScript release. Supported
 # 64-bit targets keep the native-latest path with the existing npm fallback.
+# install.sh ends by running "claude install", an interactive TUI that never
+# finishes without a TTY, so the build hung forever and the npm fallback never
+# ran (upstream issue #44). The timeout turns that hang into a failure the ||
+# catches; 300s leaves room for the binary download on slow hosts. A
+# half-finished native install is removed before the fallback, because run.sh
+# links /root/.local/bin/claude onto PATH ahead of the npm binary.
 RUN ADDON_ARCH=$(cat /etc/addon-arch); \
     if [ "${ADDON_ARCH}" = "armv7" ] || [ "${ADDON_ARCH}" = "armhf" ]; then \
         echo "32-bit ARM (${ADDON_ARCH}): installing portable Claude Code 1.0.128"; \
         npm install -g @anthropic-ai/claude-code@1.0.128; \
     else \
-        (curl -fsSL https://claude.ai/install.sh | bash \
+        (timeout 300 bash -c "curl -fsSL https://claude.ai/install.sh | bash" \
         && ln -sf /root/.local/bin/claude /usr/local/bin/claude) \
-        || npm install -g @anthropic-ai/claude-code; \
+        || { rm -f /root/.local/bin/claude; npm install -g @anthropic-ai/claude-code; }; \
     fi
 
 # Install Home Assistant CLI (ha command)
