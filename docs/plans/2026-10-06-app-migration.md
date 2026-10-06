@@ -41,6 +41,8 @@
 
 Everything below assumes (a) an app with `hassio_role: manager` may create and download a partial backup, (b) the backup is a plain tar containing `<slug>.tar.gz`, (c) that inner archive holds the app's `/data` under `data/`, (d) a backup created without password is unencrypted. Verify before writing code.
 
+**Result (2026-10-06, HA-Test, done):** all four hold. Outer tar: `6ef0b4d0_claude_terminal_pro.tar.gz` (no `./` prefix) and `./backup.json`. Inner `.tar.gz`, readable with `tar -tzf`: `./`, `./addon.json`, **`./image.tar`** (the locally built Docker image — backup was 671 MB), `data/…`. Consequence: extract **only `data`** from the inner archive (Task 4), and mention the backup size to the user (Task 6).
+
 **Files:** none (manual, run by the user in the HA-Test panel → menu `8` bash)
 
 - [ ] **Step 1: User runs in HA-Test (app `6ef0b4d0_claude_terminal_pro`):**
@@ -110,7 +112,10 @@ function buildBackupFixture(dir, slug = OLD_SLUG) {
   writeFile(path.join(data, '.config/gh/hosts.yml'), 'github.com:\n  user: old\n');
   writeFile(path.join(data, 'packages/python/venv/lib/python3.12/site-packages/requests-2.32.0.dist-info/METADATA'), '');
   writeFile(path.join(data, 'packages/python/venv/lib/python3.12/site-packages/pip-24.0.dist-info/METADATA'), '');
-  tar(['-czf', path.join(dir, `${slug}.tar.gz`), '-C', app, '.'], dir);
+  // Mirrors the real layout from Task 0, including the image the app was built
+  // from, which the migration must not unpack.
+  writeFile(path.join(app, 'image.tar'), 'not a real image');
+  tar(['-czf', path.join(dir, `${slug}.tar.gz`), '-C', app, 'addon.json', 'image.tar', 'data'], dir);
   writeFile(path.join(dir, 'backup.json'), '{}');
   tar(['-cf', path.join(dir, 'backup.tar'), '-C', dir, 'backup.json', `${slug}.tar.gz`], dir);
   return path.join(dir, 'backup.tar');
@@ -201,7 +206,8 @@ test('fixture: backup.tar holds the old app archive with data/', () => {
   const outer = spawnSync('tar', ['-tf', tarPath], { encoding: 'utf8' }).stdout;
   assert.match(outer, new RegExp(`${OLD_SLUG}\\.tar\\.gz`));
   const inner = spawnSync('tar', ['-tzf', path.join(dir, `${OLD_SLUG}.tar.gz`)], { encoding: 'utf8' }).stdout;
-  assert.match(inner, /data\/home\/\.claude\/CLAUDE\.md/);
+  assert.match(inner, /^data\/home\/\.claude\/CLAUDE\.md$/m);
+  assert.match(inner, /^image\.tar$/m);
 });
 ```
 
@@ -560,6 +566,20 @@ test('apply: backup failure takes over nothing and stops nothing', async () => {
   assert.equal(fs.existsSync(p.state), false);
 });
 
+test('apply: unpacks only data/, not the app image', async () => {
+  await withSupervisor({ oldOptions: OLD_OPTIONS }, async (client, p) => {
+    const { offer } = await detect(client, p);
+    const spy = [];
+    const realCp = fs.cpSync;
+    fs.cpSync = (src, dst, o) => { spy.push(src); return realCp(src, dst, o); };
+    try { await apply(client, p, offer, ['claude'], { today: '2026-10-06', persistInstall: 'false-bin' }); }
+    finally { fs.cpSync = realCp; }
+    const appDir = path.dirname(path.dirname(spy[0])); // <work>/app/data/home -> <work>/app
+    assert.ok(spy.every((src) => !src.includes('image.tar')));
+    assert.ok(appDir.endsWith(path.join('work', 'app', 'data')) || appDir.endsWith(path.join('work', 'app')));
+  });
+});
+
 test('apply: success marks done, removes the offer and the work dir', async () => {
   const { result, p } = await detectThenApply({}, ['claude']);
   assert.equal(result.ok, true);
@@ -580,7 +600,9 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 // Verified on HA-Test (plan Task 0): the partial backup is a tar holding
-// <slug>.tar.gz, whose data/ is the app's /data.
+// <slug>.tar.gz, whose data/ is the app's /data. That archive also carries
+// image.tar, the locally built Docker image (hundreds of MB), so only data/ is
+// extracted.
 const INNER_DATA_PREFIX = 'data';
 const innerArchiveName = (slug) => `${slug}.tar.gz`;
 
@@ -606,7 +628,7 @@ async function fetchOldData(client, offer, p, date) {
   if (!fs.existsSync(inner)) throw new Error(`backup has no ${innerArchiveName(offer.slug)}`);
   const extracted = path.join(p.work, 'app');
   fs.mkdirSync(extracted);
-  run('tar', ['-xzf', inner, '-C', extracted]);
+  run('tar', ['-xzf', inner, '-C', extracted, INNER_DATA_PREFIX]);
   return { backupSlug: slug, oldData: path.join(extracted, INNER_DATA_PREFIX) };
 }
 
@@ -892,7 +914,8 @@ function render(offer, selected) {
     '',
     ...ITEMS.map((item, i) => `  [${selected.includes(item) ? 'x' : ' '}] ${i + 1}  ${label(item, offer)}`),
     '',
-    '  A partial backup of the old app is created first and kept as a fallback.',
+    '  A partial backup of the old app is created first and kept as a fallback',
+    '  (it includes the old app image, typically several hundred MB).',
     '  Enter = take over    s = ask again next start    n = never ask',
     '',
   ];
