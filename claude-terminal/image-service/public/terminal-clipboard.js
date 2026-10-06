@@ -551,6 +551,54 @@
         });
     }
 
+    // The rebuilt link that url is a proper start of, newest first as in
+    // findLink, or url itself. A url that is a complete link on screen stays
+    // as it is, even if a longer link happens to start the same way.
+    function fullLinkFor(term, url) {
+        var links = linkSpansInRows(rawRows(term, 'all'), term.cols);
+        var i;
+        for (i = 0; i < links.length; i++) {
+            if (links[i].url === url) return url;
+        }
+        for (i = links.length - 1; i >= 0; i--) {
+            var full = links[i].url;
+            if (full.length > url.length && full.indexOf(url) === 0) return full;
+        }
+        return url;
+    }
+
+    /**
+     * Row 1 of a wrapped link belongs to ttyd's WebLinksAddon: xterm.js asks
+     * link providers in registration order and the addon came first. Its
+     * handler calls window.open() with no arguments and then sets
+     * location.href to the fragment it saw, so the fragment is swapped for the
+     * rebuilt URL on its way in. Everything stays inside the click, so no
+     * popup blocker steps in. Calls with arguments are not the addon's and go
+     * through untouched. Rejected: disposing the addon via xterm.js private
+     * fields (_core, _addonManager), which breaks silently on an update.
+     *
+     * @returns the original window.open, or null if there is none
+     */
+    function installOpenRedirect(win, term) {
+        var originalOpen = win.open;
+        if (typeof originalOpen !== 'function') return null;
+        win.open = function () {
+            if (arguments.length) return originalOpen.apply(win, arguments);
+            var opened = originalOpen.call(win);
+            if (!opened) return opened;
+            return {
+                get opener() { return opened.opener; },
+                set opener(value) { opened.opener = value; },
+                location: {
+                    get href() { return opened.location.href; },
+                    set href(url) { opened.location.href = fullLinkFor(term, url); }
+                },
+                close: function () { opened.close(); }
+            };
+        };
+        return originalOpen;
+    }
+
     function install(win, options) {
         var opts = options || {};
         var term = win.term;
@@ -693,7 +741,8 @@
 
         installTouchScroll(win, term);
         installMobileInput(win, term);
-        installLinkProvider(win, term, win.open);
+        var originalOpen = installOpenRedirect(win, term);
+        if (originalOpen) installLinkProvider(win, term, originalOpen);
 
         term[INSTALL_FLAG] = true;
         term.__claudeClipboard = controller;

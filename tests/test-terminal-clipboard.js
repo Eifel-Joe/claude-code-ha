@@ -1225,6 +1225,62 @@ test('a terminal without registerLinkProvider still installs', () => {
     assert.ok(bridge.install(env.win));
 });
 
+test("the addon's fragment on row 1 opens the full URL", () => {
+    const env = makeWindow({ buffer: WRAPPED_LINK, cols: 46 });
+    bridge.install(env.win);
+
+    // Exactly what WebLinksAddon's handleLink does.
+    const opened = env.win.open();
+    opened.opener = null;
+    opened.location.href = 'https://claude.ai/code/artifact';
+
+    assert.strictEqual(env.state.windows.length, 1);
+    assert.strictEqual(env.state.windows[0].opener, null);
+    assert.strictEqual(env.state.windows[0].location.href, FULL_LINK);
+});
+
+test('a URL that is not the start of a rebuilt link is opened unchanged', () => {
+    const env = makeWindow({ buffer: WRAPPED_LINK, cols: 46 });
+    bridge.install(env.win);
+
+    env.win.open().location.href = 'https://other.example.com/x';
+    assert.strictEqual(env.state.windows[0].location.href, 'https://other.example.com/x');
+});
+
+test('a complete link is not stretched to a longer one that starts the same', () => {
+    const env = makeWindow({
+        buffer: ['https://example.com/a', 'https://example.com/ab'], cols: 80
+    });
+    bridge.install(env.win);
+
+    // "/a" is a link of its own on screen, not a fragment of "/ab".
+    env.win.open().location.href = 'https://example.com/a';
+    assert.strictEqual(env.state.windows[0].location.href, 'https://example.com/a');
+});
+
+test('window.open with arguments goes straight through', () => {
+    const env = makeWindow({ buffer: WRAPPED_LINK, cols: 46 });
+    bridge.install(env.win);
+
+    const opened = env.win.open('https://claude.ai/code/artifact', '_blank');
+    assert.deepStrictEqual(env.state.openCalls, [['https://claude.ai/code/artifact', '_blank']]);
+    assert.strictEqual(opened, env.state.windows[0]);
+});
+
+test('the link provider opens through the original window.open, not the redirect', () => {
+    const env = makeWindow({ buffer: WRAPPED_LINK, cols: 46 });
+    const original = env.win.open;
+    let originalCalls = 0;
+    env.win.open = function (...args) { originalCalls++; return original.apply(this, args); };
+    const counted = env.win.open;
+    bridge.install(env.win);
+    assert.notStrictEqual(env.win.open, counted, 'open must be wrapped');
+
+    provideLinks(env, 2)[0].activate({}, FULL_LINK);
+    assert.strictEqual(originalCalls, 1);
+    assert.strictEqual(env.state.windows[0].location.href, FULL_LINK);
+});
+
 (async () => {
     for (const [name, fn] of tests) {
         try {
