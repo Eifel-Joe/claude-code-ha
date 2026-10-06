@@ -473,6 +473,28 @@ test('apply: a failing stop does not touch the autostart', async () => {
   assert.equal(sup.state.oldOptionsPosted, null);
 });
 
+test('apply: all six items at once', async () => {
+  const fake = fakePersistInstall(tmp());
+  const ownOptions = { persistent_apk_packages: ['git'], use_persistent_claude: true };
+  const all = ['claude', 'login', 'gh', 'packages', 'stop', 'settings'];
+  const { result, p, sup } = await detectThenApply({ ownOptions }, all, fake.deps);
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.results, {
+    claude: 'ok', login: 'ok', gh: 'ok', packages: 'ok', settings: 'ok', stop: 'ok',
+  });
+  assert.deepEqual(sup.state.ownOptions, {
+    persistent_apk_packages: ['git', 'htop'], persistent_pip_packages: ['httpx', 'requests'],
+    use_persistent_claude: true,
+    auto_launch_claude: false, dangerously_skip_permissions: true, tmux_mouse: false,
+  });
+  assert.deepEqual(sup.state.stopped, [OLD_SLUG]);
+  assert.deepEqual(sup.state.oldOptionsPosted, { boot: 'manual' });
+  assert.equal(fs.readFileSync(path.join(p.home, '.claude/.credentials.json'), 'utf8'), '{"token":"old"}');
+  assert.ok(fs.existsSync(path.join(p.home, MEMORY)));
+  assert.ok(fs.existsSync(path.join(p.dataRoot, '.config/gh/hosts.yml')));
+  assert.equal(fs.readFileSync(p.state, 'utf8').trim(), 'done');
+});
+
 test('apply: a failed item keeps the old app running', async () => {
   const fake = fakePersistInstall(tmp());
   const oldOptions = { ...OLD_OPTIONS, persistent_apk_packages: ['badpkg'] };
