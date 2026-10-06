@@ -117,4 +117,45 @@ auto_install_packages
 grep -qx 'warning|Auto-install of Python packages timed out after 1s' "$log" || \
     fail "a hanging pip install must be logged as a timeout"
 
+# A cut-off must take the step's children with it: persist-install is a script
+# around apk/pip, and an orphaned `apk add` keeps the apk database locked for
+# every later package. GNU timeout signals the process group; BusyBox timeout
+# (coreutils/timeout.c: kill(parent, signo)) only the process it started.
+grep -qE '^[[:space:]]+coreutils[[:space:]]*\\?$' "$repo_root/claude-terminal/Dockerfile" || \
+    fail "the image must install coreutils: BusyBox timeout leaves the step's children running"
+
+cat > "$PERSIST_INSTALL_BIN" << 'STUB_EOF'
+#!/usr/bin/env bash
+sleep 30 &
+printf '%s\n' "$!" > "$PERSIST_INSTALL_LOG.child"
+wait
+STUB_EOF
+config_apk_packages='child'
+config_pip_packages=''
+auto_install_packages
+child_pid=$(cat "$PERSIST_INSTALL_LOG.child")
+sleep 1
+! kill -0 "$child_pid" 2>/dev/null || fail "a cut-off package install must not leave its children running"
+
+# A half-finished npm update can keep failing later ones; say how to recover.
+: > "$log"
+setup_persistent_claude
+grep -q 'warning|Persistent Claude override: update failed.*delete /data/npm and restart' "$log" || \
+    fail "a failed Claude Code update must say how to recover"
+
+# install_tools is the fallback for tools missing from the image. It exits on
+# failure, which lets the watchdog restart the app instead of hanging forever.
+tools_bin="$tmp_dir/tools-bin"
+mkdir -p "$tools_bin"
+printf '#!/bin/sh\nexec sleep 30\n' > "$tools_bin/apk"
+chmod +x "$tools_bin/apk"
+# The fallback only runs when a tool is missing; ttyd is not on test machines.
+! command -v ttyd >/dev/null 2>&1 || fail "install_tools test needs a machine without ttyd"
+: > "$log"
+started=$SECONDS
+status=0
+( PATH="$tools_bin:$PATH"; install_tools ) || status=$?
+[ $((SECONDS - started)) -lt 10 ] || fail "a hanging apk in install_tools must not block startup"
+[ "$status" -ne 0 ] || fail "install_tools must fail when the tools could not be installed"
+
 echo "Startup timeout suite passed"

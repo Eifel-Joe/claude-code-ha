@@ -11,6 +11,14 @@
   update and for each apk package, 900 s for the pip install (a Pi may compile
   packages on first install). The app then starts as usual, with the built-in
   Claude Code if the update did not finish.
+- The image now ships GNU `coreutils`: BusyBox `timeout` stops only the process it
+  started, so a stuck `apk add` behind `persist-install` would have kept running
+  and locked the package database for every later package.
+- If the Claude Code update keeps failing after a cut-off, the log now says how
+  to recover: delete `/data/npm` and restart the app to reinstall.
+- The rarely used fallback that installs tools missing from the image (ttyd,
+  tmux, jq, curl) has the same 300 s limit; it fails the start, so the watchdog
+  restarts the app instead of it hanging.
 
 ### 📚 Documentation
 - The app description said credentials are stored in `/config/claude-config/`.

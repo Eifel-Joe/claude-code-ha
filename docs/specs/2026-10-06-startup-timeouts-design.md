@@ -54,6 +54,19 @@ Shell-Funktion.
 README Z. 81 und `CLAUDE.md` (Abschnitte Key Components, Credential System, Key
 Environment Variables): Pfade/Variablen auf den tatsächlichen Stand korrigieren.
 
+Nach Code-Review ergänzt:
+- `coreutils` ins Image. BusyBox-`timeout` signalisiert nur den gestarteten Prozess
+  (`coreutils/timeout.c`: `kill(parent, signo)`), GNU-`timeout` die Prozessgruppe;
+  sonst liefe ein `apk add` unter `persist-install` nach dem Abbruch weiter und hielte
+  die apk-Sperre. Das HA-Basis-Image bringt kein `coreutils` mit.
+- `install_tools` (Rückfall für fehlende Tools, `apk add`) ebenfalls mit 300 s.
+- Warnung nach fehlgeschlagenem Claude-Update nennt die Abhilfe (`/data/npm`
+  löschen, neu starten). Automatisches Aufräumen von npm-Resten verworfen: das
+  Verhalten von npm nach einem Abbruch ist nicht belegt.
+- Bewusst offen: Ohne `timeout` läuft der Schritt ohne Grenze und ohne Hinweis
+  (im Image nicht mehr möglich). Schlimmster Fall bei komplett totem Netz ist die
+  Summe der Grenzen (Claude 300 s + je apk-Paket 300 s + pip 900 s).
+
 Verworfen: Netzwerk-Schritte in den Hintergrund und Terminal sofort starten —
 Claude könnte starten, während npm das Binary austauscht; größerer Umbau.
 

@@ -264,7 +264,8 @@ install_tools() {
     fi
 
     bashio::log.warning "Tools missing from image, installing at runtime: ${missing[*]}"
-    if ! apk add --no-cache "${missing[@]}"; then
+    if ! run_with_timeout "$STARTUP_APK_TIMEOUT" "Installing missing tools" \
+            apk add --no-cache "${missing[@]}"; then
         bashio::log.error "Failed to install required tools: ${missing[*]}"
         exit 1
     fi
@@ -375,7 +376,9 @@ setup_persistent_claude() {
                 env NPM_CONFIG_PREFIX="$persistent_root" npm install -g "$claude_npm_spec" --prefer-online; then
             bashio::log.info "Persistent Claude override: update completed"
         else
-            bashio::log.warning "Persistent Claude override: update failed, continuing with existing version if present"
+            # A cut-off npm can leave /data/npm half-replaced, and later updates
+            # may then keep failing; a fresh install is the way out.
+            bashio::log.warning "Persistent Claude override: update failed, continuing with existing version if present. If this keeps happening, delete /data/npm and restart the app to reinstall"
         fi
     fi
 
