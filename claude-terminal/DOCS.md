@@ -67,8 +67,10 @@ The app offers several configuration options:
 
 ### Copying Text Out of the Terminal
 
-There are four ways, and which ones you need depends on the device:
+There are five ways, and which ones you need depends on the device:
 
+- **Click the link** in the terminal (desktop, with `tmux_mouse` off): any row of
+  a link that wraps over several rows opens the whole URL in a new tab.
 - **`🔗 Copy link`** appears in the header on its own whenever a link is on
   screen. One tap copies it, and the status line names the host it took. This is
   the quickest way to get an OAuth login URL out, on any device.
