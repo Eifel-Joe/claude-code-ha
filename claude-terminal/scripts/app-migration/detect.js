@@ -60,7 +60,10 @@ async function detect(client, p) {
     settings: Object.fromEntries(SETTING_KEYS.filter((k) => k in options).map((k) => [k, options[k]])),
   };
   fs.mkdirSync(p.dir, { recursive: true });
-  fs.writeFileSync(p.offer, `${JSON.stringify(offer, null, 2)}\n`);
+  // Atomic: the terminal must never read a half-written offer.
+  const tmp = `${p.offer}.tmp`;
+  fs.writeFileSync(tmp, `${JSON.stringify(offer, null, 2)}\n`);
+  fs.renameSync(tmp, p.offer);
   return { offered: true, offer };
 }
 
