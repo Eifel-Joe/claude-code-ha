@@ -136,3 +136,76 @@ test('detect: prefers a running old app over a stopped one', async () => {
     assert.equal((await detect(client, p)).offer.slug, OLD_SLUG);
   });
 });
+
+const { apply } = require(path.join(MOD, 'apply'));
+
+async function detectThenApply(opts, selected, deps = {}) {
+  return withSupervisor({ oldOptions: OLD_OPTIONS, ...opts }, async (client, p, sup) => {
+    const { offer } = await detect(client, p);
+    const result = await apply(client, p, offer, selected,
+      { today: '2026-10-06', pollMs: 1, persistInstall: deps.persistInstall || 'false-bin', ...deps });
+    return { result, p, sup };
+  });
+}
+
+test('apply: creates a named partial backup of only the old app', async () => {
+  const { sup } = await detectThenApply({}, []);
+  const call = sup.state.calls.find((c) => c.url === '/backups/new/partial');
+  assert.deepEqual(call.body, {
+    name: 'Claude Terminal Pro – Übernahme 2026-10-06', addons: [OLD_SLUG], homeassistant: false, background: true,
+  });
+});
+
+test('apply: Claude data without the login file', async () => {
+  const { result, p } = await detectThenApply({}, ['claude']);
+  assert.equal(result.results.claude, 'ok');
+  assert.equal(fs.readFileSync(path.join(p.home, '.claude/projects/-config/memory/heating.md'), 'utf8'), 'old memory\n');
+  assert.equal(fs.readFileSync(path.join(p.home, '.claude/CLAUDE.md'), 'utf8'), 'old global instructions\n');
+  assert.ok(fs.existsSync(path.join(p.home, '.claude.json')));
+  assert.equal(fs.existsSync(path.join(p.home, '.claude/.credentials.json')), false);
+});
+
+test('apply: login and gh only when selected', async () => {
+  const { result, p } = await detectThenApply({}, ['login', 'gh']);
+  assert.equal(result.results.login, 'ok');
+  assert.equal(result.results.gh, 'ok');
+  assert.equal(fs.readFileSync(path.join(p.home, '.claude/.credentials.json'), 'utf8'), '{"token":"old"}');
+  assert.ok(fs.existsSync(path.join(p.dataRoot, '.config/gh/hosts.yml')));
+  assert.equal(fs.existsSync(path.join(p.home, '.claude/CLAUDE.md')), false);
+});
+
+test('apply: never overwrites files this app already has', async () => {
+  await withSupervisor({ oldOptions: OLD_OPTIONS }, async (client, p) => {
+    const { offer } = await detect(client, p);
+    fs.mkdirSync(path.join(p.home, '.claude/skills/shared'), { recursive: true });
+    fs.writeFileSync(path.join(p.home, '.claude/skills/shared/SKILL.md'), 'new skill\n');
+    await apply(client, p, offer, ['claude'], { today: '2026-10-06', pollMs: 1, persistInstall: 'false-bin' });
+    assert.equal(fs.readFileSync(path.join(p.home, '.claude/skills/shared/SKILL.md'), 'utf8'), 'new skill\n');
+  });
+});
+
+test('apply: backup failure takes over nothing and stops nothing', async () => {
+  const { result, p, sup } = await detectThenApply({ failBackup: true }, ['claude', 'login', 'stop']);
+  assert.equal(result.ok, false);
+  assert.match(result.fatal, /backup/);
+  assert.equal(fs.existsSync(path.join(p.home, '.claude/CLAUDE.md')), false);
+  assert.deepEqual(sup.state.stopped, []);
+  assert.equal(fs.existsSync(p.state), false);
+});
+
+test('apply: unpacks only data/, not the app image', async () => {
+  await withSupervisor({ oldOptions: OLD_OPTIONS }, async (client, p) => {
+    const { offer } = await detect(client, p);
+    await apply(client, p, offer, ['claude'], { today: '2026-10-06', pollMs: 1, persistInstall: 'false-bin', keepWork: true });
+    assert.ok(fs.existsSync(path.join(p.work, 'app', 'data', 'home', '.claude')));
+    assert.equal(fs.existsSync(path.join(p.work, 'app', 'image.tar')), false);
+  });
+});
+
+test('apply: success marks done, removes the offer and the work dir', async () => {
+  const { result, p } = await detectThenApply({}, ['claude']);
+  assert.equal(result.ok, true);
+  assert.equal(fs.readFileSync(p.state, 'utf8').trim(), 'done');
+  assert.equal(fs.existsSync(p.offer), false);
+  assert.equal(fs.existsSync(p.work), false);
+});
