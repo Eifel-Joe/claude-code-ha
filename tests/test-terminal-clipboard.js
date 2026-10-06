@@ -1281,6 +1281,65 @@ test('the link provider opens through the original window.open, not the redirect
     assert.strictEqual(env.state.windows[0].location.href, FULL_LINK);
 });
 
+test('a link wrapped one column short of the pane spans every row from column 0', () => {
+    // Claude Code's login URL layout, measured live: 45-column rows at 46.
+    const url = 'https://claude.com/cai/oauth/authorize?code=true&client_id=9d1c250a' +
+        '&scope=org%3Acreate_api_key&code_challenge=hjWXYekQj00Wfyv1dC3CF414TPcRB5EIEB7tUV2Ov-s';
+    const wrapped = [];
+    for (let at = 0; at < url.length; at += 45) wrapped.push(url.slice(at, at + 45));
+    const rendered = rows(['  Use the url below to sign in', ''].concat(wrapped, ['', '  Paste code here >']), 46);
+
+    const links = bridge.linkSpansInRows(rendered, 46);
+    assert.strictEqual(links.length, 1);
+    assert.strictEqual(links[0].url, url);
+    assert.deepStrictEqual(links[0].spans,
+        wrapped.map((text, k) => ({ row: 2 + k, start: 0, end: text.length })));
+});
+
+test('installing twice neither wraps window.open again nor adds a provider', () => {
+    const env = makeWindow({ buffer: WRAPPED_LINK, cols: 46 });
+    bridge.install(env.win);
+    const wrappedOpen = env.win.open;
+    bridge.install(env.win);
+    assert.strictEqual(env.win.open, wrappedOpen);
+    assert.strictEqual(env.state.linkProviders.length, 1);
+});
+
+// Two logins: the old link is still in the scrollback above the new one.
+const TWO_LINKS = [
+    '  https://claude.ai/code/artifact',
+    '  /aaaa1111-c6ce-447f-a58c-bd14ce569558',
+    '  login again',
+    '  https://claude.ai/code/artifact',
+    '  /bbbb2222-c6ce-447f-a58c-bd14ce569558'
+];
+
+test('row 1 of an older link opens that link, not a newer one starting the same', () => {
+    const env = makeWindow({ buffer: TWO_LINKS, cols: 46 });
+    bridge.install(env.win);
+
+    // xterm.js asks every provider for the hovered line before the click
+    // (checked against real xterm.js 5.5), even where the addon's link wins.
+    provideLinks(env, 1);
+    env.win.open().location.href = 'https://claude.ai/code/artifact';
+    assert.strictEqual(env.state.windows[0].location.href,
+        'https://claude.ai/code/artifact/aaaa1111-c6ce-447f-a58c-bd14ce569558');
+
+    provideLinks(env, 4);
+    env.win.open().location.href = 'https://claude.ai/code/artifact';
+    assert.strictEqual(env.state.windows[1].location.href,
+        'https://claude.ai/code/artifact/bbbb2222-c6ce-447f-a58c-bd14ce569558');
+});
+
+test('a failing lookup still opens the URL the addon asked for', () => {
+    const env = makeWindow({ buffer: WRAPPED_LINK, cols: 46 });
+    bridge.install(env.win);
+    env.win.term.buffer.active.getLine = () => { throw new Error('buffer gone'); };
+
+    env.win.open().location.href = 'https://claude.ai/code/artifact';
+    assert.strictEqual(env.state.windows[0].location.href, 'https://claude.ai/code/artifact');
+});
+
 (async () => {
     for (const [name, fn] of tests) {
         try {

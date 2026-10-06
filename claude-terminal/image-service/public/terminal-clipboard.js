@@ -522,28 +522,26 @@
      * installOpenRedirect covers that row.
      *
      * @param open the frame's original window.open, never the redirect
+     * @param hover records the line xterm.js last asked about, for the redirect
      */
-    function installLinkProvider(win, term, open) {
+    function installLinkProvider(win, term, open, hover) {
         if (typeof term.registerLinkProvider !== 'function') return;
         term.registerLinkProvider({
             provideLinks: function (bufferLineNumber, callback) {
                 var y = bufferLineNumber - 1;
-                var buffer = term.buffer.active;
-                var rows = rowsBetween(term, Math.max(0, y - LINK_WINDOW_ROWS),
-                    Math.min(buffer.length - 1, y + LINK_WINDOW_ROWS));
+                hover.y = y;
                 var links = [];
-                linkSpansInRows(rows, term.cols).forEach(function (link) {
-                    link.spans.forEach(function (span) {
-                        if (rows[span.row].y !== y) return;
-                        links.push({
-                            // xterm.js ranges: 1-based columns, end inclusive.
-                            range: {
-                                start: { x: span.start + 1, y: bufferLineNumber },
-                                end: { x: span.end, y: bufferLineNumber }
-                            },
-                            text: link.url,
-                            activate: function () { openLink(win, open, link.url); }
-                        });
+                linksOnLine(term, y).forEach(function (found) {
+                    var span = found.span;
+                    var url = found.url;
+                    links.push({
+                        // xterm.js ranges: 1-based columns, end inclusive.
+                        range: {
+                            start: { x: span.start + 1, y: bufferLineNumber },
+                            end: { x: span.end, y: bufferLineNumber }
+                        },
+                        text: url,
+                        activate: function () { openLink(win, open, url); }
                     });
                 });
                 callback(links.length ? links : undefined);
@@ -551,18 +549,36 @@
         });
     }
 
-    // The rebuilt link that url is a proper start of, newest first as in
-    // findLink, or url itself. A url that is a complete link on screen stays
-    // as it is, even if a longer link happens to start the same way.
-    function fullLinkFor(term, url) {
-        var links = linkSpansInRows(rawRows(term, 'all'), term.cols);
-        var i;
-        for (i = 0; i < links.length; i++) {
-            if (links[i].url === url) return url;
+    // The rebuilt links with a span on buffer line y: [{url, span}].
+    function linksOnLine(term, y) {
+        var buffer = term.buffer.active;
+        var rows = rowsBetween(term, Math.max(0, y - LINK_WINDOW_ROWS),
+            Math.min(buffer.length - 1, y + LINK_WINDOW_ROWS));
+        var found = [];
+        linkSpansInRows(rows, term.cols).forEach(function (link) {
+            link.spans.forEach(function (span) {
+                if (rows[span.row].y === y) found.push({ url: link.url, span: span });
+            });
+        });
+        return found;
+    }
+
+    // url itself if it is a complete link, else the rebuilt link it is a
+    // proper start of, else url. Looked up on the hovered line when known:
+    // matching by prefix across the whole buffer picks the newest link, and
+    // after a second /login that is not the one clicked.
+    function fullLinkFor(term, url, y) {
+        var urls;
+        if (y === null) {
+            urls = linkSpansInRows(rawRows(term, 'all'), term.cols)
+                .map(function (link) { return link.url; });
+        } else {
+            urls = linksOnLine(term, y).map(function (found) { return found.url; });
         }
-        for (i = links.length - 1; i >= 0; i--) {
-            var full = links[i].url;
-            if (full.length > url.length && full.indexOf(url) === 0) return full;
+        if (urls.indexOf(url) !== -1) return url;
+        // Newest first, as findLink does.
+        for (var i = urls.length - 1; i >= 0; i--) {
+            if (urls[i].length > url.length && urls[i].indexOf(url) === 0) return urls[i];
         }
         return url;
     }
@@ -577,9 +593,14 @@
      * through untouched. Rejected: disposing the addon via xterm.js private
      * fields (_core, _addonManager), which breaks silently on an update.
      *
+     * The returned stand-in carries only what handleLink touches (opener,
+     * location.href) plus close; no other caller in the ttyd frame opens a
+     * window without arguments.
+     *
+     * @param hover the line the link provider was last asked about
      * @returns the original window.open, or null if there is none
      */
-    function installOpenRedirect(win, term) {
+    function installOpenRedirect(win, term, hover) {
         var originalOpen = win.open;
         if (typeof originalOpen !== 'function') return null;
         win.open = function () {
@@ -591,7 +612,13 @@
                 set opener(value) { opened.opener = value; },
                 location: {
                     get href() { return opened.location.href; },
-                    set href(url) { opened.location.href = fullLinkFor(term, url); }
+                    set href(url) {
+                        var target = url;
+                        // The tab is already open: a failed lookup must not
+                        // leave it blank.
+                        try { target = fullLinkFor(term, url, hover.y); } catch (err) { /* keep url */ }
+                        opened.location.href = target;
+                    }
                 },
                 close: function () { opened.close(); }
             };
@@ -741,8 +768,9 @@
 
         installTouchScroll(win, term);
         installMobileInput(win, term);
-        var originalOpen = installOpenRedirect(win, term);
-        if (originalOpen) installLinkProvider(win, term, originalOpen);
+        var hover = { y: null };
+        var originalOpen = installOpenRedirect(win, term, hover);
+        if (originalOpen) installLinkProvider(win, term, originalOpen, hover);
 
         term[INSTALL_FLAG] = true;
         term.__claudeClipboard = controller;
