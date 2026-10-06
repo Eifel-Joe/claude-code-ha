@@ -19,7 +19,7 @@
 - Modify: `tests/run-tests.sh` (nach `"$tests_dir/test-production-run.sh"`)
 - Modify: `claude-terminal/run.sh` (nach `set -o pipefail`, Z. 5)
 
-- [ ] **Step 1: Test-Suite anlegen**
+- [x] **Step 1: Test-Suite anlegen**
 
 `tests/test-startup-timeouts.sh`:
 
@@ -91,12 +91,12 @@ In `tests/run-tests.sh` nach der Zeile `"$tests_dir/test-production-run.sh"` ein
 "$tests_dir/test-startup-timeouts.sh"
 ```
 
-- [ ] **Step 2: RED**
+- [x] **Step 2: RED**
 
 Run: `bash tests/test-startup-timeouts.sh`
 Expected: Abbruch mit `run_with_timeout: command not found` (Exit ≠ 0) — `set -e` beendet beim ersten Aufruf; `|| fail` greift bei „command not found" (127), also `FAIL (startup timeouts): a quick success must return 0`.
 
-- [ ] **Step 3: Implementierung** — in `claude-terminal/run.sh` direkt nach `set -o pipefail`:
+- [x] **Step 3: Implementierung** — in `claude-terminal/run.sh` direkt nach `set -o pipefail`:
 
 ```bash
 
@@ -131,12 +131,12 @@ run_with_timeout() {
 }
 ```
 
-- [ ] **Step 4: GREEN**
+- [x] **Step 4: GREEN**
 
 Run: `bash tests/test-startup-timeouts.sh`
 Expected: `Startup timeout suite passed`, Laufzeit wenige Sekunden.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add tests/test-startup-timeouts.sh tests/run-tests.sh claude-terminal/run.sh
@@ -157,7 +157,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `claude-terminal/run.sh` (`setup_persistent_claude` ~Z. 344; `start_web_terminal` ~Z. 551)
 - Test: `tests/test-startup-timeouts.sh` (vor `echo "Startup timeout suite passed"`)
 
-- [ ] **Step 1: Tests**
+- [x] **Step 1: Tests**
 
 ```bash
 # --- Claude Code update on start ---
@@ -184,9 +184,9 @@ grep -q 'run_with_timeout "$STARTUP_NPM_TIMEOUT" "Image service: npm install" np
     fail "the image service's npm install must run under the time limit"
 ```
 
-- [ ] **Step 2: RED** — Run: `bash tests/test-startup-timeouts.sh` → Expected: nach ~30 s `FAIL (startup timeouts): a hanging Claude Code update must not block startup`.
+- [x] **Step 2: RED** — Run: `bash tests/test-startup-timeouts.sh` → Expected: nach ~30 s `FAIL (startup timeouts): a hanging Claude Code update must not block startup`.
 
-- [ ] **Step 3: Implementierung**
+- [x] **Step 3: Implementierung**
 
 In `setup_persistent_claude` die Zeile
 
@@ -215,9 +215,9 @@ ersetzen durch
             bashio::log.error "npm install failed"
 ```
 
-- [ ] **Step 4: GREEN** — `bash tests/test-startup-timeouts.sh` → `Startup timeout suite passed`.
+- [x] **Step 4: GREEN** — `bash tests/test-startup-timeouts.sh` → `Startup timeout suite passed`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add tests/test-startup-timeouts.sh claude-terminal/run.sh
@@ -239,7 +239,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `claude-terminal/run.sh` (`auto_install_packages` ~Z. 441 und ~Z. 454)
 - Test: `tests/test-startup-timeouts.sh`
 
-- [ ] **Step 1: Tests** (vor der Abschlusszeile)
+- [x] **Step 1: Tests** (vor der Abschlusszeile)
 
 ```bash
 # --- Package auto-install ---
@@ -277,9 +277,9 @@ grep -qx 'warning|Auto-install of Python packages timed out after 1s' "$log" || 
     fail "a hanging pip install must be logged as a timeout"
 ```
 
-- [ ] **Step 2: RED** — Expected: nach ~30 s `FAIL (startup timeouts): a hanging apk package must not block startup`.
+- [x] **Step 2: RED** — Expected: nach ~30 s `FAIL (startup timeouts): a hanging apk package must not block startup`.
 
-- [ ] **Step 3: Implementierung** — in `auto_install_packages`
+- [x] **Step 3: Implementierung** — in `auto_install_packages`
 
 ```bash
                 "$persist_install" "$package" || bashio::log.warning "Failed to install: $package"
@@ -307,9 +307,9 @@ ersetzen durch
                 bashio::log.warning "Failed to install Python packages"
 ```
 
-- [ ] **Step 4: GREEN** — `bash tests/test-startup-timeouts.sh` → `Startup timeout suite passed`.
+- [x] **Step 4: GREEN** — `bash tests/test-startup-timeouts.sh` → `Startup timeout suite passed`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add tests/test-startup-timeouts.sh claude-terminal/run.sh
@@ -332,7 +332,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `CLAUDE.md` (Key Components Punkt 2, Credential System „Persistent Storage", Key Environment Variables)
 - Modify: `tests/test-release-metadata.sh` (vor der letzten `echo`-Zeile)
 
-- [ ] **Step 1: Test**
+- [x] **Step 1: Test**
 
 ```bash
 # Credentials live in the app's private /data (HOME=/data/home). The store page
@@ -344,9 +344,9 @@ for doc in "$addon_dir/README.md" "$repo_root/CLAUDE.md"; do
 done
 ```
 
-- [ ] **Step 2: RED** — `bash tests/test-release-metadata.sh` → Trefferzeile README:81 und `FAIL (release metadata): README.md names /config/claude-config …`.
+- [x] **Step 2: RED** — `bash tests/test-release-metadata.sh` → Trefferzeile README:81 und `FAIL (release metadata): README.md names /config/claude-config …`.
 
-- [ ] **Step 3: Doku korrigieren**
+- [x] **Step 3: Doku korrigieren**
 
 `claude-terminal/README.md` Z. 81:
 
@@ -369,9 +369,9 @@ done
 
 (Quelle: `run.sh` `init_environment`, `export HOME="$data_home"` usw.)
 
-- [ ] **Step 4: GREEN** — `bash tests/test-release-metadata.sh` → `Release metadata suite passed (version 2.2.1)`.
+- [x] **Step 4: GREEN** — `bash tests/test-release-metadata.sh` → `Release metadata suite passed (version 2.2.1)`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add claude-terminal/README.md CLAUDE.md tests/test-release-metadata.sh
@@ -390,8 +390,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 **Files:** `claude-terminal/config.yaml`, `claude-terminal/build.yaml`, `claude-terminal/CHANGELOG.md`
 
-- [ ] **Step 1:** `config.yaml` `version: "2.2.2"`, `build.yaml` `org.opencontainers.image.version: "2.2.2"`.
-- [ ] **Step 2:** CHANGELOG oben unter `# Changelog`:
+- [x] **Step 1:** `config.yaml` `version: "2.2.2"`, `build.yaml` `org.opencontainers.image.version: "2.2.2"`.
+- [x] **Step 2:** CHANGELOG oben unter `# Changelog`:
 
 ```markdown
 ## 2.2.2
@@ -413,14 +413,14 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ```
 
-- [ ] **Step 3:** `bash tests/test-release-metadata.sh` → `Release metadata suite passed (version 2.2.2)`; `bash tests/test-startup-timeouts.sh` → passed; `node tests/test-terminal-clipboard.js | tail -1` → `All 100 …`; ShellCheck (siehe Kopf) ohne Befund; `git ls-files --eol | grep -c "crlf\|mixed"` → 0.
-- [ ] **Step 4: Commit** — `git commit -m "docs: release notes for 2.2.2"` (mit Co-Authored-By-Zeile).
+- [x] **Step 3:** `bash tests/test-release-metadata.sh` → `Release metadata suite passed (version 2.2.2)`; `bash tests/test-startup-timeouts.sh` → passed; `node tests/test-terminal-clipboard.js | tail -1` → `All 100 …`; ShellCheck (siehe Kopf) ohne Befund; `git ls-files --eol | grep -c "crlf\|mixed"` → 0.
+- [x] **Step 4: Commit** — `git commit -m "docs: release notes for 2.2.2"` (mit Co-Authored-By-Zeile).
 
 ---
 
 ### Task 6: Review, CI, HA-Test (je Schritt Freigabe)
 
-- [ ] **Step 1:** `superpowers:requesting-code-review` auf `main..fix/startup-timeouts`.
+- [x] **Step 1:** `superpowers:requesting-code-review` auf `main..fix/startup-timeouts`.
 - [ ] **Step 2:** Freigabe → Branch pushen, CI abwarten (`gh … --repo Eifel-Joe/claude-code-ha`).
 - [ ] **Step 3:** Freigabe → Merge nach `main`, Push.
 - [ ] **Step 4:** Freigabe → HA-Test: `check_updates`, Update auf 2.2.2; im App-Log `Persistent Claude override: update completed` und kein `timed out`; Panel startet (Supervisor `state: started`, Ingress liefert `/terminal-clipboard.js` mit 200).
