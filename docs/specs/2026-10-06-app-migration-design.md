@@ -68,7 +68,7 @@ Liegt ein Angebot vor, zeigt der Startbefehl vor Claude bzw. dem Menü:
   [x] 2  Claude-Login
   [x] 3  GitHub-Login (gh)
   [x] 4  Pakete neu installieren: apk: <liste> | pip: <liste aus Optionen>
-  [x] 5  Alte App danach stoppen
+  [x] 5  Alte App stoppen und ihren Autostart abschalten
   [x] 6  Einstellungen: auto_launch_claude=…, dangerously_skip_permissions=…, …
   Enter = übernehmen   s = später fragen   n = nie fragen
 ```
@@ -103,7 +103,9 @@ e. Punkt 6: `auto_launch_claude`, `dangerously_skip_permissions`, `tmux_mouse`,
    `remote_control`, `remote_control_session_name` (soweit in der alten App
    vorhanden) in die eigenen Optionen übernehmen — zusammengeführt mit den
    aktuellen eigenen Optionen, `POST /addons/self/options`.
-f. Punkt 5, als letzter Schritt: `POST /addons/<alt>/stop`.
+f. Punkt 5, als letzter Schritt: `POST /addons/<alt>/stop`, danach
+   `POST /addons/<alt>/options` mit `{ boot: "manual" }`, damit die alte App nach einem
+   Host-Neustart nicht wieder startet und den gemeinsamen OAuth-Login erneuert.
 g. `/data/migration/work` löschen, Zustand `done`, Zusammenfassung mit Ergebnis
    je Punkt und Hinweis auf das Backup unter *Einstellungen → System → Backups*.
 
@@ -117,7 +119,9 @@ g. `/data/migration/work` löschen, Zustand `done`, Zusammenfassung mit Ergebnis
   nennt den Fehler. Punkt 5 wird dann **nicht** ausgeführt (alte App bleibt als
   Rückfall verfügbar), Meldung sagt das. Ebenso, wenn Punkt 1 oder 2 gewählt war und
   im Backup nichts gefunden wurde.
-- Die alte App wird außer beim Stoppen nie verändert.
+- Die alte App wird außer beim Stoppen und Abschalten ihres Autostarts nie verändert.
+  Scheitert nur das Abschalten des Autostarts, gilt Punkt 5 als erledigt mit Hinweis
+  („could not disable autostart").
 - Login-Daten berühren nie `/config`; Zwischendateien nur in `/data/migration/work`.
 - Das Übernahme-Backup enthält Login-Token (wie jedes HA-Backup der alten App) und
   bleibt bewusst als Sicherung stehen; die Zusammenfassung sagt das.

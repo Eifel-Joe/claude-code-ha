@@ -415,11 +415,24 @@ test('apply: settings are merged into this app\'s options, excluded keys untouch
   });
 });
 
-test('apply: stops the old app last when everything succeeded', async () => {
+test('apply: stops the old app last and disables its autostart when everything succeeded', async () => {
   const { result, sup } = await detectThenApply({}, ['claude', 'stop']);
   assert.equal(result.results.stop, 'ok');
   assert.deepEqual(sup.state.stopped, [OLD_SLUG]);
-  assert.equal(sup.state.calls.at(-1).url, `/addons/${OLD_SLUG}/stop`);
+  assert.deepEqual(sup.state.oldOptionsPosted, { boot: 'manual' });
+  assert.deepEqual(sup.state.calls.slice(-2).map((c) => `${c.method} ${c.url}`),
+    [`POST /addons/${OLD_SLUG}/stop`, `POST /addons/${OLD_SLUG}/options`]);
+});
+
+test('apply: a failure to disable the autostart is reported, the stop stays ok', async () => {
+  const { result, sup } = await detectThenApply({ failOldOptions: true }, ['claude', 'stop']);
+  assert.deepEqual(sup.state.stopped, [OLD_SLUG]);
+  assert.match(result.results.stop, /^ok \(stopped; could not disable autostart: .*options failed\)$/);
+});
+
+test('apply: a failing stop does not touch the autostart', async () => {
+  const { sup } = await detectThenApply({ failStop: true }, ['claude', 'stop']);
+  assert.equal(sup.state.oldOptionsPosted, null);
 });
 
 test('apply: a failed item keeps the old app running', async () => {
@@ -472,6 +485,7 @@ const OFFER = { slug: OLD_SLUG, name: 'Claude Terminal Pro', version: '2.0.13', 
 
 test('dialog: all six items, all on, packages and settings spelled out', () => {
   const text = render(OFFER, [...ITEMS]);
+  assert.match(text, /Stop the old app and disable its autostart/);
   assert.equal(ITEMS.length, 6);
   assert.equal((text.match(/\[x\]/g) || []).length, 6);
   assert.match(text, /Claude Terminal Pro 2\.0\.13/);

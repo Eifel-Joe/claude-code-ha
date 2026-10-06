@@ -54,8 +54,9 @@ function buildBackupFixture(dir, slug = OLD_SLUG, { omit = [], mtime } = {}) {
 }
 
 // opts: { jobNoReference (done job without slug), apps, oldOptions, ownOptions, backupTar, failBackup (job 2nd poll reports an error), failStop,
-//   failDownload, failDelete }
-// state: calls, ownOptions, stopped, backups (existing slugs), deletedBackups, jobPolls
+//   failDownload, failDelete, failOldOptions }
+// state: calls, ownOptions, stopped, backups (existing slugs), deletedBackups, jobPolls,
+//   oldOptionsPosted (body of the last POST /addons/<old>/options)
 function startFakeSupervisor(opts = {}) {
   const state = {
     calls: [],
@@ -63,6 +64,7 @@ function startFakeSupervisor(opts = {}) {
     stopped: [],
     backups: [],
     deletedBackups: [],
+    oldOptionsPosted: null,
     jobPolls: 0,
   };
   const apps = opts.apps || [
@@ -122,6 +124,10 @@ function startFakeSupervisor(opts = {}) {
       if (m === `POST /addons/${OLD_SLUG}/stop`) {
         if (opts.failStop) return err(res, 500, 'stop failed');
         state.stopped.push(OLD_SLUG); return ok(res);
+      }
+      if (m === `POST /addons/${OLD_SLUG}/options`) {
+        if (opts.failOldOptions) return err(res, 400, 'options failed');
+        state.oldOptionsPosted = json; return ok(res);
       }
       return err(res, 404, `unexpected ${m}`);
     });

@@ -234,7 +234,18 @@ async function apply(client, p, offer, selected, deps = {}) {
     } else if (missing) {
       results.stop = 'skipped: Claude data or login not found in the backup, the old app keeps running';
     } else {
-      await step('stop', () => client.post(`/addons/${offer.slug}/stop`));
+      // Both apps share one Claude OAuth login; an old app that boots again
+      // after a host reboot could refresh (rotate) it under this app. The
+      // options endpoint accepts boot alone and changes nothing else.
+      await step('stop', async () => {
+        await client.post(`/addons/${offer.slug}/stop`);
+        try {
+          await client.post(`/addons/${offer.slug}/options`, { boot: 'manual' });
+        } catch (e) {
+          return `ok (stopped; could not disable autostart: ${e.message})`;
+        }
+        return 'ok';
+      });
     }
   }
 

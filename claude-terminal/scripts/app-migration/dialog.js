@@ -12,7 +12,7 @@ function label(item, offer) {
       const pip = offer.pip.length ? offer.pip.join(' ') : '-';
       return `Reinstall packages: apk: ${apk} | pip: ${pip} (+ packages found in the old Python venv)`;
     }
-    case 'stop': return 'Stop the old app afterwards';
+    case 'stop': return 'Stop the old app and disable its autostart';
     case 'settings': {
       // JSON.stringify: an empty name must show as "" rather than vanish.
       const s = Object.entries(offer.settings).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(', ') || '-';

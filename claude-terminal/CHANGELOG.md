@@ -7,13 +7,14 @@
   example the ESJavadex original). When you open the panel, a window offers to take
   over Claude data (memories, `CLAUDE.md`, history, settings), the Claude and GitHub
   logins, packages (reinstalled, not copied; only explicitly installed pip packages)
-  and app settings, and to stop the old app.
+  and app settings, and to stop the old app and disable its autostart (both apps
+  share one Claude login, which a restarted old app could refresh).
 - Works through a partial backup of the old app, created via the Supervisor API
-  (progress is shown while it runs) and kept as a fallback; the old app itself is
-  never modified. The backup includes the old app's image (several hundred MB) and
-  the old login - delete it under Settings → System → Backups once you no longer
-  need it. If any item fails, the old app is not stopped. Nothing that already
-  exists in this app is overwritten.
+  (progress is shown while it runs) and kept as a fallback; apart from being stopped
+  (if chosen), the old app is never modified. The backup includes the old app's
+  image (several hundred MB) and the old login - delete it under Settings → System →
+  Backups once you no longer need it. If any item fails, the old app is not
+  stopped. Nothing that already exists in this app is overwritten.
 
 ### 🐛 Bug Fix - persist-install reported failed Python installs as success
 - `persist-install --python` did not check for errors and ended with an `echo`, so it

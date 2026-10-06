@@ -25,7 +25,9 @@ with the digits 1–6, then press Enter:
 
 1. Claude data (memories, `CLAUDE.md`, history, settings) · 2. Claude login ·
 3. GitHub login · 4. reinstall packages (only explicitly installed pip packages) ·
-5. stop the old app (skipped if any item failed) · 6. settings (`auto_launch_claude`,
+5. stop the old app and disable its autostart, so a host reboot does not bring it
+back with the shared login (skipped if any item failed or Claude data/login was not
+found) · 6. settings (`auto_launch_claude`,
 `dangerously_skip_permissions`, `tmux_mouse`, `remote_control*`; applied after the
 next restart)
 
