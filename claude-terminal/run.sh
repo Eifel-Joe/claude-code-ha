@@ -628,6 +628,32 @@ wait_for_image_service() {
     return 1
 }
 
+# Offer to take over Claude data from another Claude Terminal Pro app (e.g. the
+# ESJavadex original) installed alongside. Detection only reads the Supervisor
+# API and writes an offer file; the selection window runs in the terminal.
+detect_app_migration() {
+    local cli="${APP_MIGRATION_CLI:-/opt/scripts/app-migration/cli.js}"
+    [ -f "$cli" ] || return 0
+    local line
+    while IFS= read -r line; do
+        bashio::log.info "$line"
+    done < <(node "$cli" detect 2>&1 || true)
+}
+
+# Prefixes the launch command with the selection window while an offer exists.
+with_migration_dialog() {
+    local launch_command="$1"
+    local offer="${APP_MIGRATION_OFFER:-/data/migration/offer.json}"
+    local cli="${APP_MIGRATION_CLI:-/opt/scripts/app-migration/cli.js}"
+    if [ -f "$offer" ]; then
+        printf 'node %s dialog; %s
+' "$cli" "$launch_command"
+    else
+        printf '%s
+' "$launch_command"
+    fi
+}
+
 # Start main web terminal
 start_web_terminal() {
     local port=7681
@@ -640,7 +666,7 @@ start_web_terminal() {
 
     # Get the appropriate launch command based on configuration
     local launch_command
-    launch_command=$(get_claude_launch_command)
+    launch_command=$(with_migration_dialog "$(get_claude_launch_command)")
 
     # Log the configuration being used
     local auto_launch_claude
@@ -703,6 +729,7 @@ main() {
     setup_persistent_claude
     setup_session_picker
     setup_persistent_packages
+    detect_app_migration
     start_web_terminal
 }
 

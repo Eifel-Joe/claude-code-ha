@@ -7,6 +7,7 @@ repo_root=$(CDPATH= cd -- "$tests_dir/.." && pwd)
 "$tests_dir/test-release-metadata.sh"
 "$tests_dir/test-production-run.sh"
 node "$tests_dir/test-terminal-clipboard.js"
+node --test "$tests_dir/test-app-migration.js"
 "$tests_dir/test-startup-hardening.sh"
 "$tests_dir/test-persist-install.sh"
 
