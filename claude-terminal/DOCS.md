@@ -24,10 +24,10 @@ installed, this app offers on the first panel open to take over its data. Choose
 with the digits 1–6, then press Enter:
 
 1. Claude data (memories, `CLAUDE.md`, history, settings) · 2. Claude login ·
-3. GitHub login · 4. reinstall packages (only explicitly installed pip packages) ·
-5. stop the old app and disable its autostart, so a host reboot does not bring it
-back with the shared login (skipped if any item failed or Claude data/login was not
-found) · 6. settings (`auto_launch_claude`,
+3. GitHub login · 4. reinstall packages (only explicitly installed pip packages; all
+if the old pip did not mark them) · 5. stop the old app and disable its autostart, so
+a host reboot does not bring it back with the shared login (skipped if any item
+failed or Claude data/login was not found) · 6. settings (`auto_launch_claude`,
 `dangerously_skip_permissions`, `tmux_mouse`, `remote_control*`; applied after the
 next restart)
 
@@ -149,7 +149,7 @@ use_persistent_claude: true
 auto_update_claude_on_start: true
 ```
 
-Your OAuth credentials are stored in the `/config/claude-config` directory and will persist across app updates and restarts, so you won't need to log in again.
+Your OAuth credentials are stored in the app's private `/data` (under `/data/home/.claude`), not in `/config`, and persist across app updates and restarts, so you won't need to log in again. Credentials an older release left in `/config/claude-config` are copied into `/data` once on start; you can delete that folder afterwards.
 
 If you enable `use_persistent_claude`, install the persistent Claude Code version once from a shell inside the app:
 

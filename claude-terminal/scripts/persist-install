@@ -124,7 +124,7 @@ install_system_packages() {
     echo "   $PERSIST_ROOT. Packages that also need data files, config or"
     echo "   helper files (python3, git, perl...) may not work after a restart"
     echo "   from the persistent copy alone. For those, prefer listing them in"
-    echo "   the add-on's persistent_apk_packages option, which reinstalls them"
+    echo "   the app's persistent_apk_packages option, which reinstalls them"
     echo "   cleanly on each start."
 }
 
@@ -190,7 +190,7 @@ install_ha_cli() {
     local image_ha="/usr/bin/ha"
 
     if [ -x "$image_ha" ] && [ "${1:-}" != "--force" ]; then
-        echo "ℹ️  Home Assistant CLI is already provided by the add-on image:"
+        echo "ℹ️  Home Assistant CLI is already provided by the app image:"
         echo "   $image_ha ($("$image_ha" --version 2>/dev/null | head -1 || echo 'version unavailable'))"
         echo ""
         echo "   Installing a second copy into $PERSIST_BIN would take priority"
@@ -284,10 +284,10 @@ install_ha_cli() {
 
 # Main execution
 main() {
-    # Check if running in the add-on
+    # Check if running in the app
     if [ ! -d "$PERSIST_DATA_ROOT" ]; then
         echo "❌ Error: $PERSIST_DATA_ROOT directory not found"
-        echo "This script must run inside the Claude Terminal add-on"
+        echo "This script must run inside the Claude Terminal app"
         exit 1
     fi
 
