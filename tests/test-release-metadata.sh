@@ -37,6 +37,19 @@ if grep -nE '^ARG BUILD_FROM' "$dockerfile"; then
     fail "Dockerfile declares ARG BUILD_FROM; a Supervisor-supplied value would swap the base image"
 fi
 
+# The multi-arch base image covers amd64 and arm64 only, and Home Assistant
+# ended 32-bit support with 2025.12 (no more app updates there).
+while IFS= read -r arch; do
+    case "$arch" in
+        amd64|aarch64) ;;
+        *) fail "config.yaml declares arch '$arch'; only amd64 and aarch64 have a base image" ;;
+    esac
+done < <(sed -n '/^arch:/,/^[a-z]/{s/^  - //p;}' "$addon_dir/config.yaml")
+
+if grep -nE 'armv7|armhf|armv6|i386|1\.0\.128' "$dockerfile"; then
+    fail "Dockerfile still carries 32-bit branches"
+fi
+
 grep -qx "## $config_version" "$addon_dir/CHANGELOG.md" || \
     fail "CHANGELOG.md has no '## $config_version' section for the current version"
 
