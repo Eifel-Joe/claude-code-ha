@@ -1,5 +1,30 @@
 # Changelog
 
+## 2.2.0
+
+### ✨ New Feature - Switch from another Claude Terminal Pro app in one step
+- On first start the app looks for another installed Claude Terminal Pro app (for
+  example the ESJavadex original). When you open the panel, a window offers to take
+  over Claude data (memories, `CLAUDE.md`, history, settings), the Claude and GitHub
+  logins, packages (reinstalled, not copied; only explicitly installed pip packages)
+  and app settings, and to stop the old app.
+- Works through a partial backup of the old app, created via the Supervisor API
+  (progress is shown while it runs) and kept as a fallback; the old app itself is
+  never modified. The backup includes the old app's image (several hundred MB) and
+  the old login - delete it under Settings → System → Backups once you no longer
+  need it. If any item fails, the old app is not stopped. Nothing that already
+  exists in this app is overwritten.
+
+### 🐛 Bug Fix - persist-install reported failed Python installs as success
+- `persist-install --python` did not check for errors and ended with an `echo`, so it
+  always exited 0. Failed packages looked installed, also during the automatic
+  package installation at startup.
+- It now exits non-zero with a ❌ message when installing python3, creating or
+  activating the venv, or `pip install` fails.
+
+### 📝 Wording
+- "Add-on" is now "app" throughout, as in Home Assistant since 2026.
+
 ## 2.1.0
 
 > **First release from [Eifel-Joe/claude-code-ha](https://github.com/Eifel-Joe/claude-code-ha).**

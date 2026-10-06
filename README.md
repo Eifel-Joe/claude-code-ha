@@ -20,6 +20,7 @@ A Home Assistant app that runs Anthropic's **Claude Code CLI** in a browser-base
 
 ## What's different in this fork
 
+- **One-step switch from the ESJavadex app** — memories, logins, packages and settings are taken over on first start
 - **New models work** — Claude Code updates itself on every start (Opus 5.5, Fable, …), plus a 🔄 *Update Claude Code* menu item
 - **Security fix** — no unauthenticated root shell on port 7681; access only through the HA sidebar (ingress)
 - **Rebuilds no longer hang** on the Claude installer
@@ -27,8 +28,11 @@ A Home Assistant app that runs Anthropic's **Claude Code CLI** in a browser-base
 - **Remote Control** and access to other apps' config folders
 
 Everything collected from community forks is credited in the [changelog](claude-terminal/CHANGELOG.md).
-Coming from the ESJavadex repository? Add this repository, install **Claude Terminal Pro**
-and log in once — both can run side by side.
+**Switching from the ESJavadex app?** Install this app next to it. On first start it
+finds the old app and, when you open the panel, offers to take over your Claude
+memories, `CLAUDE.md`, history, logins, packages and settings — via a partial
+backup of the old app, which is kept as a fallback. The old app is stopped
+afterwards; uninstall it once everything works.
 
 ---
 

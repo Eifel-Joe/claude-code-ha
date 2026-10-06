@@ -17,6 +17,23 @@ Claude Terminal Pro is an enhanced fork of the original Claude Terminal app, pro
 4. Click "OPEN WEB UI" to access the terminal
 5. On first use, follow the OAuth prompts to log in to your Anthropic account
 
+### Switching from another Claude Terminal Pro app
+
+If another Claude Terminal Pro app (for example from `ESJavadex/claude-code-ha`) is
+installed, this app offers on the first panel open to take over its data. Choose
+with the digits 1–6, then press Enter:
+
+1. Claude data (memories, `CLAUDE.md`, history, settings) · 2. Claude login ·
+3. GitHub login · 4. reinstall packages (only explicitly installed pip packages) ·
+5. stop the old app (skipped if any item failed) · 6. settings (`auto_launch_claude`,
+`dangerously_skip_permissions`, `tmux_mouse`, `remote_control*`; applied after the
+next restart)
+
+A partial backup of the old app is created first (progress is shown) and kept under
+Settings → System → Backups. It includes the old app's image (several hundred MB)
+and the old login, so delete it once you no longer need it. `s` asks again on the
+next start, `n` never asks again.
+
 ## Configuration
 
 The app offers several configuration options:
