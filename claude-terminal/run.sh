@@ -4,6 +4,36 @@
 set -e
 set -o pipefail
 
+# Time limits for startup steps that touch the network. They all run before the
+# web terminal starts, so a hung registry or mirror would leave the panel blank
+# for good. pip gets longer: on a Pi it may compile wheels on first install.
+# Overridable only so the tests can use a 1 s limit.
+STARTUP_NPM_TIMEOUT="${STARTUP_NPM_TIMEOUT:-300}"
+STARTUP_APK_TIMEOUT="${STARTUP_APK_TIMEOUT:-300}"
+STARTUP_PIP_TIMEOUT="${STARTUP_PIP_TIMEOUT:-900}"
+
+# Run a startup step under a time limit and return its own status. A cut-off is
+# told by the elapsed time, not the exit code: GNU timeout returns 124, BusyBox
+# timeout (Alpine) does not promise that.
+run_with_timeout() {
+    local seconds="$1"
+    local label="$2"
+    local started=$SECONDS
+    local status=0
+    shift 2
+
+    if command -v timeout >/dev/null 2>&1; then
+        timeout "$seconds" "$@" || status=$?
+    else
+        "$@" || status=$?
+    fi
+
+    if [ "$status" -ne 0 ] && [ $((SECONDS - started)) -ge "$seconds" ]; then
+        bashio::log.warning "$label timed out after ${seconds}s"
+    fi
+    return "$status"
+}
+
 # Initialize environment for Claude Code CLI using /data (HA best practice)
 init_environment() {
     # Use /data exclusively - guaranteed writable by HA Supervisor

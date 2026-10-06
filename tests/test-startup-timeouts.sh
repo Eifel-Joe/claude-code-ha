@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Startup steps that touch the network run before the web terminal starts, so
+# one that hangs must be cut off. A hang is a stub sleeping far past a 1 s limit.
+
+repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+tmp_dir=$(mktemp -d)
+trap 'rm -rf "$tmp_dir"' EXIT
+
+fail() {
+    echo "FAIL (startup timeouts): $*" >&2
+    exit 1
+}
+
+log="$tmp_dir/log"
+: > "$log"
+bashio::log.info() { printf 'info|%s\n' "$*" >> "$log"; }
+bashio::log.warning() { printf 'warning|%s\n' "$*" >> "$log"; }
+bashio::log.error() { printf 'error|%s\n' "$*" >> "$log"; }
+
+config_apk_packages=''
+config_pip_packages=''
+bashio::config() {
+    case "$1" in
+        use_persistent_claude) printf '%s\n' true ;;
+        auto_update_claude_on_start) printf '%s\n' true ;;
+        persistent_apk_packages) printf '%s\n' "$config_apk_packages" ;;
+        persistent_pip_packages) printf '%s\n' "$config_pip_packages" ;;
+        *) printf '%s\n' "${2:-}" ;;
+    esac
+}
+
+export STARTUP_NPM_TIMEOUT=1 STARTUP_APK_TIMEOUT=1 STARTUP_PIP_TIMEOUT=1
+
+# shellcheck disable=SC2034  # read by the sourced run.sh
+CLAUDE_RUN_SH_SKIP_MAIN=true
+# shellcheck source=/dev/null
+source "$repo_root/claude-terminal/run.sh"
+
+# --- run_with_timeout ---
+
+run_with_timeout 5 "fast step" true || fail "a quick success must return 0"
+! grep -q 'timed out' "$log" || fail "a quick success must not be reported as a timeout"
+
+status=0
+run_with_timeout 5 "failing step" sh -c 'exit 3' || status=$?
+[ "$status" -eq 3 ] || fail "the command's own status must come back (got $status)"
+! grep -q 'timed out' "$log" || fail "a quick failure is not a timeout"
+
+status=0
+started=$SECONDS
+run_with_timeout 1 "hanging step" sleep 30 || status=$?
+[ $((SECONDS - started)) -lt 10 ] || fail "a hanging command must be cut off"
+[ "$status" -ne 0 ] || fail "a cut-off command must not report success"
+grep -qx 'warning|hanging step timed out after 1s' "$log" || \
+    fail "a cut-off command must be logged as a timeout"
+
+echo "Startup timeout suite passed"
