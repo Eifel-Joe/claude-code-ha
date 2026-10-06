@@ -173,12 +173,13 @@ test('detect: prefers a running old app over a stopped one', async () => {
 });
 
 const { apply } = require(path.join(MOD, 'apply'));
+const quiet = () => {}; // keeps apply's progress output out of the test report
 
 async function detectThenApply(opts, selected, deps = {}) {
   return withSupervisor({ oldOptions: OLD_OPTIONS, ...opts }, async (client, p, sup) => {
     const { offer } = await detect(client, p);
     const result = await apply(client, p, offer, selected,
-      { today: '2026-10-06', pollMs: 1, persistInstall: deps.persistInstall || 'false-bin', ...deps });
+      { today: '2026-10-06', pollMs: 1, log: quiet, persistInstall: deps.persistInstall || 'false-bin', ...deps });
     return { result, p, sup };
   });
 }
@@ -189,6 +190,19 @@ test('apply: creates a named partial backup of only the old app', async () => {
   assert.deepEqual(call.body, {
     name: 'Claude Terminal Pro – Übernahme 2026-10-06', addons: [OLD_SLUG], homeassistant: false, background: true,
   });
+});
+
+test('apply: reports progress for backup, download, unpack and packages', async () => {
+  const lines = [];
+  const fake = fakePersistInstall(tmp());
+  await detectThenApply({}, ['claude', 'packages'],
+    { ...fake.deps, log: (l) => lines.push(l), progressEveryMs: 0 });
+  const text = lines.join('\n');
+  assert.match(text, /backup/i);
+  assert.match(text, /Still creating the backup.* \d+ s/);
+  assert.match(text, /download/i);
+  assert.match(text, /unpack/i);
+  assert.match(text, /install.*htop/i);
 });
 
 test('apply: Claude data without the login file', async () => {
@@ -214,7 +228,7 @@ test('apply: never overwrites files this app already has', async () => {
     const { offer } = await detect(client, p);
     fs.mkdirSync(path.join(p.home, '.claude/skills/shared'), { recursive: true });
     fs.writeFileSync(path.join(p.home, '.claude/skills/shared/SKILL.md'), 'new skill\n');
-    await apply(client, p, offer, ['claude'], { today: '2026-10-06', pollMs: 1, persistInstall: 'false-bin' });
+    await apply(client, p, offer, ['claude'], { today: '2026-10-06', pollMs: 1, log: quiet, persistInstall: 'false-bin' });
     assert.equal(fs.readFileSync(path.join(p.home, '.claude/skills/shared/SKILL.md'), 'utf8'), 'new skill\n');
   });
 });
@@ -231,7 +245,7 @@ test('apply: backup failure takes over nothing and stops nothing', async () => {
 test('apply: unpacks only data/, not the app image', async () => {
   await withSupervisor({ oldOptions: OLD_OPTIONS }, async (client, p) => {
     const { offer } = await detect(client, p);
-    await apply(client, p, offer, ['claude'], { today: '2026-10-06', pollMs: 1, persistInstall: 'false-bin', keepWork: true });
+    await apply(client, p, offer, ['claude'], { today: '2026-10-06', pollMs: 1, log: quiet, persistInstall: 'false-bin', keepWork: true });
     assert.ok(fs.existsSync(path.join(p.work, 'app', 'data', 'home', '.claude')));
     assert.equal(fs.existsSync(path.join(p.work, 'app', 'image.tar')), false);
   });
@@ -263,7 +277,7 @@ test('apply: claude step reports a kept existing .claude.json', async () => {
   await withSupervisor({ oldOptions: OLD_OPTIONS }, async (client, p) => {
     const { offer } = await detect(client, p);
     fs.writeFileSync(path.join(p.home, '.claude.json'), '{"new":true}');
-    const r = await apply(client, p, offer, ['claude'], { today: '2026-10-06', pollMs: 1 });
+    const r = await apply(client, p, offer, ['claude'], { today: '2026-10-06', pollMs: 1, log: quiet });
     assert.equal(r.results.claude, 'ok (kept existing .claude.json)');
     assert.equal(fs.readFileSync(path.join(p.home, '.claude.json'), 'utf8'), '{"new":true}');
   });
@@ -272,7 +286,7 @@ test('apply: claude step reports a kept existing .claude.json', async () => {
 test('apply: outer backup.tar is removed before the inner archive is unpacked', async () => {
   await withSupervisor({ oldOptions: OLD_OPTIONS }, async (client, p) => {
     const { offer } = await detect(client, p);
-    await apply(client, p, offer, ['claude'], { today: '2026-10-06', pollMs: 1, keepWork: true });
+    await apply(client, p, offer, ['claude'], { today: '2026-10-06', pollMs: 1, log: quiet, keepWork: true });
     assert.equal(fs.existsSync(path.join(p.work, 'backup.tar')), false);
   });
 });
@@ -281,7 +295,7 @@ test('apply: an existing login is not overwritten', async () => {
   await withSupervisor({ oldOptions: OLD_OPTIONS }, async (client, p) => {
     const { offer } = await detect(client, p);
     fs.writeFileSync(path.join(p.home, '.claude', '.credentials.json'), '{"token":"new"}');
-    const r = await apply(client, p, offer, ['login'], { today: '2026-10-06', pollMs: 1 });
+    const r = await apply(client, p, offer, ['login'], { today: '2026-10-06', pollMs: 1, log: quiet });
     assert.equal(r.results.login, 'ok');
     assert.equal(fs.readFileSync(path.join(p.home, '.claude/.credentials.json'), 'utf8'), '{"token":"new"}');
   });

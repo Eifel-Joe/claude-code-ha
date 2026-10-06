@@ -20,12 +20,16 @@ function today() { return new Date().toISOString().slice(0, 10); }
 const POLL_MS = 2000;
 const BACKUP_TIMEOUT_MS = 60 * 60 * 1000;
 const INSTALL_TIMEOUT_MS = 15 * 60 * 1000; // per persist-install call
+const PROGRESS_EVERY_MS = 15 * 1000;
 
 // A synchronous backup request only answers once the backup is written; with the
 // app image inside that can take longer than fetch's 300 s header timeout on slow
 // hardware. So run it as a Supervisor background job and poll /jobs/<id>, whose
 // "reference" is the backup slug once done (supervisor api/backups.py, jobs).
-async function createBackup(client, offer, date, pollMs) {
+// Progress goes to the terminal: the backup alone can take many minutes, and a
+// silent screen looks like a hang.
+async function createBackup(client, offer, { date, pollMs, log, progressEveryMs }) {
+  log('  Creating a partial backup of the old app...');
   const created = await client.post('/backups/new/partial', {
     name: `Claude Terminal Pro – Übernahme ${date}`,
     addons: [offer.slug],
@@ -33,7 +37,9 @@ async function createBackup(client, offer, date, pollMs) {
     background: true,
   });
   if (created.slug) return created.slug; // finished before the request returned
-  const deadline = Date.now() + BACKUP_TIMEOUT_MS;
+  const started = Date.now();
+  const deadline = started + BACKUP_TIMEOUT_MS;
+  let lastProgress = started;
   for (;;) {
     const job = await client.get(`/jobs/${created.job_id}`);
     if (job.done) {
@@ -43,17 +49,24 @@ async function createBackup(client, offer, date, pollMs) {
       if (!job.reference) throw new Error('backup finished without a backup slug');
       return job.reference;
     }
-    if (Date.now() > deadline) throw new Error('backup still running after 60 minutes');
+    const now = Date.now();
+    if (now > deadline) throw new Error('backup still running after 60 minutes');
+    if (now - lastProgress >= progressEveryMs) {
+      log(`  Still creating the backup… ${Math.round((now - started) / 1000)} s`);
+      lastProgress = now;
+    }
     await new Promise((resolve) => setTimeout(resolve, pollMs));
   }
 }
 
-async function fetchOldData(client, offer, p, date, pollMs = POLL_MS) {
-  const slug = await createBackup(client, offer, date, pollMs);
+async function fetchOldData(client, offer, p, opts) {
+  const slug = await createBackup(client, offer, opts);
   fs.rmSync(p.work, { recursive: true, force: true });
   fs.mkdirSync(p.work, { recursive: true });
   const outer = path.join(p.work, 'backup.tar');
+  opts.log('  Downloading the backup...');
   await client.download(`/backups/${slug}/download`, outer);
+  opts.log('  Unpacking the backup...');
   run('tar', ['-xf', outer, '-C', p.work]);
   fs.rmSync(outer, { force: true }); // halves peak disk use before the inner archive is unpacked
   const inner = path.join(p.work, innerArchiveName(offer.slug));
@@ -102,9 +115,15 @@ async function mergeOwnOptions(client, change) {
 
 async function apply(client, p, offer, selected, deps = {}) {
   const results = {};
+  const log = deps.log || console.log;
   let old;
   try {
-    old = await fetchOldData(client, offer, p, deps.today || today(), deps.pollMs);
+    old = await fetchOldData(client, offer, p, {
+      date: deps.today || today(),
+      pollMs: deps.pollMs || POLL_MS,
+      log,
+      progressEveryMs: deps.progressEveryMs ?? PROGRESS_EVERY_MS,
+    });
   } catch (e) {
     fs.rmSync(p.work, { recursive: true, force: true });
     return { ok: false, fatal: e.message, results };
@@ -147,9 +166,10 @@ async function apply(client, p, offer, selected, deps = {}) {
 
   await step('packages', async () => {
     const failed = [];
+    const pipWanted = unique([...offer.pip, ...pipNamesFromVenv(old.oldData)]);
+    log(`  Installing packages: apk: ${offer.apk.join(' ') || '-'} | pip: ${pipWanted.join(' ') || '-'}`);
     const apk = offer.apk.filter((pkg) => install([pkg]) || (failed.push(pkg), false));
-    const pip = unique([...offer.pip, ...pipNamesFromVenv(old.oldData)])
-      .filter((pkg) => install(['--python', pkg]) || (failed.push(pkg), false));
+    const pip = pipWanted.filter((pkg) => install(['--python', pkg]) || (failed.push(pkg), false));
     await mergeOwnOptions(client, (cur) => ({
       persistent_apk_packages: unique([...(cur.persistent_apk_packages || []), ...apk]),
       persistent_pip_packages: unique([...(cur.persistent_pip_packages || []), ...pip]),
