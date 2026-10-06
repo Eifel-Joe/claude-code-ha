@@ -21,6 +21,11 @@ const POLL_MS = 2000;
 const BACKUP_TIMEOUT_MS = 60 * 60 * 1000;
 const INSTALL_TIMEOUT_MS = 15 * 60 * 1000; // per persist-install call
 const PROGRESS_EVERY_MS = 15 * 1000;
+// Peak disk use is while the outer tar (about the backup size) is unpacked:
+// the inner <slug>.tar.gz it yields is about as large again, and the outer tar
+// is removed only afterwards. 0.2 is headroom for the unpacked data/ and the
+// copies into /data.
+const FREE_SPACE_FACTOR = 2.2;
 
 // A synchronous backup request only answers once the backup is written; with the
 // app image inside that can take longer than fetch's 300 s header timeout on slow
@@ -59,7 +64,20 @@ async function createBackup(client, offer, { date, pollMs, log, progressEveryMs 
   }
 }
 
+// Fails before the download: a full /data breaks Claude and this app, not
+// only the migration. Supervisor reports the backup size in MB.
+async function checkFreeSpace(client, p, slug) {
+  const { size } = await client.get(`/backups/${slug}/info`);
+  const st = fs.statfsSync(p.dataRoot);
+  const haveMb = (Number(st.bavail) * Number(st.bsize)) / (1024 * 1024);
+  const needMb = (Number(size) || 0) * FREE_SPACE_FACTOR;
+  if (haveMb < needMb) {
+    throw new Error(`not enough free space in ${p.dataRoot}: need ~${Math.ceil(needMb)} MB, have ${Math.floor(haveMb)} MB`);
+  }
+}
+
 async function fetchOldData(client, offer, p, slug, opts) {
+  await checkFreeSpace(client, p, slug);
   fs.rmSync(p.work, { recursive: true, force: true });
   fs.mkdirSync(p.work, { recursive: true });
   const outer = path.join(p.work, 'backup.tar');

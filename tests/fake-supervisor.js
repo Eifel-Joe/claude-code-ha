@@ -54,7 +54,7 @@ function buildBackupFixture(dir, slug = OLD_SLUG, { omit = [], mtime } = {}) {
 }
 
 // opts: { jobNoReference (done job without slug), apps, oldOptions, ownOptions, backupTar, failBackup (job 2nd poll reports an error), failStop,
-//   failDownload, failDelete, failOldOptions }
+//   failDownload, failDelete, failOldOptions, backupSizeMb (size in /backups/bk1/info, default 1) }
 // state: calls, ownOptions, stopped, backups (existing slugs), deletedBackups, jobPolls,
 //   oldOptionsPosted (body of the last POST /addons/<old>/options)
 function startFakeSupervisor(opts = {}) {
@@ -106,6 +106,10 @@ function startFakeSupervisor(opts = {}) {
         if (opts.failBackup) return ok(res, { done: true, reference: null, errors: [{ message: 'backup failed' }] });
         if (!state.backups.includes('bk1')) state.backups.push('bk1');
         return ok(res, { done: true, reference: 'bk1', errors: [] });
+      }
+      if (m === 'GET /backups/bk1/info') {
+        if (!state.backups.includes('bk1')) return err(res, 404, 'no such backup');
+        return ok(res, { slug: 'bk1', size: opts.backupSizeMb ?? 1 });
       }
       if (m === 'GET /backups/bk1/download') {
         if (!state.backups.includes('bk1')) return err(res, 404, 'no such backup');

@@ -88,8 +88,10 @@ Reihenfolge; Schritt a/b sind Voraussetzung für alles Weitere:
 
 a. `POST /backups/new/partial` mit nur der alten App, Name
    „Claude Terminal Pro – Übernahme <JJJJ-MM-TT>", ohne Passwort.
-b. `GET /backups/<slug>/download` nach `/data/migration/work/`, inneres Archiv
-   der alten App entpacken.
+b. Vorher `GET /backups/<slug>/info`: freier Platz in `/data` muss mindestens das
+   2,2-Fache der Backup-Größe sein (äußeres tar plus entpacktes inneres Archiv), sonst
+   Abbruch. Dann `GET /backups/<slug>/download` nach `/data/migration/work/`, inneres
+   Archiv der alten App entpacken.
 c. Je nach Auswahl aus dem Backup nach `/data` kopieren (`cp -a`, nichts
    Vorhandenes überschreiben):
    - 1 → `data/home/.claude/` ohne `.credentials.json`, `data/home/.claude.json`

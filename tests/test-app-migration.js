@@ -334,6 +334,24 @@ test('apply: a failure after the backup exists deletes the backup and takes over
   assert.deepEqual(sup.state.stopped, []);
 });
 
+test('apply: too little free space for the backup is fatal before the download', async () => {
+  const { result, sup } = await detectThenApply({ backupSizeMb: 1e9 }, ['claude', 'stop']);
+  assert.equal(result.ok, false);
+  assert.match(result.fatal, /^not enough free space in .*: need ~\d+ MB, have \d+ MB$/);
+  assert.equal(result.backupDeleted, true);
+  assert.deepEqual(sup.state.deletedBackups, ['bk1']);
+  assert.equal(sup.state.calls.some((c) => c.url === '/backups/bk1/download'), false);
+  assert.deepEqual(sup.state.stopped, []);
+});
+
+test('apply: checks the backup size before downloading it', async () => {
+  const { result, sup } = await detectThenApply({}, ['claude']);
+  assert.equal(result.ok, true);
+  const urls = sup.state.calls.map((c) => c.url);
+  assert.ok(urls.indexOf('/backups/bk1/info') >= 0, 'no size check');
+  assert.ok(urls.indexOf('/backups/bk1/info') < urls.indexOf('/backups/bk1/download'));
+});
+
 test('apply: a failed backup deletion is reported, the fatal error is kept', async () => {
   const lines = [];
   const { result } = await detectThenApply({ failDownload: true, failDelete: true }, ['claude'],
