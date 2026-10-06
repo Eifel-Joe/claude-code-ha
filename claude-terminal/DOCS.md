@@ -190,7 +190,8 @@ The terminal starts directly in your `/config` directory, giving you immediate a
 
 ## Credits
 
+**Fork Maintainer:** [@Eifel-Joe](https://github.com/Eifel-Joe)
+**Upstream:** Javier Santos ([@ESJavadex](https://github.com/ESJavadex))
 **Original Creator:** Tom Cassady ([@heytcass](https://github.com/heytcass))
-**Fork Maintainer:** Javier Santos ([@esjavadex](https://github.com/esjavadex))
 
 This add-on was created and enhanced with the assistance of Claude Code itself! The development process, debugging, and documentation were all completed using Claude's AI capabilities - a perfect demonstration of what this add-on can help you accomplish.

@@ -6,7 +6,7 @@ An enhanced, web-based terminal with Claude Code CLI and persistent package mana
 
 *Claude Terminal Pro running in Home Assistant*
 
-> **Fork Attribution:** This is an enhanced fork of [heytcass/home-assistant-addons](https://github.com/heytcass/home-assistant-addons) by Tom Cassady, maintained by Javier Santos ([@esjavadex](https://github.com/esjavadex)).
+> **Fork Attribution:** Maintained by [@Eifel-Joe](https://github.com/Eifel-Joe) as a fork of [ESJavadex/claude-code-ha](https://github.com/ESJavadex/claude-code-ha) by Javier Santos, which builds on [heytcass/home-assistant-addons](https://github.com/heytcass/home-assistant-addons) by Tom Cassady.
 
 ## What is Claude Terminal Pro?
 
@@ -176,8 +176,9 @@ For detailed usage instructions, see the [documentation](DOCS.md).
 
 ## Credits
 
+**Fork Maintainer:** [@Eifel-Joe](https://github.com/Eifel-Joe) - Maintains this fork and collects community fork fixes
+**Upstream:** Javier Santos ([@ESJavadex](https://github.com/ESJavadex)) - Created Claude Terminal Pro: persistent package management and enhancements
 **Original Creator:** Tom Cassady ([@heytcass](https://github.com/heytcass)) - Created the initial Claude Terminal add-on
-**Fork Maintainer:** Javier Santos ([@esjavadex](https://github.com/esjavadex)) - Added persistent package management and enhancements
 
 This add-on was created and enhanced with the assistance of Claude Code itself! The development process, debugging, and documentation were all completed using Claude's AI capabilities - a perfect demonstration of what this add-on can help you accomplish.
 

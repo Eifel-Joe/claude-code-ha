@@ -10,7 +10,25 @@ A Home Assistant add-on that runs Anthropic's **Claude Code CLI** in a browser-b
 
 ![Claude Terminal Screenshot](claude-terminal/screenshot.png)
 
-> **Fork of** [heytcass/home-assistant-addons](https://github.com/heytcass/home-assistant-addons) by Tom Cassady, maintained by Javier Santos ([@esjavadex](https://github.com/esjavadex)). Same MIT license as the original.
+> **This is [Eifel-Joe](https://github.com/Eifel-Joe)'s maintained fork** of
+> [ESJavadex/claude-code-ha](https://github.com/ESJavadex/claude-code-ha) by Javier Santos,
+> which itself builds on [heytcass/home-assistant-addons](https://github.com/heytcass/home-assistant-addons)
+> by Tom Cassady. Upstream's last release was 2.0.13 in July 2026 and several community pull
+> requests are still open, so this fork collects the fixes published across the community forks
+> and keeps Claude Code current. Huge thanks to Javier for the add-on this is built on.
+> Same MIT license as the original.
+
+## What's different in this fork
+
+- **New models work** — Claude Code updates itself on every start (Opus 5.5, Fable, …), plus a 🔄 *Update Claude Code* menu item
+- **Security fix** — no unauthenticated root shell on port 7681; access only through the HA sidebar (ingress)
+- **Rebuilds no longer hang** on the Claude installer
+- **Phone-friendly terminal** — copy, swipe scrolling, on-screen keyboard, image paste
+- **Remote Control** and access to other apps' config folders
+
+Everything collected from community forks is credited in the [changelog](claude-terminal/CHANGELOG.md).
+Coming from the ESJavadex repository? Add this repository, install **Claude Terminal Pro**
+and log in once — both can run side by side.
 
 ---
 
@@ -32,9 +50,10 @@ Authentication uses OAuth — no API key or config needed for a normal setup. Th
 ## Features
 
 ### Terminal & session
-- **Web terminal** via ttyd, embedded in the HA sidebar (`code-braces-box` panel icon)
+- **Web terminal** via ttyd, embedded in the HA sidebar (`code-braces-box` panel icon) — reachable only through Home Assistant ingress, no host ports
 - **Auto-launch** Claude on open, or an interactive **session picker** (`auto_launch_claude`)
 - **Persistent tmux session** — closing the browser tab or restarting Home Assistant Core does not kill your Claude session; reopening reattaches to the same one
+- **Remote Control** — start Claude paired with claude.ai/code and the Claude app (`remote_control`)
 - **Reliable browser copy/paste** — tmux mouse capture is **off by default** so pasting works (including OAuth login codes); re-enable with `tmux_mouse` if you prefer tmux mouse selection
 
 ### Bundled tooling
@@ -48,7 +67,7 @@ Authentication uses OAuth — no API key or config needed for a normal setup. Th
 - **Everything in `/data`** survives reboots and add-on updates (auth, config, packages)
 - **`persist-install`** — install APK/pip packages that stick across restarts, into an isolated Python venv
 - **Auto-install** — declare packages in the config and they install on startup (`persistent_apk_packages`, `persistent_pip_packages`)
-- **Optional persistent Claude override** — advanced users can pin/manage a Claude Code install in `/data/npm` (`use_persistent_claude`, `auto_update_claude_on_start`), validated with a version check before it is activated
+- **Always-current Claude Code** — kept in `/data/npm` and updated on each start (on by default: `use_persistent_claude`, `auto_update_claude_on_start`), validated before activation; or update manually from the session picker
 
 ### Extras
 - **Image paste** — paste (Ctrl+V), drag-drop, or upload images for Claude to analyze (JPEG/PNG/GIF/WebP/SVG, ~10 MB), stored in `/data/images/`. Lightweight service (~10 MB RAM), ARM-compatible
@@ -61,6 +80,8 @@ Authentication uses OAuth — no API key or config needed for a normal setup. Th
 | Option | Default | Description |
 | --- | --- | --- |
 | `auto_launch_claude` | `true` | Start Claude automatically, or show the session picker |
+| `remote_control` | `false` | Start the auto-launched session with `--remote-control` (claude.ai/code, Claude app) |
+| `remote_control_session_name` | `""` | Optional name for the Remote Control session |
 | `tmux_mouse` | `false` | Enable tmux mouse mode. Keep off for native browser copy/paste |
 | `dangerously_skip_permissions` | `false` | Run Claude with unrestricted file access |
 | `persistent_apk_packages` | `[]` | Alpine (APK) packages to auto-install on startup |
@@ -149,15 +170,17 @@ Found a bug or have a request? [Open an issue](https://github.com/Eifel-Joe/clau
 
 ## Credits
 
+- **Fork maintainer:** [@Eifel-Joe](https://github.com/Eifel-Joe)
+- **Upstream:** Javier Santos ([@ESJavadex](https://github.com/ESJavadex)) — creator of
+  Claude Terminal Pro: persistent packages, tmux persistence, multi-arch and much more.
+  Greetings and thanks, Javier! More of his AI + Home Assistant work: [Javadex](https://www.javadex.es/)
 - **Original creator:** Tom Cassady ([@heytcass](https://github.com/heytcass)) — the initial Claude Terminal add-on
-- **Fork maintainer:** Javier Santos ([@esjavadex](https://github.com/esjavadex)) — persistent packages, tmux persistence, multi-arch, and ongoing enhancements
+- **Community fork contributions in 2.1.0:** [@Moulbi](https://github.com/Moulbi),
+  [@PeterLinuxOSS](https://github.com/PeterLinuxOSS), [@nsleigh](https://github.com/nsleigh),
+  [@marcjay](https://github.com/marcjay), [@martinboksa](https://github.com/martinboksa)
 
 Built and maintained with the help of Claude Code itself.
 
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
-## About the author
-
-Maintained by **Javier Santos** ([@ESJavadex](https://github.com/ESJavadex)) — AI consultant and founder of [Javadex](https://www.javadex.es/), where I help companies run private AI platforms. I also build [Cortex](https://www.javadex.es/plataforma), a self-hosted multi-model AI platform (the same "your AI, your data" philosophy as this add-on). More AI + Home Assistant content (in Spanish) on the [Javadex blog](https://www.javadex.es/blog).
