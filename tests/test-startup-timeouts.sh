@@ -56,4 +56,28 @@ run_with_timeout 1 "hanging step" sleep 30 || status=$?
 grep -qx 'warning|hanging step timed out after 1s' "$log" || \
     fail "a cut-off command must be logged as a timeout"
 
+# --- Claude Code update on start ---
+
+stub_bin="$tmp_dir/bin"
+mkdir -p "$stub_bin"
+printf '#!/bin/sh\nexec sleep 30\n' > "$stub_bin/npm"
+chmod +x "$stub_bin/npm"
+PATH="$stub_bin:$PATH"
+
+PERSISTENT_CLAUDE_ROOT="$tmp_dir/npm"
+CLAUDE_BIN_LINK="$tmp_dir/claude"
+CLAUDE_NATIVE_BIN_LINK="$tmp_dir/native/claude"
+: > "$log"
+started=$SECONDS
+setup_persistent_claude
+[ $((SECONDS - started)) -lt 10 ] || fail "a hanging Claude Code update must not block startup"
+grep -qx 'warning|Persistent Claude override: npm update timed out after 1s' "$log" || \
+    fail "a hanging Claude Code update must be logged as a timeout"
+
+# start_web_terminal launches servers, so check the call instead of running it.
+# shellcheck disable=SC2016  # the literal $STARTUP_NPM_TIMEOUT is what is searched for
+grep -q 'run_with_timeout "$STARTUP_NPM_TIMEOUT" "Image service: npm install" npm install' \
+    "$repo_root/claude-terminal/run.sh" || \
+    fail "the image service's npm install must run under the time limit"
+
 echo "Startup timeout suite passed"

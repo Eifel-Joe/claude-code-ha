@@ -371,7 +371,8 @@ setup_persistent_claude() {
 
     if [ "$auto_update_claude_on_start" = "true" ]; then
         bashio::log.info "Persistent Claude override: updating Claude Code in /data/npm..."
-        if NPM_CONFIG_PREFIX="$persistent_root" npm install -g "$claude_npm_spec" --prefer-online; then
+        if run_with_timeout "$STARTUP_NPM_TIMEOUT" "Persistent Claude override: npm update" \
+                env NPM_CONFIG_PREFIX="$persistent_root" npm install -g "$claude_npm_spec" --prefer-online; then
             bashio::log.info "Persistent Claude override: update completed"
         else
             bashio::log.warning "Persistent Claude override: update failed, continuing with existing version if present"
@@ -578,7 +579,9 @@ start_image_service() {
     if [ ! -d "${service_dir}/node_modules" ]; then
         bashio::log.error "node_modules not found in ${service_dir}"
         bashio::log.info "Attempting to install dependencies..."
-        cd "${service_dir}" && npm install || bashio::log.error "npm install failed"
+        cd "${service_dir}" && \
+            run_with_timeout "$STARTUP_NPM_TIMEOUT" "Image service: npm install" npm install || \
+            bashio::log.error "npm install failed"
         cd - > /dev/null
     fi
 
