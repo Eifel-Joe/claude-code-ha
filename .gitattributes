@@ -1,0 +1,3 @@
+# Keep LF in the repository no matter which editor or tool wrote the file;
+# run.sh and friends execute in Linux containers.
+* text=auto eol=lf
