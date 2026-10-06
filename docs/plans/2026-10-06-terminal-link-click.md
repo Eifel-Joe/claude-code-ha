@@ -23,7 +23,7 @@
 - Modify: `claude-terminal/image-service/public/terminal-clipboard.js` (`joinRows` ~Z. 281–326, `findLastUrl` ~Z. 225–255, Export ~Z. 645)
 - Test: `tests/test-terminal-clipboard.js` (neue Tests vor dem Block `(async () => {` am Dateiende einfügen)
 
-- [ ] **Step 1: Failing tests schreiben**
+- [x] **Step 1: Failing tests schreiben**
 
 ```js
 // --- Clickable links: which cells belong to which rebuilt URL ---
@@ -81,12 +81,12 @@ test('a link running into the last row read gets no spans - it may go on below',
 });
 ```
 
-- [ ] **Step 2: Lauf → FAIL**
+- [x] **Step 2: Lauf → FAIL**
 
 Run: `node tests/test-terminal-clipboard.js`
 Expected: 6× `FAIL …` mit `bridge.linkSpansInRows is not a function`, Exit-Code 1.
 
-- [ ] **Step 3: Implementierung**
+- [x] **Step 3: Implementierung**
 
 In `findLastUrl` die Bereinigung in eine eigene Funktion `cleanUrl` direkt davor verschieben. `findLastUrl` wird zu:
 
@@ -242,12 +242,12 @@ Im Export-Objekt am Dateiende nach `findLinkInRows: findLinkInRows,` ergänzen:
         linkSpansInRows: linkSpansInRows,
 ```
 
-- [ ] **Step 4: Lauf → PASS**
+- [x] **Step 4: Lauf → PASS**
 
 Run: `node tests/test-terminal-clipboard.js`
 Expected: letzte Zeile `All 86 clipboard bridge tests passed`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add claude-terminal/image-service/public/terminal-clipboard.js tests/test-terminal-clipboard.js
@@ -268,7 +268,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `claude-terminal/image-service/public/terminal-clipboard.js` (`rawRows` ~Z. 153–178, `install` ~Z. 441 ff.)
 - Test: `tests/test-terminal-clipboard.js` (`makeWindow` ~Z. 72–187, neue Tests)
 
-- [ ] **Step 1: Fakes erweitern**
+- [x] **Step 1: Fakes erweitern**
 
 In `makeWindow` in `state` ergänzen:
 
@@ -300,7 +300,7 @@ Im `win.term`-Objekt nach `onSelectionChange(...)`:
         },
 ```
 
-- [ ] **Step 2: Failing tests schreiben**
+- [x] **Step 2: Failing tests schreiben**
 
 ```js
 const WRAPPED_LINK = [
@@ -363,12 +363,12 @@ test('a terminal without registerLinkProvider still installs', () => {
 });
 ```
 
-- [ ] **Step 3: Lauf → FAIL**
+- [x] **Step 3: Lauf → FAIL**
 
 Run: `node tests/test-terminal-clipboard.js`
 Expected: `FAIL install registers one link provider` (0 ≠ 1) sowie FAIL der drei Tests, die `provideLinks` aufrufen (`Cannot read properties of undefined (reading 'provideLinks')`) — 4 FAIL; der Test ohne `registerLinkProvider` besteht schon. Exit-Code 1.
 
-- [ ] **Step 4: Implementierung**
+- [x] **Step 4: Implementierung**
 
 `rawRows` auf eine Hilfsfunktion mit Pufferzeile `y` je Zeile umstellen:
 
@@ -461,12 +461,12 @@ In `install()` direkt nach `installMobileInput(win, term);`:
 
 (Task 3 ersetzt `win.open` hier durch das gesicherte Original.)
 
-- [ ] **Step 5: Lauf → PASS**
+- [x] **Step 5: Lauf → PASS**
 
 Run: `node tests/test-terminal-clipboard.js`
 Expected: `All 91 clipboard bridge tests passed`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add claude-terminal/image-service/public/terminal-clipboard.js tests/test-terminal-clipboard.js
@@ -488,7 +488,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `claude-terminal/image-service/public/terminal-clipboard.js` (neue Funktion vor `install`, Aufruf in `install`)
 - Test: `tests/test-terminal-clipboard.js`
 
-- [ ] **Step 1: Failing tests schreiben**
+- [x] **Step 1: Failing tests schreiben**
 
 ```js
 test("the addon's fragment on row 1 opens the full URL", () => {
@@ -548,12 +548,12 @@ test('the link provider opens through the original window.open, not the redirect
 });
 ```
 
-- [ ] **Step 2: Lauf → FAIL**
+- [x] **Step 2: Lauf → FAIL**
 
 Run: `node tests/test-terminal-clipboard.js`
 Expected: `FAIL the addon's fragment on row 1 opens the full URL` (href ist das Bruchstück) und `FAIL the link provider opens through the original window.open…` (`open must be wrapped`). Die beiden „unchanged/goes straight through"-Tests und der Längen-Test bestehen schon (heutiges Verhalten). Exit-Code 1.
 
-- [ ] **Step 3: Implementierung**
+- [x] **Step 3: Implementierung**
 
 Vor `function install(win, options)` (nach `installLinkProvider`) einfügen:
 
@@ -620,14 +620,14 @@ ersetzen durch
         if (originalOpen) installLinkProvider(win, term, originalOpen);
 ```
 
-- [ ] **Step 4: Lauf → PASS**
+- [x] **Step 4: Lauf → PASS**
 
 Run: `node tests/test-terminal-clipboard.js`
 Expected: `All 96 clipboard bridge tests passed`.
 
 Hinweis: Der Test „a terminal without registerLinkProvider still installs" aus Task 2 muss weiter bestehen.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add claude-terminal/image-service/public/terminal-clipboard.js tests/test-terminal-clipboard.js
@@ -649,7 +649,7 @@ Kein ttyd unter Windows, daher ein Prüfstand mit dem echten xterm.js + WebLinks
 **Files:**
 - Create (Scratchpad, nicht im Repo): `<scratchpad>/linktest/index.html`, Kopie von `terminal-clipboard.js` daneben
 
-- [ ] **Step 1: Prüfstand anlegen**
+- [x] **Step 1: Prüfstand anlegen**
 
 `index.html`:
 
@@ -681,7 +681,7 @@ Kein ttyd unter Windows, daher ein Prüfstand mit dem echten xterm.js + WebLinks
 
 Öffnen: im Browser-Pane als `file:///…/linktest/index.html` (kein Server nötig; die CDN-Skripte laden auch von `file://`). Falls `Terminal`/`WebLinksAddon` als globale Namen nicht existieren: Konsole lesen und die UMD-Namen anpassen, nicht raten.
 
-- [ ] **Step 2: Klicks prüfen**
+- [x] **Step 2: Klicks prüfen**
 
 Im Browser-Pane nacheinander auf Zeile 1 und Zeile 2 des Links klicken (Koordinaten aus Screenshot), danach per JavaScript `window.opened.map(o => o.win.location.href)` lesen.
 Erwartet: zwei Einträge, beide `https://claude.ai/code/artifact/8f1aa329-c6ce-447f-a58c-bd14ce569558`, beide `opener === null`. Ergebnis im Chat zeigen.
@@ -697,9 +697,9 @@ Schlägt das fehl: STOP, `superpowers:systematic-debugging`, nicht raten.
 - Modify: `claude-terminal/CHANGELOG.md` (oben einfügen)
 - Modify: `claude-terminal/DOCS.md` (Abschnitt „Copying Text Out of the Terminal", ~Z. 68–80)
 
-- [ ] **Step 1: Version** — in `claude-terminal/config.yaml` die Zeile `version:` auf `2.2.1` setzen (Anführungszeichen-Stil der Datei beibehalten).
+- [x] **Step 1: Version** — in `claude-terminal/config.yaml` die Zeile `version:` auf `2.2.1` setzen (Anführungszeichen-Stil der Datei beibehalten).
 
-- [ ] **Step 2: CHANGELOG** — direkt unter `# Changelog` einfügen:
+- [x] **Step 2: CHANGELOG** — direkt unter `# Changelog` einfügen:
 
 ```markdown
 ## 2.2.1
@@ -714,7 +714,7 @@ Schlägt das fehl: STOP, `superpowers:systematic-debugging`, nicht raten.
 
 ```
 
-- [ ] **Step 3: DOCS** — im Abschnitt „Copying Text Out of the Terminal" den Satz „There are four ways" durch „There are five ways" ersetzen und vor dem Punkt `**`🔗 Copy link`**` einfügen:
+- [x] **Step 3: DOCS** — im Abschnitt „Copying Text Out of the Terminal" den Satz „There are four ways" durch „There are five ways" ersetzen und vor dem Punkt `**`🔗 Copy link`**` einfügen:
 
 ```markdown
 - **Click the link** in the terminal (desktop, with `tmux_mouse` off): any row of
@@ -723,7 +723,7 @@ Schlägt das fehl: STOP, `superpowers:systematic-debugging`, nicht raten.
 
 Vorher prüfen, ob „four ways" wirklich so dasteht (`grep -n "four ways" claude-terminal/DOCS.md`); sonst Wortlaut an den tatsächlichen Text anpassen.
 
-- [ ] **Step 4: Prüfen**
+- [x] **Step 4: Prüfen**
 
 Run:
 ```bash
@@ -733,7 +733,7 @@ git ls-files --eol | grep -c "crlf\|mixed"
 ```
 Expected: `All 96 clipboard bridge tests passed`; Release-Metadaten-Test ohne Fehler (falls er unter Windows an Symlinks scheitert: Ausgabe zeigen, CI entscheidet); `0`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add claude-terminal/config.yaml claude-terminal/CHANGELOG.md claude-terminal/DOCS.md
@@ -746,8 +746,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ### Task 6: Review, Push, Live-Test (je Schritt Freigabe im Chat)
 
-- [ ] **Step 1:** `superpowers:requesting-code-review` auf `main..feat/terminal-link-click`; Rückmeldungen über `superpowers:receiving-code-review`.
-- [ ] **Step 2:** ShellCheck ist nicht betroffen (keine Shell-Dateien geändert). `node tests/test-image-service.js` zusätzlich laufen lassen (liefert `public/` aus).
+- [x] **Step 1:** `superpowers:requesting-code-review` auf `main..feat/terminal-link-click`; Rückmeldungen über `superpowers:receiving-code-review`.
+- [x] **Step 2:** ShellCheck ist nicht betroffen (keine Shell-Dateien geändert). `node tests/test-image-service.js` zusätzlich laufen lassen (liefert `public/` aus).
 - [ ] **Step 3: Freigabe einholen**, dann Branch pushen und CI abwarten (ccd_pr-Tools, kein Polling per Hand). Merge nach `main` erst nach Freigabe.
 - [ ] **Step 4: HA-Test** (nach Freigabe): App auf 2.2.1 aktualisieren (steht noch auf 2.1.0), Panel öffnen, in Claude `/login` aufrufen, erste, mittlere und letzte Zeile des Links anklicken. Kriterium: jeder Klick öffnet einen Tab mit exakt der URL, die „🔗 Copy link" liefert (Länge und Ende vergleichen und zeigen).
 - [ ] **Step 5: HA-Prod** nur nach ausdrücklicher Freigabe, gleiches Kriterium.
