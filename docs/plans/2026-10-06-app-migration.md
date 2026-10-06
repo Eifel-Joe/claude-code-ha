@@ -569,14 +569,9 @@ test('apply: backup failure takes over nothing and stops nothing', async () => {
 test('apply: unpacks only data/, not the app image', async () => {
   await withSupervisor({ oldOptions: OLD_OPTIONS }, async (client, p) => {
     const { offer } = await detect(client, p);
-    const spy = [];
-    const realCp = fs.cpSync;
-    fs.cpSync = (src, dst, o) => { spy.push(src); return realCp(src, dst, o); };
-    try { await apply(client, p, offer, ['claude'], { today: '2026-10-06', persistInstall: 'false-bin' }); }
-    finally { fs.cpSync = realCp; }
-    const appDir = path.dirname(path.dirname(spy[0])); // <work>/app/data/home -> <work>/app
-    assert.ok(spy.every((src) => !src.includes('image.tar')));
-    assert.ok(appDir.endsWith(path.join('work', 'app', 'data')) || appDir.endsWith(path.join('work', 'app')));
+    await apply(client, p, offer, ['claude'], { today: '2026-10-06', persistInstall: 'false-bin', keepWork: true });
+    assert.ok(fs.existsSync(path.join(p.work, 'app', 'data', 'home', '.claude')));
+    assert.equal(fs.existsSync(path.join(p.work, 'app', 'image.tar')), false);
   });
 });
 
@@ -672,7 +667,7 @@ async function apply(client, p, offer, selected, deps = {}) {
   await step('gh', () => (copyMissing(path.join(old.oldData, '.config', 'gh'),
     path.join(p.dataRoot, '.config', 'gh')) ? 'ok' : 'not found'));
 
-  fs.rmSync(p.work, { recursive: true, force: true });
+  if (!deps.keepWork) fs.rmSync(p.work, { recursive: true, force: true }); // keepWork: tests only
   fs.writeFileSync(p.state, 'done\n');
   fs.rmSync(p.offer, { force: true });
   return { ok: true, backupSlug: old.backupSlug, results };
