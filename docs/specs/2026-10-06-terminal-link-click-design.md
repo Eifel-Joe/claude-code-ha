@@ -68,10 +68,14 @@ ihren Abschnitten je Quellzeile:
 `win.open` wird gehüllt: Ein Aufruf **ohne Argumente** (Muster des Addons) öffnet
 das echte leere Fenster und gibt ein Objekt zurück, dessen `opener` an das echte
 Fenster durchgereicht wird und dessen `location.href`-Setter die Ziel-URL auflöst:
-ist sie ein echter (kürzerer) Anfang einer URL, die `linkSpansInRows` über den
-ganzen Puffer (`rawRows(term, 'all')`) findet, wird die volle URL gesetzt — bei
-mehreren Treffern die zuletzt im Puffer stehende, wie bei `findLink` —, sonst die
-übergebene. Ist die übergebene URL selbst ein vollständiger Link im Puffer, bleibt
+ist sie ein echter (kürzerer) Anfang einer URL, die auf der **zuletzt überfahrenen
+Zeile** liegt, wird die volle URL gesetzt, sonst die übergebene. Die Zeile merkt
+sich der Provider aus B: xterm fragt vor jedem Klick alle Provider nach der Zeile
+unter der Maus, auch dort, wo der Link des Addons gewinnt (im echten xterm.js 5.5
+geprüft). Ohne gemerkte Zeile (Provider nie gefragt) wird über den ganzen Puffer
+gesucht, neuester Treffer zuerst. *(Nach Code-Review geändert: die reine
+Puffer-Suche öffnete nach einem zweiten `/login` beim Klick auf den alten Link den
+neuen.)* Ist die übergebene URL selbst ein vollständiger Link im Puffer, bleibt
 sie unverändert, auch wenn ein längerer Link gleich beginnt. Aufrufe mit Argumenten gehen unverändert
 an das Original. Alles läuft synchron im Klick (kein Popup-Blocker).
 
