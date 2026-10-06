@@ -3,7 +3,9 @@
 # User-friendly command for installing packages persistently
 # Usage: persist-install python git vim
 
-PERSIST_ROOT="/data/packages"
+# PERSIST_DATA_ROOT: overridable for tests only (tests/test-persist-install.sh).
+PERSIST_DATA_ROOT="${PERSIST_DATA_ROOT:-/data}"
+PERSIST_ROOT="$PERSIST_DATA_ROOT/packages"
 PERSIST_BIN="$PERSIST_ROOT/bin"
 PERSIST_PYTHON="$PERSIST_ROOT/python"
 
@@ -143,21 +145,36 @@ install_python_packages() {
         # Check if system Python exists
         if ! command -v python3 &>/dev/null; then
             echo "❌ Python not installed. Installing..."
-            install_system_packages python3 py3-pip
+            if ! install_system_packages python3 py3-pip; then
+                echo "❌ Could not install python3"
+                return 1
+            fi
         fi
 
         mkdir -p "$PERSIST_PYTHON"
-        python3 -m venv "$PERSIST_PYTHON/venv"
+        if ! python3 -m venv "$PERSIST_PYTHON/venv"; then
+            echo "❌ Could not create the virtual environment in $PERSIST_PYTHON/venv"
+            return 1
+        fi
         echo "✅ Virtual environment created"
         echo ""
     fi
 
     # Activate and install
-    source "$PERSIST_PYTHON/venv/bin/activate"
+    # shellcheck source=/dev/null
+    if ! source "$PERSIST_PYTHON/venv/bin/activate"; then
+        echo "❌ Could not activate the virtual environment in $PERSIST_PYTHON/venv"
+        return 1
+    fi
 
     echo "⏳ Installing packages..."
-    pip install --upgrade pip -q
-    pip install "$@"
+    # A failed self-upgrade is harmless: the existing pip still installs.
+    pip install --upgrade pip -q || true
+    # Callers (app migration, auto_install_packages) rely on the exit status.
+    if ! pip install "$@"; then
+        echo "❌ Failed to install Python packages: $*"
+        return 1
+    fi
 
     echo ""
     echo "✅ Python packages installed!"
@@ -268,8 +285,8 @@ install_ha_cli() {
 # Main execution
 main() {
     # Check if running in the add-on
-    if [ ! -d "/data" ]; then
-        echo "❌ Error: /data directory not found"
+    if [ ! -d "$PERSIST_DATA_ROOT" ]; then
+        echo "❌ Error: $PERSIST_DATA_ROOT directory not found"
         echo "This script must run inside the Claude Terminal add-on"
         exit 1
     fi
