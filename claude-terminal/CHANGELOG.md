@@ -18,7 +18,9 @@
 
 ### 📚 Documentation
 - The development guide and project notes build without a base-image argument
-  and keep test options and credentials under `/data`, where the app reads them.
+  and keep test credentials under `/data`, where the app reads them. They no
+  longer suggest an `options.json` for local runs: bashio reads options from the
+  Supervisor API, so a run without the Supervisor uses the defaults.
   The stale `DEVELOPMENT_STATUS.md` and an unlinked old copy of `DOCS.md` are
   removed.
 

@@ -100,8 +100,8 @@ podman build -t local/claude-terminal:test ./claude-terminal
 # Create test directories (/config = HA configuration, /data = app storage)
 mkdir -p /tmp/test-config /tmp/test-data
 
-# Configure session picker (optional)
-echo '{"auto_launch_claude": false}' > /tmp/test-data/options.json
+# App options: bashio reads them from the Supervisor API, not from a file, so a
+# local run without the Supervisor uses the defaults in run.sh (auto-launch on).
 
 # Run test container
 podman run -d --name test-claude-dev -p 7680:7680 -v /tmp/test-config:/config -v /tmp/test-data:/data local/claude-terminal:test

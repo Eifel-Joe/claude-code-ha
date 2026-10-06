@@ -19,10 +19,10 @@ The fastest way to test changes without publishing new versions:
 podman build -t local/claude-terminal:test ./claude-terminal
 
 # 2. Create test directories. /config is Home Assistant's configuration,
-#    /data is the app's private storage: options.json and credentials
-#    (/data/home/.claude) live there.
+#    /data is the app's private storage (credentials in /data/home/.claude).
+# App options: bashio reads them from the Supervisor API, not from a file, so a
+# local run without the Supervisor uses the defaults in run.sh (auto-launch on).
 mkdir -p /tmp/test-config /tmp/test-data
-echo '{"auto_launch_claude": false}' > /tmp/test-data/options.json
 
 # 3. Run test container
 # Publish 7680 (the image service / ingress entry point), not 7681.
@@ -86,13 +86,10 @@ podman exec -it test-claude-dev /opt/scripts/claude-session-picker.sh
 #### Session Picker Testing
 
 ```bash
-# Test with auto-launch disabled
-echo '{"auto_launch_claude": false}' > /tmp/test-data/options.json
-
-# Test with auto-launch enabled (default)
-echo '{"auto_launch_claude": true}' > /tmp/test-data/options.json
-# OR
-rm /tmp/test-data/options.json
+# App options: bashio reads them from the Supervisor API, not from a file, so a
+# local run without the Supervisor uses the defaults in run.sh (auto-launch on).
+# Run the picker directly instead of switching auto_launch_claude off:
+podman exec -it test-claude-dev /opt/scripts/claude-session-picker.sh
 ```
 
 #### Authentication Testing
@@ -268,7 +265,6 @@ Home Assistant rebuilds the app on each device once `version` in `config.yaml` c
 ```bash
 # Test with real Home Assistant config structure
 mkdir -p /tmp/ha-config/.storage /tmp/ha-data
-echo '{"auto_launch_claude": false}' > /tmp/ha-data/options.json
 
 podman run -d --name test-ha-claude -p 7680:7680 \
   -v /tmp/ha-config:/config -v /tmp/ha-data:/data local/claude-terminal:test

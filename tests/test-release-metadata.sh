@@ -28,23 +28,33 @@ esac
     fail "claude-terminal/build.yaml exists; build parameters belong in the Dockerfile"
 
 dockerfile="$addon_dir/Dockerfile"
-grep -qE '^FROM ghcr\.io/home-assistant/base:[0-9]+\.[0-9]+' "$dockerfile" || \
+# Dockerfile keywords are case-insensitive; a second stage would make the final
+# image something other than the pinned base.
+from_lines=$(grep -iE '^[[:space:]]*FROM[[:space:]]' "$dockerfile" || true)
+[ "$(printf '%s\n' "$from_lines" | grep -c .)" -eq 1 ] || \
+    fail "Dockerfile must have exactly one FROM; found: $(printf '%s' "$from_lines" | tr '\n' '|')"
+printf '%s\n' "$from_lines" | grep -qE '^FROM ghcr\.io/home-assistant/base:[0-9]+\.[0-9]+' || \
     fail "Dockerfile must start from a tagged ghcr.io/home-assistant/base image"
 # Without build.yaml, older Supervisor versions still pass BUILD_FROM
 # ({arch}-base:latest, the newest Alpine). An ARG would let that replace the
 # pinned base without anyone noticing.
-if grep -nE '^ARG BUILD_FROM' "$dockerfile"; then
+if grep -niE '^[[:space:]]*ARG[[:space:]]+BUILD_FROM' "$dockerfile"; then
     fail "Dockerfile declares ARG BUILD_FROM; a Supervisor-supplied value would swap the base image"
 fi
 
 # The multi-arch base image covers amd64 and arm64 only, and Home Assistant
-# ended 32-bit support with 2025.12 (no more app updates there).
+# ended 32-bit support with 2025.12 (no more app updates there). The list must
+# be in block form ("  - amd64"): a flow list would slip past this check, so an
+# empty result fails too.
+arches=$(sed -n '/^arch:/,/^[a-z]/{s/^  - //p;}' "$addon_dir/config.yaml")
+[ -n "$arches" ] || \
+    fail "config.yaml has no arch list in block form (\"  - amd64\")"
 while IFS= read -r arch; do
     case "$arch" in
         amd64|aarch64) ;;
         *) fail "config.yaml declares arch '$arch'; only amd64 and aarch64 have a base image" ;;
     esac
-done < <(sed -n '/^arch:/,/^[a-z]/{s/^  - //p;}' "$addon_dir/config.yaml")
+done <<< "$arches"
 
 if grep -nE 'armv7|armhf|armv6|i386|1\.0\.128' "$dockerfile"; then
     fail "Dockerfile still carries 32-bit branches"
@@ -58,6 +68,10 @@ grep -qx "## $config_version" "$addon_dir/CHANGELOG.md" || \
 newest=$(grep -m1 '^## ' "$addon_dir/CHANGELOG.md" | sed 's/^## //')
 [ "$newest" = "$config_version" ] || \
     fail "newest CHANGELOG entry is '$newest' but config.yaml is at '$config_version'"
+
+# The README version badge drifted before (it showed 2.2.0 while 2.2.2 shipped).
+grep -q "badge/version-${config_version}-" "$repo_root/README.md" || \
+    fail "README.md version badge does not show $config_version"
 
 # Publishing a host port would bypass Home Assistant ingress authentication and
 # expose ttyd's unauthenticated root shell on the LAN. Keep that closed.
@@ -85,8 +99,8 @@ for f in "$repo_root/CLAUDE.md" "$repo_root/DEVELOPMENT.md" "$repo_root/flake.ni
     fi
 done
 
-# The developer guide set up credentials and options under /config; both live
-# in /data (credentials in /data/home/.claude, options in /data/options.json).
+# The developer guide set up credentials under /config/claude-config; they live
+# in the app's private /data (/data/home/.claude).
 if grep -n 'claude-config' "$repo_root/DEVELOPMENT.md"; then
     fail "DEVELOPMENT.md still uses /config/claude-config; credentials live in /data/home/.claude"
 fi
