@@ -59,8 +59,7 @@ async function createBackup(client, offer, { date, pollMs, log, progressEveryMs 
   }
 }
 
-async function fetchOldData(client, offer, p, opts) {
-  const slug = await createBackup(client, offer, opts);
+async function fetchOldData(client, offer, p, slug, opts) {
   fs.rmSync(p.work, { recursive: true, force: true });
   fs.mkdirSync(p.work, { recursive: true });
   const outer = path.join(p.work, 'backup.tar');
@@ -75,6 +74,19 @@ async function fetchOldData(client, offer, p, opts) {
   fs.mkdirSync(extracted);
   run('tar', ['-xzf', inner, '-C', extracted, INNER_DATA_PREFIX]);
   return { backupSlug: slug, oldData: path.join(extracted, INNER_DATA_PREFIX) };
+}
+
+// A backup nobody can use (download/unpack failed) is only a full copy of the
+// old login plus the app image; the next start asks again and creates a new one.
+// A failing delete must not hide the original error, so it is only logged.
+async function deleteBackup(client, slug, log) {
+  try {
+    await client.del(`/backups/${slug}`);
+    return true;
+  } catch (e) {
+    log(`  Could not delete the backup ${slug}: ${e.message}`);
+    return false;
+  }
 }
 
 // Copies src to dst without replacing anything that already exists there.
@@ -141,17 +153,21 @@ async function mergeOwnOptions(client, change) {
 async function apply(client, p, offer, selected, deps = {}) {
   const results = {};
   const log = deps.log || console.log;
+  const opts = {
+    date: deps.today || today(),
+    pollMs: deps.pollMs || POLL_MS,
+    log,
+    progressEveryMs: deps.progressEveryMs ?? PROGRESS_EVERY_MS,
+  };
+  let backupSlug;
   let old;
   try {
-    old = await fetchOldData(client, offer, p, {
-      date: deps.today || today(),
-      pollMs: deps.pollMs || POLL_MS,
-      log,
-      progressEveryMs: deps.progressEveryMs ?? PROGRESS_EVERY_MS,
-    });
+    backupSlug = await createBackup(client, offer, opts);
+    old = await fetchOldData(client, offer, p, backupSlug, opts);
   } catch (e) {
     fs.rmSync(p.work, { recursive: true, force: true });
-    return { ok: false, fatal: e.message, results };
+    const backupDeleted = backupSlug ? await deleteBackup(client, backupSlug, log) : false;
+    return { ok: false, fatal: e.message, backupSlug, backupDeleted, results };
   }
   const oldHome = path.join(old.oldData, 'home');
 

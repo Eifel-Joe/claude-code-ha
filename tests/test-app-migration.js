@@ -320,6 +320,37 @@ test('apply: a finished job without a slug is fatal', async () => {
   assert.match(result.fatal, /without a backup slug/);
 });
 
+test('apply: a failure after the backup exists deletes the backup and takes over nothing', async () => {
+  const { result, p, sup } = await detectThenApply({ failDownload: true }, ['claude', 'login', 'stop']);
+  assert.equal(result.ok, false);
+  assert.match(result.fatal, /download failed/);
+  assert.equal(result.backupDeleted, true);
+  assert.deepEqual(sup.state.deletedBackups, ['bk1']);
+  assert.deepEqual(sup.state.backups, []);
+  assert.equal(fs.existsSync(p.offer), true);
+  assert.equal(fs.existsSync(p.state), false);
+  assert.equal(fs.existsSync(p.work), false);
+  assert.equal(fs.existsSync(path.join(p.home, '.claude/CLAUDE.md')), false);
+  assert.deepEqual(sup.state.stopped, []);
+});
+
+test('apply: a failed backup deletion is reported, the fatal error is kept', async () => {
+  const lines = [];
+  const { result } = await detectThenApply({ failDownload: true, failDelete: true }, ['claude'],
+    { log: (l) => lines.push(l) });
+  assert.equal(result.ok, false);
+  assert.match(result.fatal, /download failed/);
+  assert.equal(result.backupDeleted, false);
+  assert.equal(result.backupSlug, 'bk1');
+  assert.match(lines.join('\n'), /delete failed/);
+});
+
+test('apply: a failed backup job reports no backup to delete', async () => {
+  const { result, sup } = await detectThenApply({ failBackup: true }, ['claude']);
+  assert.equal(result.backupDeleted, false);
+  assert.deepEqual(sup.state.calls.filter((c) => c.method === 'DELETE'), []);
+});
+
 // A persist-install stand-in that logs its arguments and fails for "badpkg"
 // (apk) or "badpy" (pip).
 // sleepMs: hangs that long before exiting (for the timeout test).
@@ -473,6 +504,18 @@ test('cli: detect exits 0 and prints the reason when nothing is offered', () => 
   });
   assert.equal(r.status, 0);
   assert.match(r.stdout + r.stderr, /App migration: detection failed/);
+});
+
+test('summary: a fatal result says whether the backup was removed', () => {
+  const removed = renderSummary({ ok: false, fatal: 'download failed', backupSlug: 'bk1', backupDeleted: true, results: {} });
+  assert.match(removed, /Nothing was taken over: download failed/);
+  assert.match(removed, /backup .*was deleted/i);
+  const kept = renderSummary({ ok: false, fatal: 'download failed', backupSlug: 'bk1', backupDeleted: false, results: {} });
+  assert.match(kept, /could not be deleted/);
+  assert.match(kept, /Claude Terminal Pro – Übernahme/);
+  assert.match(kept, /bk1/);
+  const none = renderSummary({ ok: false, fatal: 'backup failed', backupDeleted: false, results: {} });
+  assert.doesNotMatch(none, /delete/i);
 });
 
 test('summary: names failures and the kept backup', () => {

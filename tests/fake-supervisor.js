@@ -53,14 +53,16 @@ function buildBackupFixture(dir, slug = OLD_SLUG, { omit = [], mtime } = {}) {
   return path.join(dir, 'backup.tar');
 }
 
-// opts: { jobNoReference (done job without slug), apps, oldOptions, ownOptions, backupTar, failBackup (job 2nd poll reports an error), failStop }
-// state: calls, ownOptions, stopped, backups (created slugs), jobPolls
+// opts: { jobNoReference (done job without slug), apps, oldOptions, ownOptions, backupTar, failBackup (job 2nd poll reports an error), failStop,
+//   failDownload, failDelete }
+// state: calls, ownOptions, stopped, backups (existing slugs), deletedBackups, jobPolls
 function startFakeSupervisor(opts = {}) {
   const state = {
     calls: [],
     ownOptions: { ...(opts.ownOptions || {}) },
     stopped: [],
     backups: [],
+    deletedBackups: [],
     jobPolls: 0,
   };
   const apps = opts.apps || [
@@ -105,9 +107,16 @@ function startFakeSupervisor(opts = {}) {
       }
       if (m === 'GET /backups/bk1/download') {
         if (!state.backups.includes('bk1')) return err(res, 404, 'no such backup');
+        if (opts.failDownload) return err(res, 500, 'download failed');
         if (!opts.backupTar) return err(res, 500, 'no backupTar configured');
         res.writeHead(200, { 'Content-Type': 'application/x-tar' });
         return fs.createReadStream(opts.backupTar).pipe(res);
+      }
+      if (m === 'DELETE /backups/bk1') {
+        if (opts.failDelete) return err(res, 500, 'delete failed');
+        state.backups = state.backups.filter((b) => b !== 'bk1');
+        state.deletedBackups.push('bk1');
+        return ok(res);
       }
       if (m === 'POST /addons/self/options') { state.ownOptions = json.options; return ok(res); }
       if (m === `POST /addons/${OLD_SLUG}/stop`) {

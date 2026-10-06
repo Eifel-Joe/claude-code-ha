@@ -63,7 +63,12 @@ const SUMMARY_LABELS = {
 
 function renderSummary(result) {
   if (!result.ok) {
-    return `\n  Nothing was taken over: ${result.fatal}\n  The old app is unchanged. You will be asked again on the next start.\n`;
+    const backup = !result.backupSlug ? []
+      : result.backupDeleted ? ['  The partial backup created for this was deleted again.']
+        : [`  The partial backup "Claude Terminal Pro – Übernahme …" (${result.backupSlug}) could not be deleted;`,
+          '  it contains the old login, delete it under Settings → System → Backups.'];
+    return ['', `  Nothing was taken over: ${result.fatal}`, ...backup,
+      '  The old app is unchanged. You will be asked again on the next start.', ''].join('\n');
   }
   const lines = Object.entries(result.results).map(([k, v]) => `  ${SUMMARY_LABELS[k] || k}: ${v}`);
   return ['', ...lines, '',

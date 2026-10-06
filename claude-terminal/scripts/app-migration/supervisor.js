@@ -46,6 +46,7 @@ function createClient({
   return {
     get: (urlPath) => call('GET', urlPath),
     post: (urlPath, body) => call('POST', urlPath, body || {}),
+    del: (urlPath) => call('DELETE', urlPath),
     download,
   };
 }

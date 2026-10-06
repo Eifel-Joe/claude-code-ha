@@ -110,7 +110,9 @@ g. `/data/migration/work` löschen, Zustand `done`, Zusammenfassung mit Ergebnis
 ## Fehlerverhalten
 
 - a oder b schlägt fehl → nichts übernehmen, alte App nicht stoppen, Meldung,
-  Zustand bleibt offen (nächster Start der App fragt erneut).
+  Zustand bleibt offen (nächster Start der App fragt erneut). Existiert das Backup
+  schon (Fehler bei Download/Entpacken), wird es wieder gelöscht; misslingt das,
+  nennt die Meldung das Backup, damit man es von Hand löschen kann.
 - Ein Punkt in c–e schlägt fehl → übrige Punkte laufen weiter; Zusammenfassung
   nennt den Fehler. Punkt 5 wird dann **nicht** ausgeführt (alte App bleibt als
   Rückfall verfügbar), Meldung sagt das.
