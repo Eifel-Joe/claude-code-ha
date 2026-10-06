@@ -748,7 +748,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 - [x] **Step 1:** `superpowers:requesting-code-review` auf `main..feat/terminal-link-click`; Rückmeldungen über `superpowers:receiving-code-review`.
 - [x] **Step 2:** ShellCheck ist nicht betroffen (keine Shell-Dateien geändert). `node tests/test-image-service.js` zusätzlich laufen lassen (liefert `public/` aus).
-- [ ] **Step 3: Freigabe einholen**, dann Branch pushen und CI abwarten (ccd_pr-Tools, kein Polling per Hand). Merge nach `main` erst nach Freigabe.
-- [ ] **Step 4: HA-Test** (nach Freigabe): App auf 2.2.1 aktualisieren (steht noch auf 2.1.0), Panel öffnen, in Claude `/login` aufrufen, erste, mittlere und letzte Zeile des Links anklicken. Kriterium: jeder Klick öffnet einen Tab mit exakt der URL, die „🔗 Copy link" liefert (Länge und Ende vergleichen und zeigen).
+- [x] **Step 3: Freigabe einholen**, dann Branch pushen und CI abwarten (ccd_pr-Tools, kein Polling per Hand). Merge nach `main` erst nach Freigabe.
+- [x] **Step 4: HA-Test** (nach Freigabe): App auf 2.2.1 aktualisieren (steht noch auf 2.1.0), Panel öffnen, in Claude `/login` aufrufen, erste, mittlere und letzte Zeile des Links anklicken. Kriterium: jeder Klick öffnet einen Tab mit exakt der URL, die „🔗 Copy link" liefert (Länge und Ende vergleichen und zeigen).
 - [ ] **Step 5: HA-Prod** nur nach ausdrücklicher Freigabe, gleiches Kriterium.
 - [ ] **Step 6:** Memory `claude-code-ha-followups` Punkt 2 aktualisieren, `docs/SESSION-STAND.md` anlegen/ergänzen.
