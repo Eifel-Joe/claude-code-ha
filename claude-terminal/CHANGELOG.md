@@ -1,5 +1,26 @@
 # Changelog
 
+## 2.3.4
+
+### 🐛 Bug Fix - HA CLI and GitHub CLI lookups no longer hit GitHub's API limit
+- The image build and `persist-install --ha-cli` asked GitHub's REST API for
+  the latest release. Without a token it allows 60 requests per hour per IP,
+  and a build failed with 403. They now read the version from where
+  `github.com/<repo>/releases/latest` redirects to, which has no such limit.
+  If that redirect does not end in a release, nothing is downloaded and an
+  existing copy stays in place.
+
+### 🛠️ Improvement - Mac clipboard monitor removed
+- `mac-clipboard-monitor.py` uploaded to `<host>:8123/upload`, which is Home
+  Assistant itself, or to the direct port closed in 2.1.0, so it could not
+  reach the app. Paste (Ctrl+V / Cmd+V) or drop an image into the terminal
+  instead; it lands in `/data/images` the same way.
+
+### 🔧 Technical
+- The migration tests remove their temporary directories.
+- `DEVELOPMENT.md` suggests another host port instead of `sudo kill -9` when
+  7680 is busy.
+
 ## 2.3.3
 
 ### 🐛 Bug Fix - `persist-install --ha-cli` said "Nothing to do" over an active old copy
