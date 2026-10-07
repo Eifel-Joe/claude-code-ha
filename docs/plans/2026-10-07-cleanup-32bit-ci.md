@@ -24,7 +24,7 @@
 - Modify: `tests/test-persist-install.sh` (vor `echo "persist-install tests passed"`)
 - Modify: `claude-terminal/scripts/persist-install` (`install_ha_cli`, Z. 184–217)
 
-- [ ] **Step 1: Test ergänzen (RED)** — vor der letzten Zeile `echo "persist-install tests passed"` einfügen:
+- [x] **Step 1: Test ergänzen (RED)** — vor der letzten Zeile `echo "persist-install tests passed"` einfügen:
 
 ```bash
 # --- persist-install --ha-cli -------------------------------------------------
@@ -89,9 +89,9 @@ if [ -n "$want_arch" ]; then
 fi
 ```
 
-- [ ] **Step 2: RED prüfen** — `bash tests/test-persist-install.sh` → `FAIL (persist-install): --ha-cli did not download the latest release: … releases/download/4.46.0/ha_amd64`.
+- [x] **Step 2: RED prüfen** — `bash tests/test-persist-install.sh` → `FAIL (persist-install): --ha-cli did not download the latest release: … releases/download/4.46.0/ha_amd64`.
 
-- [ ] **Step 3: `install_ha_cli` umbauen** — den Funktionsanfang
+- [x] **Step 3: `install_ha_cli` umbauen** — den Funktionsanfang
 
 ```bash
 install_ha_cli() {
@@ -159,9 +159,9 @@ ersetzen durch
     local download_url="https://github.com/home-assistant/cli/releases/download/${HA_VERSION}/ha_${arch}"
 ```
 
-- [ ] **Step 4: GREEN** — `bash tests/test-persist-install.sh` → `persist-install tests passed`; `git diff claude-terminal/scripts/persist-install` auf korrekte Escapes (`'"tag_name": *"[^"]*"'`, `'s/.*"\([^"]*\)"$/\1/'`) prüfen.
+- [x] **Step 4: GREEN** — `bash tests/test-persist-install.sh` → `persist-install tests passed`; `git diff claude-terminal/scripts/persist-install` auf korrekte Escapes (`'"tag_name": *"[^"]*"'`, `'s/.*"\([^"]*\)"$/\1/'`) prüfen.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add tests/test-persist-install.sh claude-terminal/scripts/persist-install
@@ -186,7 +186,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Delete: `claude-terminal/scripts/install-ha-cli.sh`, `config/scripts/claude-session-picker.sh`
 - Modify: `.gitignore`
 
-- [ ] **Step 1: Test ergänzen (RED)** — nach dem `fi` des Blocks `Dockerfile still carries 32-bit branches` einfügen:
+- [x] **Step 1: Test ergänzen (RED)** — nach dem `fi` des Blocks `Dockerfile still carries 32-bit branches` einfügen:
 
 ```bash
 # The runtime scripts had their own 32-bit branches and pins (Claude 1.0.128,
@@ -198,9 +198,9 @@ if grep -rniE 'armv7|armv6|armhf|i386|i686|1\.0\.128|4\.46\.0' \
 fi
 ```
 
-- [ ] **Step 2: RED prüfen** — `bash tests/test-release-metadata.sh` → Trefferliste (`run.sh:362`, `:363`, `:524`, `claude-session-picker.sh:56`, `install-ha-cli.sh:23…`; `persist-install` ist nach Task 1 schon sauber), dann `FAIL (release metadata): run.sh or scripts/ still carry 32-bit branches or pins`.
+- [x] **Step 2: RED prüfen** — `bash tests/test-release-metadata.sh` → Trefferliste (`run.sh:362`, `:363`, `:524`, `claude-session-picker.sh:56`, `install-ha-cli.sh:23…`; `persist-install` ist nach Task 1 schon sauber), dann `FAIL (release metadata): run.sh or scripts/ still carry 32-bit branches or pins`.
 
-- [ ] **Step 3: `run.sh`** — den Block
+- [x] **Step 3: `run.sh`** — den Block
 
 ```bash
     # Current Claude Code native releases do not provide 32-bit ARM binaries.
@@ -225,9 +225,9 @@ ersetzen durch
     # commands. Needs a claude.ai OAuth login and Claude Code v2.1.51+.
 ```
 
-- [ ] **Step 4: Session-Picker-Kommentar** — `# The version the Update option would install. A pinned spec (ARMv7) is its` → `# The version the Update option would install. A pinned spec is its`.
+- [x] **Step 4: Session-Picker-Kommentar** — `# The version the Update option would install. A pinned spec (ARMv7) is its` → `# The version the Update option would install. A pinned spec is its`.
 
-- [ ] **Step 5: Dateien löschen, `.gitignore`**
+- [x] **Step 5: Dateien löschen, `.gitignore`**
 
 ```bash
 git rm -q claude-terminal/scripts/install-ha-cli.sh config/scripts/claude-session-picker.sh
@@ -241,9 +241,9 @@ In `.gitignore` direkt nach der Zeile `/config/options.json` anfügen:
 /data/
 ```
 
-- [ ] **Step 6: GREEN** — `bash tests/test-release-metadata.sh` → `Release metadata suite passed (version 2.3.0)`.
+- [x] **Step 6: GREEN** — `bash tests/test-release-metadata.sh` → `Release metadata suite passed (version 2.3.0)`.
 
-- [ ] **Step 7: Prüfen und committen** — `git check-ignore -v data/x` → `.gitignore:…:/data/`. `bash tests/test-startup-timeouts.sh` → `Startup timeout suite passed`.
+- [x] **Step 7: Prüfen und committen** — `git check-ignore -v data/x` → `.gitignore:…:/data/`. `bash tests/test-startup-timeouts.sh` → `Startup timeout suite passed`.
 
 ```bash
 git add tests/test-release-metadata.sh claude-terminal/run.sh claude-terminal/scripts/claude-session-picker.sh .gitignore
@@ -264,7 +264,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 **Files:** `.github/workflows/ci.yml`, `.github/workflows/claude.yml`
 
-- [ ] **Step 1: Ersetzungen** (alle Vorkommen):
+- [x] **Step 1: Ersetzungen** (alle Vorkommen):
 
 | alt | neu | Datei |
 |---|---|---|
@@ -278,9 +278,9 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 Kommentar über `node-version` ergänzen: `# Same major as the image (Alpine 3.21 ships Node 22).`
 
-- [ ] **Step 2: Prüfen** — `grep -n "uses:\|node-version" .github/workflows/*.yml` zeigt nur die neuen Versionen; `python -c "import yaml,sys;[yaml.safe_load(open(f)) for f in sys.argv[1:]]" .github/workflows/ci.yml .github/workflows/claude.yml` ohne Fehler (falls `yaml` lokal fehlt: Validierung durch die CI).
+- [x] **Step 2: Prüfen** — `grep -n "uses:\|node-version" .github/workflows/*.yml` zeigt nur die neuen Versionen; `python -c "import yaml,sys;[yaml.safe_load(open(f)) for f in sys.argv[1:]]" .github/workflows/ci.yml .github/workflows/claude.yml` ohne Fehler (falls `yaml` lokal fehlt: Validierung durch die CI).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add .github/workflows/ci.yml .github/workflows/claude.yml
@@ -299,8 +299,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 **Files:** `claude-terminal/config.yaml`, `claude-terminal/CHANGELOG.md`, `README.md` (Badge), `docs/release-notes-2.3.1.md`
 
-- [ ] **Step 1: RED** — `version: "2.3.0"` → `"2.3.1"`; `bash tests/test-release-metadata.sh` → `FAIL … CHANGELOG.md has no '## 2.3.1' section`.
-- [ ] **Step 2: CHANGELOG oben:**
+- [x] **Step 1: RED** — `version: "2.3.0"` → `"2.3.1"`; `bash tests/test-release-metadata.sh` → `FAIL … CHANGELOG.md has no '## 2.3.1' section`.
+- [x] **Step 2: CHANGELOG oben:**
 
 ```markdown
 ## 2.3.1
@@ -321,8 +321,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ```
 
-- [ ] **Step 3:** `README.md` Badge `badge/version-2.3.0-1f6feb` → `badge/version-2.3.1-1f6feb`.
-- [ ] **Step 4:** `docs/release-notes-2.3.1.md`:
+- [x] **Step 3:** `README.md` Badge `badge/version-2.3.0-1f6feb` → `badge/version-2.3.1-1f6feb`.
+- [x] **Step 4:** `docs/release-notes-2.3.1.md`:
 
 ```markdown
 ## `persist-install --ha-cli --force` installed an old HA CLI
@@ -336,18 +336,18 @@ It always installed version 4.46.0, a pin left over from 32-bit builds. That cop
 Full details: [CHANGELOG](https://github.com/Eifel-Joe/claude-code-ha/blob/main/claude-terminal/CHANGELOG.md).
 ```
 
-- [ ] **Step 5: Alle lokalen Suiten** (mit `TMPDIR`/`TMP`/`TEMP` auf `.tmp`): Metadaten (2.3.1), persist-install, Startup-Timeouts, Clipboard (100), Migration (`fail 0`), ShellCheck ohne Ausgabe, CRLF `0`. Danach `ls /tmp/tmp.* 2>/dev/null` → keine neuen Einträge.
-- [ ] **Step 6: Commit** `release: 2.3.1` (config.yaml, CHANGELOG, README, Release-Notes).
+- [x] **Step 5: Alle lokalen Suiten** (mit `TMPDIR`/`TMP`/`TEMP` auf `.tmp`): Metadaten (2.3.1), persist-install, Startup-Timeouts, Clipboard (100), Migration (`fail 0`), ShellCheck ohne Ausgabe, CRLF `0`. Danach `ls /tmp/tmp.* 2>/dev/null` → keine neuen Einträge.
+- [x] **Step 6: Commit** `release: 2.3.1` (config.yaml, CHANGELOG, README, Release-Notes).
 
 ---
 
 ### Task 5: Review, Ubuntu-26-Probe, CI, HA-Test, Release (mit Freigaben)
 
-- [ ] **Step 1: Code-Review** per Subagent gegen Spec/Plan (`git diff 2b4b2aa..HEAD`); Subagent arbeitet nur unter `.tmp/`.
-- [ ] **Step 2: Ubuntu-26-Zwischen-Commit** — in `ci.yml` alle drei `runs-on: ubuntu-latest` → `runs-on: ubuntu-26.04`; Commit `ci: run all jobs on ubuntu-26.04 (probe before the label switch)`.
-- [ ] **Step 3: Push — nur nach Freigabe.** CI-Lauf abwarten: alle Jobs grün auf Ubuntu 26.04 (im Log „Ubuntu 26.04“ bzw. Runner-Image prüfen), ShellCheck per `apt` installiert, keine Node-20-Annotations.
-- [ ] **Step 4: Zurück auf `ubuntu-latest`** — Commit `ci: back to ubuntu-latest after the 26.04 probe`; Push (Freigabe aus Step 3 gilt für diesen zweiten Push mit) und CI grün abwarten.
-- [ ] **Step 5: Merge nach `main` (`--no-ff`) und Push — nur nach Freigabe.**
-- [ ] **Step 6: HA-Test auf 2.3.1** — nur nach Freigabe; `check_updates`, `update` (bei Timeout Supervisor-Log, nicht erneut auslösen); `state: started`, Log fehlerfrei. User: `persist-install --ha-cli --force` zeigt aktuelle Version, danach `rm /data/packages/bin/ha`.
-- [ ] **Step 7: Tag `v2.3.1` + Release** — Titel und Text vorher im Chat, nur nach Freigabe.
-- [ ] **Step 8: Abschluss** — Memory (Punkte 10–12 erledigt), `docs/SESSION-STAND.md`, Plan abhaken, `.tmp/` leeren.
+- [x] **Step 1: Code-Review** per Subagent gegen Spec/Plan (`git diff 2b4b2aa..HEAD`); Subagent arbeitet nur unter `.tmp/`.
+- [x] **Step 2: Ubuntu-26-Zwischen-Commit** — in `ci.yml` alle drei `runs-on: ubuntu-latest` → `runs-on: ubuntu-26.04`; Commit `ci: run all jobs on ubuntu-26.04 (probe before the label switch)`.
+- [x] **Step 3: Push — nur nach Freigabe.** CI-Lauf abwarten: alle Jobs grün auf Ubuntu 26.04 (im Log „Ubuntu 26.04“ bzw. Runner-Image prüfen), ShellCheck per `apt` installiert, keine Node-20-Annotations.
+- [x] **Step 4: Zurück auf `ubuntu-latest`** — Commit `ci: back to ubuntu-latest after the 26.04 probe`; Push (Freigabe aus Step 3 gilt für diesen zweiten Push mit) und CI grün abwarten.
+- [x] **Step 5: Merge nach `main` (`--no-ff`) und Push — nur nach Freigabe.**
+- [x] **Step 6: HA-Test auf 2.3.1** — nur nach Freigabe; `check_updates`, `update` (bei Timeout Supervisor-Log, nicht erneut auslösen); `state: started`, Log fehlerfrei. User: `persist-install --ha-cli --force` zeigt aktuelle Version, danach `rm /data/packages/bin/ha`.
+- [x] **Step 7: Tag `v2.3.1` + Release** — Titel und Text vorher im Chat, nur nach Freigabe.
+- [x] **Step 8: Abschluss** — Memory (Punkte 10–12 erledigt), `docs/SESSION-STAND.md`, Plan abhaken, `.tmp/` leeren.

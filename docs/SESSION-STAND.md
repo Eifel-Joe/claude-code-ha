@@ -1,5 +1,42 @@
 # Sitzungsstand
 
+## 2026-10-07 (2) — Release 2.3.3 (Folgepunkte 10–12, persist-install --ha-cli)
+
+### Stand
+- Spec `docs/specs/2026-10-07-cleanup-32bit-ci-design.md`, Plan
+  `docs/plans/2026-10-07-cleanup-32bit-ci.md` (abgehakt). 2.3.1 (Bereinigung,
+  CI), 2.3.2 (`ha --version` gibt es nicht) und 2.3.3 (Hinweis auf verdeckende
+  Kopie) auf `main` (`ef6999e`); nur Tag/Release `v2.3.3` als Sammel-Release.
+- CI grün auf `main` (Lauf 37587636406). Ubuntu-26.04-Probe grün
+  (Lauf 37583213130); Actions auf Node-24-Majors, Tests auf Node 22.
+- HA-Test auf 2.3.3; vom User im App-Terminal bestätigt: `--force` installiert
+  v5.5.0 („ha runs ✓"), ohne `--force` ⚠️-Hinweis auf die Kopie (v5.5.0), nach
+  `rm` wieder „Nothing to do".
+- HA-Prod: laut User 2.2.2, nicht per MCP geprüft; Update nur mit Freigabe.
+
+### Verworfen
+- `persist-install --ha-cli` streichen (User wählte „neueste Version holen").
+- `/config/` komplett in `.gitignore` (nur `/data/` ergänzt).
+- Versionsdatei für die Image-CLI (Dockerfile-Änderung, nicht nötig).
+
+### Fallen
+- Die HA-CLI hat kein `--version` (4.x und 5.x, `cmd/root.go` ohne `Version`).
+- Im Image gibt es `/usr/bin/ha`: ohne `--force` greift immer zuerst diese
+  Prüfung; Tests überschreiben den Pfad mit `PERSIST_IMAGE_HA`.
+- Git Bash hält Dateien nur mit Shebang für ausführbar — Test-Fakes brauchen eins.
+- Eigene Kommentare mit `4.46.0`/`armv7` lösen den Metadaten-Schutz aus.
+- api.github.com ohne Token: 403 durch Rate-Limit möglich (CI-Lauf
+  37584251742, per Rerun grün) → Folgepunkt 13.
+- Temp-Dateien nur unter `.tmp/` im Projekt (Memory `no-temp-files-on-c`);
+  lokale Tests mit `TMPDIR`/`TMP`/`TEMP` darauf.
+
+### Nächste Schritte
+- HA-Prod auf 2.3.3 (Freigabe nötig).
+- Folgepunkte im Memory `claude-code-ha-followups` (3, 7, 9, 13, 14).
+
+### Empfohlene Skills
+- `task-loop` für den nächsten Folgepunkt.
+
 ## 2026-10-07 — Release 2.3.0 (Dockerfile statt build.yaml, armv7 raus, Doku)
 
 ### Stand
