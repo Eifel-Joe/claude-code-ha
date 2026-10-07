@@ -146,11 +146,46 @@ case "$out" in
     *"cannot run on this CPU"*) ;;
     *) fail "kvm64: auth helper does not explain: $out" ;;
 esac
+# The update item's label: never "up to date" without knowing the installed
+# version. A pinned spec is the "latest" version, so this needs no network.
+export CLAUDE_NPM_SPEC=@anthropic-ai/claude-code@9.9.9
+: > "$claude_calls"
+label=$(update_menu_label)
+case "$label" in
+    *"up to date"*) fail "kvm64: update label claims up to date: $label" ;;
+    *"latest 9.9.9; installed version not checked on this CPU"*) ;;
+    *) fail "kvm64: update label does not explain: $label" ;;
+esac
+[ ! -s "$claude_calls" ] || fail "kvm64: the update label ran Claude: $(cat "$claude_calls")"
 
 export CPU_CHECK_CPUINFO="$v2"
 [ "$(get_installed_version)" = "2.1.292" ] || fail "x86-64-v2: version lookup must run Claude"
 launch_claude_new < /dev/null > /dev/null 2>&1
 grep -q . "$claude_calls" || fail "x86-64-v2: new session did not start Claude"
+label=$(update_menu_label)
+[ "$label" = "Update Claude Code (2.1.292 → 9.9.9 available)" ] || \
+    fail "x86-64-v2: update label with a newer release: $label"
+export CLAUDE_NPM_SPEC=@anthropic-ai/claude-code@2.1.292
+label=$(update_menu_label)
+[ "$label" = "Update Claude Code (2.1.292, up to date)" ] || \
+    fail "x86-64-v2: update label when current: $label"
+label=$(CLAUDE_BIN="$tmp_dir/no-such-claude"; update_menu_label)
+case "$label" in
+    *"up to date"*) fail "missing binary: update label claims up to date: $label" ;;
+    *"latest 2.1.292; installed version unknown"*) ;;
+    *) fail "missing binary: update label does not explain: $label" ;;
+esac
+# A binary that prints something other than a version is no better.
+bad_claude="$tmp_dir/bad-claude"
+printf '#!/bin/sh\necho "Error: no version"\n' > "$bad_claude"
+chmod +x "$bad_claude"
+label=$(CLAUDE_BIN="$bad_claude"; update_menu_label)
+case "$label" in
+    *"up to date"*) fail "non-version output: update label claims up to date: $label" ;;
+    *"latest 2.1.292; installed version unknown"*) ;;
+    *) fail "non-version output: update label does not explain: $label" ;;
+esac
+unset CLAUDE_NPM_SPEC
 unset CPU_CHECK_ARCH CPU_CHECK_CPUINFO
 
 echo "cpu-check suite passed"

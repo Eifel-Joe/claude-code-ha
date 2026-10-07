@@ -73,11 +73,12 @@ compute_menu_numbers() {
 LATEST_VERSION_CACHE="${XDG_CACHE_HOME:-/data/.cache}/claude-latest-version"
 LATEST_VERSION_TTL=3600
 
-# "2.1.226 (Claude Code)" -> "2.1.226"
+# "2.1.226 (Claude Code)" -> "2.1.226"; nothing unless it looks like a
+# version, so an error message never reaches the "up to date" comparison.
 get_installed_version() {
     [ -z "$(claude_cpu_missing)" ] || return 0
     [ -x "$CLAUDE_BIN" ] || return 0
-    "$CLAUDE_BIN" --version 2>/dev/null | awk 'NR==1 {print $1}'
+    "$CLAUDE_BIN" --version 2>/dev/null | awk 'NR==1 && $1 ~ /^[0-9]/ {print $1}'
 }
 
 # Version line for the menu; never runs the binary where it would hang.
@@ -134,10 +135,19 @@ update_menu_label() {
 
     if [ -z "$latest" ]; then
         echo "Update Claude Code (latest version unknown)"
-    elif [ -n "$installed" ] && version_is_newer "$latest" "$installed"; then
+    elif [ -z "$installed" ]; then
+        # Unknown installed version is not "up to date". On a CPU without
+        # x86-64-v2 the version is deliberately not asked for (cpu-check.sh);
+        # otherwise the binary is missing or printed no version.
+        if [ -n "$(claude_cpu_missing)" ]; then
+            echo "Update Claude Code (latest $latest; installed version not checked on this CPU)"
+        else
+            echo "Update Claude Code (latest $latest; installed version unknown)"
+        fi
+    elif version_is_newer "$latest" "$installed"; then
         echo "Update Claude Code ($installed → $latest available)"
     else
-        echo "Update Claude Code (${installed:-$latest}, up to date)"
+        echo "Update Claude Code ($installed, up to date)"
     fi
 }
 
