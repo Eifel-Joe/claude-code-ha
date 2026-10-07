@@ -71,7 +71,8 @@ Stand: 2026-10-07 · Ziel-Version: 2.3.1 · Status: Entwurf im Chat bestätigt
 ## Nicht dabei
 - Alpine 3.22+, Fork-Survey (Punkt 7), Clipboard-Monitor (Punkt 9).
 - Vereinfachung der Pinned-Spec-Logik im Session-Picker.
-- Weitere `.gitignore`-Umbauten (z. B. `/config/` komplett).
+- `.gitignore`: nur `/data/` kommt dazu (siehe Entscheidung 1); `/config/` wird
+  **nicht** komplett ignoriert.
 
 ## Arbeitsweise
 Temporäre Dateien nur unter `.tmp/` im Projekt; lokale Tests mit
