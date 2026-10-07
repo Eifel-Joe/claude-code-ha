@@ -206,7 +206,12 @@ The terminal starts directly in your `/config` directory, giving you immediate a
 
 ## Troubleshooting
 
-- If Claude doesn't start automatically, try running `node /usr/local/bin/claude -i` manually
+- **Claude does not start on a virtual machine (blank panel or "cannot run on this CPU")**:
+  Claude Code needs an x86-64-v2 CPU (SSE4.2 and POPCNT). Proxmox's default
+  CPU type `kvm64` lacks both. Set the VM's CPU type to `host` (or at least
+  `x86-64-v2-AES`) and restart the VM. The app shows this hint in the log and
+  the terminal; the shell, `ha`, `gh` and your packages keep working.
+- If Claude doesn't start automatically, choose "🐚 Drop to bash shell" in the session menu and run `claude` to see its output
 - If you see permission errors, try restarting the app
 - If you have authentication issues, try logging out and back in
 - Check the app logs for any error messages

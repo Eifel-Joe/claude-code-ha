@@ -1,5 +1,20 @@
 # Changelog
 
+## 3.1.1
+
+### 🐛 Bug Fix - Clear message instead of a silent hang on older virtual CPUs
+- Claude Code needs an x86-64-v2 CPU (SSE4.2, POPCNT). On a Proxmox VM with
+  CPU type `kvm64` it hung without a word. The app now checks the CPU: the log
+  and the terminal say what is missing and how to fix it (CPU type `host` or
+  `x86-64-v2-AES`), and the session menu (including the auth helper) no
+  longer hangs. With `use_persistent_claude` the start no longer waits 15 s
+  for a hung version check and then wrongly tells you to reinstall. Verified:
+  Claude Code runs on `x86-64-v2-AES` without AVX/AVX2.
+
+### 📚 Documentation
+- Troubleshooting no longer suggests `node /usr/local/bin/claude -i`, which
+  does not work with the native Claude binary.
+
 ## 3.1.0
 
 ### ✨ New Feature - Every option explained

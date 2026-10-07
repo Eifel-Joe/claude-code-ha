@@ -12,6 +12,10 @@ STARTUP_NPM_TIMEOUT="${STARTUP_NPM_TIMEOUT:-300}"
 STARTUP_APK_TIMEOUT="${STARTUP_APK_TIMEOUT:-300}"
 STARTUP_PIP_TIMEOUT="${STARTUP_PIP_TIMEOUT:-900}"
 
+# CPU check shared with the session picker and health check (cpu-check.sh).
+# shellcheck source=/dev/null
+[ -f "${CPU_CHECK_SCRIPT:-/opt/scripts/cpu-check.sh}" ] && . "${CPU_CHECK_SCRIPT:-/opt/scripts/cpu-check.sh}"
+
 # Run a startup step under a time limit and return its own status. A cut-off is
 # told by the elapsed time, not the exit code: GNU timeout returns 124, BusyBox
 # timeout (Alpine) does not promise that.
@@ -375,6 +379,17 @@ setup_persistent_claude() {
         fi
     fi
 
+    # On a CPU without x86-64-v2 (cpu-check.sh) `--version` hangs into the
+    # timeout below and the install gets blamed; name the real cause instead.
+    if command -v claude_cpu_missing_flags >/dev/null 2>&1; then
+        local cpu_missing
+        cpu_missing=$(claude_cpu_missing_flags)
+        if [ -n "$cpu_missing" ]; then
+            bashio::log.warning "Persistent Claude override: skipped, Claude Code cannot run on this CPU (missing: ${cpu_missing}; needs x86-64-v2)"
+            return 0
+        fi
+    fi
+
     # Smoke-test the persistent binary before trusting it: this rejects a stale
     # or wrong-architecture install (e.g. an amd64 binary left in /data on a Pi).
     # Run under a timeout so a hung `--version` can never block app startup.
@@ -502,6 +517,22 @@ get_claude_launch_command() {
     dangerously_skip_permissions=$(bashio::config 'dangerously_skip_permissions' 'false')
     remote_control=$(bashio::config 'remote_control' 'false')
     remote_control_session_name=$(bashio::config 'remote_control_session_name' '')
+
+    # Claude Code hangs without a word on CPUs without x86-64-v2 (cpu-check.sh);
+    # open the session picker instead, which explains it.
+    local cpu_missing=""
+    if command -v claude_cpu_missing_flags >/dev/null 2>&1; then
+        cpu_missing=$(claude_cpu_missing_flags)
+    fi
+    if [ -n "$cpu_missing" ]; then
+        bashio::log.warning "Claude Code cannot run on this CPU (missing: ${cpu_missing}; needs x86-64-v2). Not starting it; see Troubleshooting in the app documentation."
+        if [ -f /usr/local/bin/claude-session-picker ]; then
+            echo "clear && /usr/local/bin/claude-session-picker"
+        else
+            echo "clear && bash -l"
+        fi
+        return 0
+    fi
 
     # Build Claude flags
     if [ "$dangerously_skip_permissions" = "true" ]; then
