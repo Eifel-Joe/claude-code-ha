@@ -357,15 +357,8 @@ setup_persistent_claude() {
 
     mkdir -p "$persistent_root"
 
-    # Current Claude Code native releases do not provide 32-bit ARM binaries.
-    case "$(uname -m)" in
-        armv7l|armv6l|armhf)
-            claude_npm_spec="@anthropic-ai/claude-code@1.0.128"
-            ;;
-    esac
-
     # Exported so the session picker's manual update option can reuse the
-    # same install path/spec instead of duplicating the arch resolution.
+    # same install path/spec instead of duplicating them.
     export PERSISTENT_CLAUDE_ROOT="$persistent_root"
     export CLAUDE_BIN_LINK="$claude_link"
     export CLAUDE_NPM_SPEC="$claude_npm_spec"
@@ -520,8 +513,7 @@ get_claude_launch_command() {
     # with claude.ai/code and the Claude mobile app (same as `claude --remote-control`),
     # so a phone or browser can drive it without opening the web terminal first.
     # Only affects the auto-launch path below; the session picker builds its own
-    # commands. Needs a claude.ai OAuth login and Claude Code v2.1.51+, so it does
-    # nothing on the ARMv7 image that pins the portable 1.0.128 release.
+    # commands. Needs a claude.ai OAuth login and Claude Code v2.1.51+.
     if [ "$remote_control" = "true" ]; then
         claude_flags="${claude_flags:+${claude_flags} }--remote-control"
         if [ -n "$remote_control_session_name" ]; then
