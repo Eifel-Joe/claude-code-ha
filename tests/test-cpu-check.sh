@@ -175,6 +175,16 @@ case "$label" in
     *"latest 2.1.292; installed version unknown"*) ;;
     *) fail "missing binary: update label does not explain: $label" ;;
 esac
+# A binary that prints something other than a version is no better.
+bad_claude="$tmp_dir/bad-claude"
+printf '#!/bin/sh\necho "Error: no version"\n' > "$bad_claude"
+chmod +x "$bad_claude"
+label=$(CLAUDE_BIN="$bad_claude"; update_menu_label)
+case "$label" in
+    *"up to date"*) fail "non-version output: update label claims up to date: $label" ;;
+    *"latest 2.1.292; installed version unknown"*) ;;
+    *) fail "non-version output: update label does not explain: $label" ;;
+esac
 unset CLAUDE_NPM_SPEC
 unset CPU_CHECK_ARCH CPU_CHECK_CPUINFO
 

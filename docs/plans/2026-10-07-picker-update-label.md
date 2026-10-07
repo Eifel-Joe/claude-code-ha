@@ -20,7 +20,7 @@ Mehrzeiliges mit dem Edit-Tool, nicht per Heredoc. Nach jeder Änderung
 **Files:**
 - Test: `tests/test-cpu-check.sh` (Abschnitt `# --- session picker ---`)
 
-- [ ] **Step 1: kvm64-Fall ergänzen** — direkt nach dem Auth-Helper-Block (nach der Zeile `esac`, die auf `*) fail "kvm64: auth helper does not explain: $out" ;;` folgt) und vor `export CPU_CHECK_CPUINFO="$v2"` einfügen:
+- [x] **Step 1: kvm64-Fall ergänzen** — direkt nach dem Auth-Helper-Block (nach der Zeile `esac`, die auf `*) fail "kvm64: auth helper does not explain: $out" ;;` folgt) und vor `export CPU_CHECK_CPUINFO="$v2"` einfügen:
 
 ```bash
 # The update item's label: never "up to date" without knowing the installed
@@ -36,7 +36,7 @@ esac
 [ ! -s "$claude_calls" ] || fail "kvm64: the update label ran Claude: $(cat "$claude_calls")"
 ```
 
-- [ ] **Step 2: x86-64-v2-Fälle ergänzen** — nach `grep -q . "$claude_calls" || fail "x86-64-v2: new session did not start Claude"` und vor `unset CPU_CHECK_ARCH CPU_CHECK_CPUINFO` einfügen:
+- [x] **Step 2: x86-64-v2-Fälle ergänzen** — nach `grep -q . "$claude_calls" || fail "x86-64-v2: new session did not start Claude"` und vor `unset CPU_CHECK_ARCH CPU_CHECK_CPUINFO` einfügen:
 
 ```bash
 label=$(update_menu_label)
@@ -55,12 +55,12 @@ esac
 unset CLAUDE_NPM_SPEC
 ```
 
-- [ ] **Step 3: RED prüfen**
+- [x] **Step 3: RED prüfen**
 
 Run: `bash tests/test-cpu-check.sh < /dev/null`
 Expected: Exit 1, `FAIL (…): kvm64: update label claims up to date: Update Claude Code (9.9.9, up to date)`
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tests/test-cpu-check.sh
@@ -72,7 +72,7 @@ git commit -m "test: picker update label must not claim up to date without a ver
 **Files:**
 - Modify: `claude-workbench/scripts/claude-session-picker.sh` (`update_menu_label`, ca. Zeile 130–142)
 
-- [ ] **Step 1: Funktion ersetzen** durch:
+- [x] **Step 1: Funktion ersetzen** durch:
 
 ```bash
 update_menu_label() {
@@ -99,14 +99,14 @@ update_menu_label() {
 }
 ```
 
-- [ ] **Step 2: GREEN prüfen**
+- [x] **Step 2: GREEN prüfen**
 
 Run: `bash tests/test-cpu-check.sh < /dev/null`
 Expected: `cpu-check suite passed`, Exit 0
 
-- [ ] **Step 3: Gegenprobe Schwester-Zweig** — nur in dieser Datei den `elif [ -z "$installed" ]`-Zweig vorübergehend entfernen, Test muss mit `kvm64: update label claims up to date` fallen; danach Zweig wiederherstellen (Edit-Tool, kein `git checkout -- .`), Test wieder grün.
+- [x] **Step 3: Gegenprobe Schwester-Zweig** — nur in dieser Datei den `elif [ -z "$installed" ]`-Zweig vorübergehend entfernen, Test muss mit `kvm64: update label claims up to date` fallen; danach Zweig wiederherstellen (Edit-Tool, kein `git checkout -- .`), Test wieder grün.
 
-- [ ] **Step 4: Volle lokale Suite + ShellCheck**
+- [x] **Step 4: Volle lokale Suite + ShellCheck**
 
 ```bash
 bash tests/test-release-metadata.sh
@@ -119,7 +119,7 @@ shellcheck -S warning -e SC1008,SC1007,SC2155 -x claude-workbench/run.sh claude-
 ```
 Expected: alle grün, ShellCheck ohne Ausgabe.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add claude-workbench/scripts/claude-session-picker.sh
@@ -134,9 +134,9 @@ git commit -m "fix(picker): do not claim 'up to date' when the installed version
 - Modify: `claude-workbench/CHANGELOG.md` (oben)
 - Create: `docs/release-notes-3.1.2.md`
 
-- [ ] **Step 1: Version und Badge** auf 3.1.2.
+- [x] **Step 1: Version und Badge** auf 3.1.2.
 
-- [ ] **Step 2: CHANGELOG** direkt unter `# Changelog` einfügen:
+- [x] **Step 2: CHANGELOG** direkt unter `# Changelog` einfügen:
 
 ```markdown
 ## 3.1.2
@@ -149,7 +149,7 @@ git commit -m "fix(picker): do not claim 'up to date' when the installed version
   version was not checked on this CPU, or is unknown.
 ```
 
-- [ ] **Step 3: Release-Notes** `docs/release-notes-3.1.2.md`:
+- [x] **Step 3: Release-Notes** `docs/release-notes-3.1.2.md`:
 
 ```markdown
 ## Update menu no longer claims "up to date" without knowing
@@ -159,11 +159,11 @@ With `use_persistent_claude`, the session menu's **🔄 Update Claude Code** ite
 Full details: [CHANGELOG](https://github.com/Eifel-Joe/claude-workbench/blob/main/claude-workbench/CHANGELOG.md).
 ```
 
-- [ ] **Step 4: Prüfen**
+- [x] **Step 4: Prüfen**
 
 Run: `bash tests/test-release-metadata.sh` → grün; `git ls-files --eol | grep -c "crlf\|mixed"` → `0`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add claude-workbench/config.yaml README.md claude-workbench/CHANGELOG.md docs/release-notes-3.1.2.md
@@ -172,7 +172,7 @@ git commit -m "chore(release): 3.1.2"
 
 ### Task 4: Review, CI, HA-Test, Release (je mit Freigabe)
 
-- [ ] **Step 1:** Code-Review per Subagent (`superpowers:requesting-code-review`) über `main..fix/picker-update-label` gegen Spec und Plan.
+- [x] **Step 1:** Code-Review per Subagent (`superpowers:requesting-code-review`) über `main..fix/picker-update-label` gegen Spec und Plan.
 - [ ] **Step 2:** Push des Branches (Freigabe), CI über `gh run list --repo Eifel-Joe/claude-workbench --branch fix/picker-update-label` (bei zwei Läufen den zweiten nehmen) → grün.
 - [ ] **Step 3:** Merge nach `main` (`--no-ff`), Push (Freigabe), CI auf `main` grün.
 - [ ] **Step 4:** HA-Test: `ha_manage_app` check_updates, dann update auf 3.1.2; App-Log prüfen. User prüft im Picker (bei `use_persistent_claude: true`) das Label auf CPU-Typ `host`: zeigt die installierte Version wie bisher.
