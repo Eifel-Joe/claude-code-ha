@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.1.2
+
+### 🐛 Bug Fix - Update menu no longer claims "up to date" without knowing
+- With `use_persistent_claude`, the session menu's **🔄 Update Claude Code**
+  item showed the latest release as "up to date" whenever the installed
+  version was unknown: on a CPU without x86-64-v2 (where the app does not run
+  Claude to ask) or when the binary was missing. It now says the installed
+  version was not checked on this CPU, or is unknown.
+
 ## 3.1.1
 
 ### 🐛 Bug Fix - Clear message instead of a silent hang on older virtual CPUs
