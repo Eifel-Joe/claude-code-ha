@@ -14,6 +14,11 @@
   Assistant configuration is mapped as `homeassistant_config`, still at
   `/config`, so nothing changes in the terminal.
 
+### 🐛 Bug Fix - Terminal panel no longer dies on a dropped connection
+- When ttyd dropped a connection after it had started answering, the image
+  service crashed (`ERR_HTTP_HEADERS_SENT`) and the panel stayed blank until
+  the app was restarted. It now just closes that one response.
+
 ## 3.0.0
 
 ### ✨ New Feature - Claude Terminal Pro is now Claude Workbench
