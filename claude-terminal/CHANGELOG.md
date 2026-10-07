@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.3.2
+
+### 🐛 Bug Fix - `persist-install --ha-cli` printed an error instead of a version
+- The `ha` CLI has no `--version` flag (neither 4.x nor 5.x), so after an
+  install, and when reporting an existing copy, it showed
+  `Error: unknown flag: --version` and the usage text.
+- The install now records the version it downloaded in
+  `/data/packages/bin/.ha-version` and shows it; an existing copy without that
+  record is reported as `unknown (installed before 2.3.1)`, which hints at the
+  old pinned 4.46.0. The post-install check runs `ha help`, which works
+  offline.
+
 ## 2.3.1
 
 ### 🐛 Bug Fix - `persist-install --ha-cli --force` installed an old HA CLI
