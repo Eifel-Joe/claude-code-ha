@@ -64,7 +64,7 @@ liegt im Image unter `/opt/scripts/cpu-check.sh`.
 
 Neue Prüfung `check_cpu_compatibility` in `run_diagnostics`: bei fehlenden
 Merkmalen `bashio::log.warning` mit derselben Aussage (Merkmale, x86-64-v2,
-Proxmox-Hinweis); sonst eine `info`-Zeile „CPU supports x86-64-v2 ✓“. Zählt
+Proxmox-Hinweis); sonst eine `info`-Zeile „CPU meets Claude Code's requirements ✓“. Zählt
 nicht als Fehler (Start läuft weiter).
 
 ### 3. Autostart (`run.sh`, `get_claude_launch_command`)
@@ -84,6 +84,18 @@ Rückfallpfad „Session picker not found“.
   - Nach „Update Claude Code“ keine Versionsabfrage der neuen Binary.
 - Am Dateiende `main "$@"` nur, wenn `CLAUDE_PICKER_SKIP_MAIN` nicht `true`
   ist (für Tests, wie `CLAUDE_RUN_SH_SKIP_MAIN` in `run.sh`).
+
+### 4a. Nach Review ergänzt
+
+- Picker-Menüpunkt „Auth helper“ (`launch_auth_helper`) ist ebenfalls
+  geschützt: `claude-auth-helper.sh` pipet in `claude` und endet mit
+  `exec claude`.
+- `run.sh` `setup_persistent_claude`: bei fehlenden Merkmalen kein
+  `--version`-Smoke-Test (lief 15 s in die Zeitgrenze und meldete dann
+  fälschlich „no working persistent Claude install … install it manually“),
+  stattdessen Warnung mit der CPU als Ursache.
+- DOCS nennt den Menüpunkt „Drop to bash shell“ beim Namen (die Nummer ist
+  7 oder 8, je nach `use_persistent_claude`).
 
 ### 5. Doku
 
@@ -124,6 +136,6 @@ Mit Fixture-`cpuinfo`-Dateien unter `$TMPDIR`:
 2. HA-Test auf 3.1.1, CPU-Typ vorübergehend `kvm64` (User stellt um):
    App-Log zeigt die CPU-Warnung; Panel zeigt statt Hänger den Hinweis und
    den Session-Picker; Bash (Option 8), `ha` und `gh` funktionieren.
-3. HA-Test zurück auf `x86-64-v3`/`host`: Log „CPU supports x86-64-v2 ✓“,
+3. HA-Test zurück auf `x86-64-v3`/`host`: Log „CPU meets Claude Code's requirements ✓“,
    Claude startet automatisch wie bisher.
 4. HA-Prod: Update durch User, App-Log ohne CPU-Warnung, Claude startet.

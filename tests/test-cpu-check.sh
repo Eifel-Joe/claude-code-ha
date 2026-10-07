@@ -78,10 +78,39 @@ case "$cmd" in
 esac
 grep -q '^warning|.*cannot run on this CPU' "$log" || fail "auto-launch did not log why Claude is not started"
 cmd=$(CPU_CHECK_ARCH=x86_64 CPU_CHECK_CPUINFO="$v2" get_claude_launch_command)
+# Not just "/usr/local/bin/claude": that would also match claude-session-picker.
 case "$cmd" in
-    *"/usr/local/bin/claude"*) ;;
+    *"/usr/local/bin/claude "*|*"/usr/local/bin/claude") ;;
     *) fail "auto-launch must start Claude on x86-64-v2: $cmd" ;;
 esac
+
+# --- persistent Claude smoke test in run.sh ---
+
+# It runs `claude --version` at startup; on kvm64 that hangs into its 15 s
+# timeout and then blames the install.
+persistent_calls="$tmp_dir/persistent-calls"
+export PERSISTENT_CLAUDE_ROOT="$tmp_dir/npm"
+mkdir -p "$PERSISTENT_CLAUDE_ROOT/bin" "$PERSISTENT_CLAUDE_ROOT/lib/node_modules/@anthropic-ai/claude-code"
+printf '{}\n' > "$PERSISTENT_CLAUDE_ROOT/lib/node_modules/@anthropic-ai/claude-code/package.json"
+printf '#!/bin/sh\necho "$@" >> "%s"\necho "2.1.292 (Claude Code)"\n' "$persistent_calls" > "$PERSISTENT_CLAUDE_ROOT/bin/claude"
+chmod +x "$PERSISTENT_CLAUDE_ROOT/bin/claude"
+export CLAUDE_BIN_LINK="$tmp_dir/link/claude" CLAUDE_NATIVE_BIN_LINK="$tmp_dir/native/claude"
+mkdir -p "$tmp_dir/link" "$tmp_dir/native"
+bashio::config() {
+    case "$1" in
+        use_persistent_claude) printf '%s\n' true ;;
+        auto_update_claude_on_start) printf '%s\n' false ;;
+        *) printf '%s\n' "${2:-}" ;;
+    esac
+}
+: > "$log"
+: > "$persistent_calls"
+CPU_CHECK_ARCH=x86_64 CPU_CHECK_CPUINFO="$kvm64" setup_persistent_claude
+[ ! -s "$persistent_calls" ] || fail "kvm64: startup still ran the persistent Claude binary"
+grep -q '^warning|.*cannot run on this CPU' "$log" || fail "kvm64: persistent setup did not name the CPU: $(cat "$log")"
+! grep -q 'no working persistent Claude install' "$log" || fail "kvm64: persistent setup blames the install instead of the CPU"
+CPU_CHECK_ARCH=x86_64 CPU_CHECK_CPUINFO="$v2" setup_persistent_claude
+grep -q -- '--version' "$persistent_calls" || fail "x86-64-v2: persistent smoke test must still run"
 
 # --- session picker ---
 
@@ -110,6 +139,13 @@ launch_claude_continue < /dev/null > /dev/null 2>&1
 launch_claude_resume < /dev/null > /dev/null 2>&1
 printf 'foo\n' | launch_claude_custom > /dev/null 2>&1
 [ ! -s "$claude_calls" ] || fail "kvm64: the picker still ran Claude: $(cat "$claude_calls")"
+# The auth helper pipes into and finally execs claude; it must not even start.
+out=$(launch_auth_helper < /dev/null 2>&1)
+case "$out" in
+    *"Starting Claude authentication helper"*) fail "kvm64: auth helper still starts: $out" ;;
+    *"cannot run on this CPU"*) ;;
+    *) fail "kvm64: auth helper does not explain: $out" ;;
+esac
 
 export CPU_CHECK_CPUINFO="$v2"
 [ "$(get_installed_version)" = "2.1.292" ] || fail "x86-64-v2: version lookup must run Claude"

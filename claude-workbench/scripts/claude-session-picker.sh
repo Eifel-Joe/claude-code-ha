@@ -260,6 +260,8 @@ launch_update_claude() {
 }
 
 launch_auth_helper() {
+    # The helper pipes into and finally execs claude.
+    claude_runs_here || return 0
     echo "🔐 Starting Claude authentication helper..."
     sleep 1
     /opt/scripts/claude-auth-helper.sh

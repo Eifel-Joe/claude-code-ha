@@ -211,7 +211,7 @@ The terminal starts directly in your `/config` directory, giving you immediate a
   CPU type `kvm64` lacks both. Set the VM's CPU type to `host` (or at least
   `x86-64-v2-AES`) and restart the VM. The app shows this hint in the log and
   the terminal; the shell, `ha`, `gh` and your packages keep working.
-- If Claude doesn't start automatically, open the bash shell from the session menu (option 8) and run `claude` to see its output
+- If Claude doesn't start automatically, choose "🐚 Drop to bash shell" in the session menu and run `claude` to see its output
 - If you see permission errors, try restarting the app
 - If you have authentication issues, try logging out and back in
 - Check the app logs for any error messages

@@ -379,6 +379,17 @@ setup_persistent_claude() {
         fi
     fi
 
+    # On a CPU without x86-64-v2 (cpu-check.sh) `--version` hangs into the
+    # timeout below and the install gets blamed; name the real cause instead.
+    if command -v claude_cpu_missing_flags >/dev/null 2>&1; then
+        local cpu_missing
+        cpu_missing=$(claude_cpu_missing_flags)
+        if [ -n "$cpu_missing" ]; then
+            bashio::log.warning "Persistent Claude override: skipped, Claude Code cannot run on this CPU (missing: ${cpu_missing}; needs x86-64-v2)"
+            return 0
+        fi
+    fi
+
     # Smoke-test the persistent binary before trusting it: this rejects a stale
     # or wrong-architecture install (e.g. an amd64 binary left in /data on a Pi).
     # Run under a timeout so a hung `--version` can never block app startup.
