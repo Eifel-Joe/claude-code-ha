@@ -20,7 +20,7 @@
 - Delete: `claude-terminal/build.yaml`
 - Modify: `.github/workflows/ci.yml` (Hadolint-Ausnahmen, YAML-Validierung, Build-Matrix, Build-Args)
 
-- [ ] **Step 1: Test anpassen (RED)**
+- [x] **Step 1: Test anpassen (RED)**
 
 In `tests/test-release-metadata.sh` den Kopfkommentar
 
@@ -78,12 +78,12 @@ done < <(sed -n '/^arch:/,/^[a-z]/{s/^  - //p;}' "$addon_dir/config.yaml")
 
 ersatzlos löschen (die Arch-Prüfung kommt in Task 2 neu).
 
-- [ ] **Step 2: Test laufen lassen, Fehlschlag prüfen**
+- [x] **Step 2: Test laufen lassen, Fehlschlag prüfen**
 
 Run: `bash tests/test-release-metadata.sh`
 Expected: `FAIL (release metadata): claude-terminal/build.yaml exists; build parameters belong in the Dockerfile`, Exit-Code 1.
 
-- [ ] **Step 3: Dockerfile-Kopf ersetzen, `build.yaml` löschen**
+- [x] **Step 3: Dockerfile-Kopf ersetzen, `build.yaml` löschen**
 
 `claude-terminal/Dockerfile` Z. 1–2
 
@@ -110,7 +110,7 @@ LABEL \
 
 Run: `git rm claude-terminal/build.yaml`
 
-- [ ] **Step 4: CI anpassen**
+- [x] **Step 4: CI anpassen**
 
 In `.github/workflows/ci.yml`:
 
@@ -185,13 +185,13 @@ ersetzen durch
             BUILD_ARCH=${{ matrix.arch }}
 ```
 
-- [ ] **Step 5: Test laufen lassen (GREEN)**
+- [x] **Step 5: Test laufen lassen (GREEN)**
 
 Run: `bash tests/test-release-metadata.sh`
 Expected: `Release metadata suite passed (version 2.2.2)`.
 Run: `grep -n "build.yaml\|matrix.base\|DL3006" .github/workflows/ci.yml` → keine Ausgabe.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add tests/test-release-metadata.sh claude-terminal/Dockerfile .github/workflows/ci.yml
@@ -215,7 +215,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `claude-terminal/config.yaml:9-12`
 - Modify: `claude-terminal/Dockerfile` (Arch-Erkennung, Claude-Code-, HA-CLI-, gh-Installation)
 
-- [ ] **Step 1: Test ergänzen (RED)**
+- [x] **Step 1: Test ergänzen (RED)**
 
 In `tests/test-release-metadata.sh` direkt nach dem `ARG BUILD_FROM`-Block einfügen:
 
@@ -234,12 +234,12 @@ if grep -nE 'armv7|armhf|armv6|i386|1\.0\.128' "$dockerfile"; then
 fi
 ```
 
-- [ ] **Step 2: Test laufen lassen, Fehlschlag prüfen**
+- [x] **Step 2: Test laufen lassen, Fehlschlag prüfen**
 
 Run: `bash tests/test-release-metadata.sh`
 Expected: `FAIL (release metadata): config.yaml declares arch 'armv7'; only amd64 and aarch64 have a base image`.
 
-- [ ] **Step 3: `config.yaml`**
+- [x] **Step 3: `config.yaml`**
 
 ```yaml
 arch:
@@ -256,12 +256,12 @@ arch:
   - amd64
 ```
 
-- [ ] **Step 4: Test laufen lassen, nächster Fehlschlag**
+- [x] **Step 4: Test laufen lassen, nächster Fehlschlag**
 
 Run: `bash tests/test-release-metadata.sh`
 Expected: Zeilen mit `armv7`/`armhf`/`i386`/`1.0.128` aus dem Dockerfile, dann `FAIL (release metadata): Dockerfile still carries 32-bit branches`.
 
-- [ ] **Step 5: Dockerfile — Arch-Erkennung**
+- [x] **Step 5: Dockerfile — Arch-Erkennung**
 
 Den Block vom Kommentar `# Home Assistant Supervisor always passes BUILD_ARCH (amd64|aarch64|armv7|armhf|i386)` bis einschließlich der Zeile `    echo "Resolved add-on architecture: ${ADDON_ARCH} (BUILD_ARCH='${BUILD_ARCH}' TARGETARCH='${TARGETARCH}/${TARGETVARIANT}' uname='$(uname -m)')"` ersetzen durch
 
@@ -294,7 +294,7 @@ RUN ADDON_ARCH="${BUILD_ARCH}"; \
     echo "Resolved add-on architecture: ${ADDON_ARCH} (BUILD_ARCH='${BUILD_ARCH}' TARGETARCH='${TARGETARCH}' uname='$(uname -m)')"
 ```
 
-- [ ] **Step 6: Dockerfile — Claude Code**
+- [x] **Step 6: Dockerfile — Claude Code**
 
 Den Block vom Kommentar `# Install Claude Code CLI. Current native releases do not publish a 32-bit ARM` bis einschließlich `    fi` (Ende des `RUN`) ersetzen durch
 
@@ -311,7 +311,7 @@ RUN (timeout 300 bash -c "curl -fsSL https://claude.ai/install.sh | bash" \
     || { rm -f /root/.local/bin/claude; npm install -g @anthropic-ai/claude-code; }
 ```
 
-- [ ] **Step 7: Dockerfile — HA-CLI**
+- [x] **Step 7: Dockerfile — HA-CLI**
 
 Den Block vom Kommentar `# Install Home Assistant CLI (ha command)` bis zur Zeile `    esac && \` des `case` (einschließlich) plus die folgenden drei Zeilen `if [ "${HA_VERSION}" = "latest" ] …` bis `    fi && \` ersetzen durch
 
@@ -325,7 +325,7 @@ RUN HA_ARCH=$(cat /etc/addon-arch) && \
 
 Die nachfolgenden Zeilen ab `    echo "Installing Home Assistant CLI ${HA_VERSION} for ${HA_ARCH}..." && \` bleiben unverändert.
 
-- [ ] **Step 8: Dockerfile — GitHub CLI**
+- [x] **Step 8: Dockerfile — GitHub CLI**
 
 Den Block vom Kommentar `# Install GitHub CLI (gh command)` bis zur Zeile `    fi && \` nach `GH_VERSION=$(curl … | sed 's/^v//');` ersetzen durch
 
@@ -342,12 +342,12 @@ RUN case "$(cat /etc/addon-arch)" in \
 
 Die nachfolgenden Zeilen ab `    echo "Installing GitHub CLI v${GH_VERSION} for ${GH_ARCH}..." && \` bleiben unverändert.
 
-- [ ] **Step 9: Test laufen lassen (GREEN) und Sichtprüfung**
+- [x] **Step 9: Test laufen lassen (GREEN) und Sichtprüfung**
 
 Run: `bash tests/test-release-metadata.sh` → `Release metadata suite passed (version 2.2.2)`.
 Run: `sed -n 1,130p claude-terminal/Dockerfile` und prüfen: jedes `RUN … \`-Fortsetzungs-Ende sauber, kein verwaistes `fi`/`esac`, `TARGETVARIANT` nirgends mehr (`grep -n TARGETVARIANT claude-terminal/Dockerfile` → leer).
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add tests/test-release-metadata.sh claude-terminal/config.yaml claude-terminal/Dockerfile
@@ -370,7 +370,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `DEVELOPMENT.md`, `CLAUDE.md`, `flake.nix`, `README.md`, `claude-terminal/README.md`, `claude-terminal/DOCS.md`
 - Delete: `DEVELOPMENT_STATUS.md`, `DOCS.md` (Repo-Root)
 
-- [ ] **Step 1: Test ergänzen (RED)**
+- [x] **Step 1: Test ergänzen (RED)**
 
 In `tests/test-release-metadata.sh` direkt vor `echo "Release metadata suite passed …"` einfügen:
 
@@ -400,18 +400,18 @@ if grep -niE 'armv7' "$addon_dir/DOCS.md"; then
 fi
 ```
 
-- [ ] **Step 2: Test laufen lassen, Fehlschlag prüfen**
+- [x] **Step 2: Test laufen lassen, Fehlschlag prüfen**
 
 Run: `bash tests/test-release-metadata.sh`
 Expected: `CLAUDE.md:31:podman build --build-arg BUILD_FROM=…` usw., dann `FAIL (release metadata): CLAUDE.md still passes BUILD_FROM; …`.
 
-- [ ] **Step 3: Dateien löschen**
+- [x] **Step 3: Dateien löschen**
 
 ```bash
 git rm DEVELOPMENT_STATUS.md DOCS.md
 ```
 
-- [ ] **Step 4: `DEVELOPMENT.md`**
+- [x] **Step 4: `DEVELOPMENT.md`**
 
 Jede Ersetzung exakt:
 
@@ -467,7 +467,7 @@ podman build --platform linux/arm64 \
 ```
 ````
 
-- [ ] **Step 5: `CLAUDE.md`**
+- [x] **Step 5: `CLAUDE.md`**
 
 | alt | neu |
 |---|---|
@@ -487,12 +487,12 @@ podman build --platform linux/arm64 \
 
 Danach: `grep -n "BUILD_FROM\|build.yaml\|armv7\|test-config/claude-config" CLAUDE.md` → keine Ausgabe außer der neuen Dockerfile-Zeile mit „There is no build.yaml".
 
-- [ ] **Step 6: `flake.nix`**
+- [x] **Step 6: `flake.nix`**
 
 `alias build-addon='podman build --build-arg BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.21 -t local/claude-terminal ./claude-terminal'`
 → `alias build-addon='podman build -t local/claude-terminal ./claude-terminal'`
 
-- [ ] **Step 7: `README.md`**
+- [x] **Step 7: `README.md`**
 
 a) Badge Z. 6: `arch-amd64%20%7C%20aarch64%20%7C%20armv7-8957e5` → `arch-amd64%20%7C%20aarch64-8957e5`.
 
@@ -504,25 +504,25 @@ b) In „Architecture support" die Zeile `| \`armv7\` | portable JS …` und die
 
 (Der Satz nennt `armv7` bewusst; die Prüfung aus Step 1 testet für `README.md` deshalb nur die Tabellenzeile.)
 
-- [ ] **Step 8: `claude-terminal/README.md`**
+- [x] **Step 8: `claude-terminal/README.md`**
 
 - Z. 25: `- **Claude Code CLI**: Latest native release on amd64/aarch64; ARMv7 uses the final portable JavaScript release (\`1.0.128\`) because current native releases do not publish ARM32 binaries` → `- **Claude Code CLI**: Latest native release`
 - Z. 30: `- **Multi-Architecture Support**: Works on amd64, aarch64, and armv7 platforms` → `- **Multi-Architecture Support**: Works on amd64 and aarch64`
 - „Version History" (v1.0.2 …) bleibt unverändert (Historie).
 
-- [ ] **Step 9: `claude-terminal/DOCS.md`**
+- [x] **Step 9: `claude-terminal/DOCS.md`**
 
 - Z. 53: `- **Requires** a claude.ai OAuth login (API keys are not supported) and Claude Code v2.1.51 or later. It is therefore not available on the ARMv7 build, which pins the portable \`1.0.128\` release` → `- **Requires** a claude.ai OAuth login (API keys are not supported) and Claude Code v2.1.51 or later`
 - Den Absatz `On ARMv7, use the final portable JavaScript release because current Claude Code` / `native releases do not publish ARM32 binaries:` samt dem folgenden ```` ```bash ```` -Block mit `@1.0.128` und der Leerzeile danach löschen.
 
-- [ ] **Step 10: Test laufen lassen (GREEN)**
+- [x] **Step 10: Test laufen lassen (GREEN)**
 
 Run: `bash tests/test-release-metadata.sh` → `Release metadata suite passed (version 2.2.2)`.
 Run: `grep -rn "BUILD_FROM\|claude-config" --include=*.md --include=*.nix --include=*.yml . | grep -v "^./docs/\|CHANGELOG.md"`
 Expected: nur die bewusst stehenden Hinweise auf die einmalige Übernahme aus `/config/claude-config` (`CLAUDE.md` Abschnitt „Credential System", `claude-terminal/DOCS.md`), kein `BUILD_FROM`.
 Run: `ls DEVELOPMENT_STATUS.md DOCS.md` → beide „No such file or directory".
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add tests/test-release-metadata.sh DEVELOPMENT.md CLAUDE.md flake.nix README.md claude-terminal/README.md claude-terminal/DOCS.md
@@ -546,13 +546,13 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `README.md` (Versions-Badge Z. 3)
 - Create: `docs/release-notes-2.3.0.md`
 
-- [ ] **Step 1: Version bumpen (RED)**
+- [x] **Step 1: Version bumpen (RED)**
 
 `claude-terminal/config.yaml`: `version: "2.2.2"` → `version: "2.3.0"`.
 Run: `bash tests/test-release-metadata.sh`
 Expected: `FAIL (release metadata): CHANGELOG.md has no '## 2.3.0' section for the current version`.
 
-- [ ] **Step 2: CHANGELOG oben einfügen**
+- [x] **Step 2: CHANGELOG oben einfügen**
 
 ```markdown
 ## 2.3.0
@@ -579,11 +579,11 @@ Expected: `FAIL (release metadata): CHANGELOG.md has no '## 2.3.0' section for t
 
 ```
 
-- [ ] **Step 3: README-Versions-Badge**
+- [x] **Step 3: README-Versions-Badge**
 
 `README.md` Z. 3: `badge/version-2.2.0-1f6feb` → `badge/version-2.3.0-1f6feb`.
 
-- [ ] **Step 4: Release-Notes**
+- [x] **Step 4: Release-Notes**
 
 `docs/release-notes-2.3.0.md`:
 
@@ -602,7 +602,7 @@ Home Assistant ended support for 32-bit systems with 2025.12, and the Supervisor
 Full details: [CHANGELOG](https://github.com/Eifel-Joe/claude-code-ha/blob/main/claude-terminal/CHANGELOG.md).
 ```
 
-- [ ] **Step 5: Alle lokalen Suiten**
+- [x] **Step 5: Alle lokalen Suiten**
 
 ```bash
 bash tests/test-release-metadata.sh
@@ -615,7 +615,7 @@ git ls-files --eol | grep -c "crlf\|mixed"
 
 Expected: `Release metadata suite passed (version 2.3.0)`, `Startup timeout suite passed`, Clipboard-Suite ohne Fehler, Migrationstests `# fail 0`, ShellCheck ohne Ausgabe, `0`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add claude-terminal/config.yaml claude-terminal/CHANGELOG.md README.md docs/release-notes-2.3.0.md
@@ -628,12 +628,12 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ### Task 5: Review, CI, HA-Test, Release (mit Freigaben)
 
-- [ ] **Step 1: Code-Review** per Subagent (`superpowers:requesting-code-review`) gegen Spec und Plan, Diff `main..chore/dockerfile-build-armv7`. Befunde über `superpowers:receiving-code-review` prüfen.
-- [ ] **Step 2: Push** des Branches — **nur nach Freigabe im Chat**. Dann CI: `gh run list --repo Eifel-Joe/claude-code-ha --branch chore/dockerfile-build-armv7 --limit 1` und `gh run view <id> --repo Eifel-Joe/claude-code-ha`. Erwartet: Lint (inkl. Hadolint ohne DL3006), Regression suites, Build amd64 und Build aarch64 grün. Scheitert Hadolint an DL3006: Ausnahme mit korrigiertem Kommentar zurück (Spec erlaubt das).
-- [ ] **Step 3: Merge nach `main`** (`--no-ff`, wie bisher) und Push — **nur nach Freigabe**.
-- [ ] **Step 4: HA-Test**: Zeitpunkt notieren, Update auf 2.3.0 per MCP (bei „Request timed out" Supervisor-Log prüfen, nicht erneut auslösen). Prüfen:
+- [x] **Step 1: Code-Review** per Subagent (`superpowers:requesting-code-review`) gegen Spec und Plan, Diff `main..chore/dockerfile-build-armv7`. Befunde über `superpowers:receiving-code-review` prüfen.
+- [x] **Step 2: Push** des Branches — **nur nach Freigabe im Chat**. Dann CI: `gh run list --repo Eifel-Joe/claude-code-ha --branch chore/dockerfile-build-armv7 --limit 1` und `gh run view <id> --repo Eifel-Joe/claude-code-ha`. Erwartet: Lint (inkl. Hadolint ohne DL3006), Regression suites, Build amd64 und Build aarch64 grün. Scheitert Hadolint an DL3006: Ausnahme mit korrigiertem Kommentar zurück (Spec erlaubt das).
+- [x] **Step 3: Merge nach `main`** (`--no-ff`, wie bisher) und Push — **nur nach Freigabe**.
+- [x] **Step 4: HA-Test**: Zeitpunkt notieren, Update auf 2.3.0 per MCP (bei „Request timed out" Supervisor-Log prüfen, nicht erneut auslösen). Prüfen:
   - `ha_get_logs(source="system_service", slug="supervisor", search="build.yaml")` → kein Eintrag nach dem Update-Zeitpunkt (Gegenprobe: 2026-10-06 17:45:31).
   - App `state: started`, Version 2.3.0.
   - App-Log ohne Fehler; im Terminal `claude --version` (User oder per Log „Claude Code … installed").
-- [ ] **Step 5: Tag `v2.3.0` und GitHub-Release** mit `docs/release-notes-2.3.0.md` — **Text vorher im Chat zeigen, nur nach Freigabe**.
-- [ ] **Step 6: Abschluss**: Memory `claude-code-ha-followups` aktualisieren (Punkte 5, 6, 8 erledigt; neue Punkte: Mac-Clipboard-Monitor `:8123/upload` über Ingress ungeprüft; verwaiste `config/scripts/claude-session-picker.sh`), `docs/SESSION-STAND.md` ergänzen, Plan-Checkboxen abhaken.
+- [x] **Step 5: Tag `v2.3.0` und GitHub-Release** mit `docs/release-notes-2.3.0.md` — **Text vorher im Chat zeigen, nur nach Freigabe**.
+- [x] **Step 6: Abschluss**: Memory `claude-code-ha-followups` aktualisieren (Punkte 5, 6, 8 erledigt; neue Punkte: Mac-Clipboard-Monitor `:8123/upload` über Ingress ungeprüft; verwaiste `config/scripts/claude-session-picker.sh`), `docs/SESSION-STAND.md` ergänzen, Plan-Checkboxen abhaken.

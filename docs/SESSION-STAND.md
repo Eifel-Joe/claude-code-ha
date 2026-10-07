@@ -1,16 +1,24 @@
 # Sitzungsstand
 
-## 2026-10-07 — Spec + Plan 2.3.0 (Dockerfile statt build.yaml, armv7 raus, Doku)
+## 2026-10-07 — Release 2.3.0 (Dockerfile statt build.yaml, armv7 raus, Doku)
 
 ### Stand
-- Branch `chore/dockerfile-build-armv7`: Spec
-  `docs/specs/2026-10-07-dockerfile-build-design.md` (`89d6ca9`) und Plan
-  `docs/plans/2026-10-07-dockerfile-build.md` (`91f6aff`), beide vom User
-  freigegeben. Noch kein Produktionscode, nichts gepusht.
-- Gegenprobe HA-Test: Supervisor-Warnung `uses build.yaml which is deprecated`
-  für `6ef0b4d0_claude_terminal_pro`, zuletzt 2026-10-06 17:45:31.
-- User: HA-Prod auf 2.2.2 aktualisiert (laut User, nicht per MCP geprüft); alte
-  ESJavadex-App wird gerade deinstalliert.
+- Spec `docs/specs/2026-10-07-dockerfile-build-design.md`, Plan
+  `docs/plans/2026-10-07-dockerfile-build.md` (alle Schritte abgehakt). Gemergt
+  nach `main` (`d016c71`), CI grün (Branch: Lauf 37548664129, main: 37549114833;
+  Build-Log: `FROM ghcr.io/home-assistant/base:3.21`, Claude Code nativ
+  installiert, Hadolint ohne DL3006 grün). Tag + GitHub-Release `v2.3.0`.
+- HA-Test auf 2.3.0 (Update 2026-10-07 01:58): Supervisor-Build ohne
+  `BUILD_FROM`, keine `build.yaml`-Warnung mehr (letzte 2026-10-06 17:45:31),
+  `state: started`, App-Log ohne Fehler („Claude CLI is executable ✓").
+  unbestätigt: `claude --version` im Terminal (User gab Release frei, Ausgabe
+  nicht gezeigt).
+- HA-Prod: laut User auf 2.2.2, nicht per MCP geprüft. Update auf 2.3.0 nur
+  mit Freigabe.
+- Lokal grün: `bash tests/test-release-metadata.sh` (2.3.0),
+  `bash tests/test-startup-timeouts.sh`, ShellCheck; Clipboard (100) und
+  Migration (57) vor dem Review-Commit `d2d8b0b`, der nur Doku/Metadaten-Test
+  berührt.
 
 ### Verworfen
 - armv7 über `${BUILD_ARCH}-base` behalten: Supervisor auf 32-Bit holt seit
@@ -19,18 +27,27 @@
   `{arch}-base:latest` und würden Alpine still tauschen.
 - Migrationsreste (Options-Pinning, pip-Versionen, `.egg-info`) bewusst nicht
   umgesetzt — Begründung in der Spec, Abschnitt 5.
+- `options.json` für lokale Testläufe (weder unter `/config` noch `/data`):
+  bashio liest Optionen über die Supervisor-API
+  (`bashio::app.config` → `GET /addons/self/options/config`); lokal gelten die
+  Standardwerte aus `run.sh`.
 
 ### Fallen
 - `ghcr.io/home-assistant/base:3.21` enthält nur amd64/arm64 (Manifest geprüft).
 - Supervisor-Quelle heißt jetzt `supervisor/apps/build.py` (nicht `addons/`).
 - Lokal kein docker/podman/hadolint: Image-Build und Hadolint nur in der CI.
+- Escapes: Heredocs über das Bash-Tool verstümmeln `\\` + Zeilenumbruch.
+  Python-Skripte für Mehrzeilen-Ersetzungen mit dem Write-Tool anlegen und
+  Backslashes über `chr(92)` bauen.
+- Die Version steht seit 2.3.0 nur noch in `config.yaml` (plus README-Badge,
+  vom Metadaten-Test geprüft) — `build.yaml` gibt es nicht mehr.
 
 ### Nächste Schritte
-- Plan `docs/plans/2026-10-07-dockerfile-build.md` ab Task 1 umsetzen.
+- HA-Prod auf 2.3.0 (Freigabe nötig).
+- Folgepunkte im Memory `claude-code-ha-followups` (3, 7, 9–12).
 
 ### Empfohlene Skills
-- `superpowers:executing-plans` bzw. `superpowers:subagent-driven-development`,
-  `superpowers:test-driven-development`, danach `superpowers:requesting-code-review`.
+- `task-loop` für den nächsten Folgepunkt.
 
 ## 2026-10-06 — Releases 2.2.1 (klickbare Links) und 2.2.2 (Zeitgrenzen beim Start)
 
