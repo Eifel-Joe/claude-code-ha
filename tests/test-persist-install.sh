@@ -82,6 +82,20 @@ fi
 # 4.46.0 once downgraded it: the copy in /data/packages/bin sits in PATH ahead
 # of the newer one shipped in the image.
 curl_log="$tmp_dir/curl.log"
+
+# The ha binary the fake download delivers. Like the real CLI (4.x and 5.x)
+# it has no --version flag; `help` works offline. Padded past persist-install's
+# 1 MB size check, with a shebang because Git Bash only treats files with one
+# as executable.
+fake_ha="$tmp_dir/fake-ha"
+{
+    printf '#!/bin/sh\n'
+    printf 'case "$1" in --version) echo "Error: unknown flag: --version" >&2; echo "Usage:"; exit 1 ;; esac\n'
+    printf 'echo fake-ha\nexit 0\n#'
+    head -c 1100000 /dev/zero | tr '\0' x
+    printf '\n'
+} > "$fake_ha"
+
 cat > "$fake_bin/curl" <<CURL
 #!/bin/sh
 printf '%s\n' "\$*" >> "$curl_log"
@@ -93,9 +107,7 @@ for arg in "\$@"; do
 done
 if [ -n "\$out" ]; then
     [ "\${FAKE_DL_STATUS:-0}" -eq 0 ] || exit "\$FAKE_DL_STATUS"
-    # A runnable script over persist-install's 1 MB size check (Git Bash only
-    # treats files with a shebang as executable).
-    { printf '#!/bin/sh\n#'; head -c 1100000 /dev/zero | tr '\\0' x; printf '\necho fake-ha\n'; } > "\$out"
+    cp "$fake_ha" "\$out"
     exit 0
 fi
 [ "\${FAKE_API_STATUS:-0}" -eq 0 ] || exit "\$FAKE_API_STATUS"
@@ -121,8 +133,16 @@ run_ha_cli() {
 # An earlier --force left an old copy in /data/packages/bin.
 make_old_copy() {
     mkdir -p "$1/packages/bin"
-    printf '#!/bin/sh\necho old-ha\n' > "$1/packages/bin/ha"
+    printf '#!/bin/sh\ncase "$1" in --version) echo "Usage:"; exit 1 ;; esac\necho old-ha\n' > "$1/packages/bin/ha"
     chmod +x "$1/packages/bin/ha"
+}
+
+# ha has no --version flag; asking for it printed "unknown flag" and the usage
+# text where a version belonged.
+assert_no_version_flag_noise() {
+    if grep -qE 'unknown flag|Usage:' "$tmp_dir/out.log"; then
+        fail "$1 called 'ha --version': $(cat "$tmp_dir/out.log")"
+    fi
 }
 
 if [ -n "$want_arch" ]; then
@@ -133,6 +153,9 @@ if [ -n "$want_arch" ]; then
     grep -q "releases/download/9.9.1/ha_${want_arch}" "$curl_log" || \
         fail "--ha-cli did not download the latest release: $(cat "$curl_log")"
     [ -x "$tmp_dir/ha-ok/packages/bin/ha" ] || fail "--ha-cli left no binary"
+    assert_no_version_flag_noise "--ha-cli after installing"
+    [ "$(cat "$tmp_dir/ha-ok/packages/bin/.ha-version" 2>/dev/null)" = "9.9.1" ] || \
+        fail "--ha-cli did not record the installed version in .ha-version"
 
     # API unreachable -> non-zero, nothing downloaded
     if FAKE_API_STATUS=22 run_ha_cli "$tmp_dir/ha-down"; then
@@ -162,6 +185,8 @@ if [ -n "$want_arch" ]; then
     if grep -q 'old-ha' "$tmp_dir/ha-replace/packages/bin/ha"; then
         fail "--ha-cli --force kept the old copy: $(cat "$tmp_dir/out.log")"
     fi
+    [ "$(cat "$tmp_dir/ha-replace/packages/bin/.ha-version" 2>/dev/null)" = "9.9.1" ] || \
+        fail "--ha-cli --force did not record the new version"
 
     # Without --force an existing copy stays, and nothing goes to the network.
     make_old_copy "$tmp_dir/ha-keep"
@@ -169,6 +194,16 @@ if [ -n "$want_arch" ]; then
         fail "--ha-cli without --force failed on an existing copy: $(cat "$tmp_dir/out.log")"
     [ ! -s "$curl_log" ] || fail "--ha-cli without --force called curl on an existing copy: $(cat "$curl_log")"
     grep -q 'old-ha' "$tmp_dir/ha-keep/packages/bin/ha" || fail "--ha-cli without --force touched the existing copy"
+    assert_no_version_flag_noise "--ha-cli on an existing copy"
+    grep -q 'unknown (installed before 2.3.1)' "$tmp_dir/out.log" || \
+        fail "--ha-cli did not flag a copy without .ha-version as old: $(cat "$tmp_dir/out.log")"
+
+    # A copy with a recorded version reports it.
+    make_old_copy "$tmp_dir/ha-known"
+    printf '9.9.0\n' > "$tmp_dir/ha-known/packages/bin/.ha-version"
+    run_ha_cli "$tmp_dir/ha-known" "" || fail "--ha-cli failed on a recorded copy"
+    grep -q 'v9.9.0' "$tmp_dir/out.log" || \
+        fail "--ha-cli did not report the recorded version: $(cat "$tmp_dir/out.log")"
 
     # A failed download with --force keeps the old copy instead of deleting it.
     make_old_copy "$tmp_dir/ha-dlfail"
