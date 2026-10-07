@@ -172,4 +172,17 @@ fi
 grep -q '"name": "claude-workbench-image-service"' "$addon_dir/image-service/package.json" || \
     fail "image-service/package.json is not named claude-workbench-image-service"
 
+# Icon and logo come from tools/make-logo.py (original spark plus ">_" in a
+# terminal window). Home Assistant expects a 128x128 icon.
+png_size() {
+    od -An -tu1 -j16 -N8 "$1" | \
+        awk '{print ($1*16777216+$2*65536+$3*256+$4) "x" ($5*16777216+$6*65536+$7*256+$8)}'
+}
+[ "$(png_size "$addon_dir/icon.png")" = "128x128" ] || \
+    fail "icon.png is $(png_size "$addon_dir/icon.png"), expected 128x128 (tools/make-logo.py)"
+[ "$(png_size "$addon_dir/logo.png")" = "256x256" ] || \
+    fail "logo.png is $(png_size "$addon_dir/logo.png"), expected 256x256 (tools/make-logo.py)"
+[ -f "$repo_root/tools/logo/claude-spark.png" ] || \
+    fail "tools/logo/claude-spark.png (logo source) is missing"
+
 echo "Release metadata suite passed (version $config_version)"
