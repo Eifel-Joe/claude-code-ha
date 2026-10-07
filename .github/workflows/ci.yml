@@ -16,7 +16,7 @@ concurrency:
 jobs:
   lint:
     name: Lint shell and Dockerfile
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7
 
@@ -59,7 +59,7 @@ jobs:
 
   test:
     name: Regression suites
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7
 
@@ -83,7 +83,7 @@ jobs:
 
   build:
     name: Build image (${{ matrix.arch }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
