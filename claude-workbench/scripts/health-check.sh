@@ -3,6 +3,9 @@
 # Health check script for the Claude Workbench app
 # Validates environment and provides diagnostic information
 
+# shellcheck source=/dev/null
+[ -f "${CPU_CHECK_SCRIPT:-/opt/scripts/cpu-check.sh}" ] && . "${CPU_CHECK_SCRIPT:-/opt/scripts/cpu-check.sh}"
+
 check_system_resources() {
     bashio::log.info "=== System Resources Check ==="
 
@@ -87,6 +90,22 @@ check_claude_cli() {
     fi
 }
 
+# Claude Code hangs without a word on CPUs without x86-64-v2 (cpu-check.sh).
+# A warning, not a failure: the shell, ha, gh and packages still work.
+check_cpu_compatibility() {
+    bashio::log.info "=== CPU Check ==="
+    command -v claude_cpu_missing_flags >/dev/null 2>&1 || return 0
+    local missing
+    missing=$(claude_cpu_missing_flags)
+    if [ -n "$missing" ]; then
+        bashio::log.warning "CPU lacks ${missing}: Claude Code needs x86-64-v2 (SSE4.2, POPCNT) and will not start."
+        bashio::log.warning "Proxmox: set the VM's CPU type to 'host' or 'x86-64-v2-AES' and restart the VM."
+    else
+        bashio::log.info "CPU meets Claude Code's requirements ✓"
+    fi
+    return 0
+}
+
 check_network_connectivity() {
     bashio::log.info "=== Network Connectivity Check ==="
 
@@ -140,6 +159,7 @@ run_diagnostics() {
     check_directory_permissions || ((errors++))
     check_node_installation || ((errors++))
     check_claude_cli || ((errors++))
+    check_cpu_compatibility
     check_network_connectivity || ((errors++))
 
     bashio::log.info "========================================="

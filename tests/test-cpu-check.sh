@@ -40,4 +40,22 @@ case "$explain" in
     *) fail "explanation lacks cause or fix: $explain" ;;
 esac
 
+# --- health check ---
+
+log="$tmp_dir/log"
+: > "$log"
+bashio::log.info() { printf 'info|%s\n' "$*" >> "$log"; }
+bashio::log.warning() { printf 'warning|%s\n' "$*" >> "$log"; }
+bashio::log.error() { printf 'error|%s\n' "$*" >> "$log"; }
+# shellcheck source=/dev/null
+source "$repo_root/claude-workbench/scripts/health-check.sh"
+
+CPU_CHECK_ARCH=x86_64 CPU_CHECK_CPUINFO="$kvm64" check_cpu_compatibility || \
+    fail "the CPU check must not count as a failed health check"
+grep -q '^warning|.*sse4_2 popcnt.*x86-64-v2' "$log" || fail "health check did not warn about kvm64: $(cat "$log")"
+grep -q "^warning|.*Proxmox" "$log" || fail "health check warning lacks the Proxmox fix"
+: > "$log"
+CPU_CHECK_ARCH=x86_64 CPU_CHECK_CPUINFO="$v2" check_cpu_compatibility
+! grep -q '^warning|' "$log" || fail "x86-64-v2 must not warn: $(cat "$log")"
+
 echo "cpu-check suite passed"
