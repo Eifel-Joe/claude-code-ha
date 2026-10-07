@@ -83,4 +83,38 @@ case "$cmd" in
     *) fail "auto-launch must start Claude on x86-64-v2: $cmd" ;;
 esac
 
+# --- session picker ---
+
+fake_claude="$tmp_dir/claude"
+claude_calls="$tmp_dir/claude-calls"
+printf '#!/bin/sh\necho "$@" >> "%s"\necho "2.1.292 (Claude Code)"\n' "$claude_calls" > "$fake_claude"
+chmod +x "$fake_claude"
+export CLAUDE_BIN="$fake_claude"
+# shellcheck disable=SC2034  # read by the sourced picker
+CLAUDE_PICKER_SKIP_MAIN=true
+# The picker runs without nounset in production (unset options are normal).
+set +u
+# shellcheck source=/dev/null
+source "$repo_root/claude-workbench/scripts/claude-session-picker.sh"
+
+export CPU_CHECK_ARCH=x86_64 CPU_CHECK_CPUINFO="$kvm64"
+: > "$claude_calls"
+[ -z "$(get_installed_version)" ] || fail "kvm64: the version lookup must not run Claude"
+case "$(claude_version_label)" in
+    *"not supported on this CPU"*) ;;
+    *) fail "kvm64: menu version label does not explain: $(claude_version_label)" ;;
+esac
+out=$(launch_claude_new < /dev/null 2>&1)
+case "$out" in *"cannot run on this CPU"*) ;; *) fail "kvm64: new session does not explain: $out" ;; esac
+launch_claude_continue < /dev/null > /dev/null 2>&1
+launch_claude_resume < /dev/null > /dev/null 2>&1
+printf 'foo\n' | launch_claude_custom > /dev/null 2>&1
+[ ! -s "$claude_calls" ] || fail "kvm64: the picker still ran Claude: $(cat "$claude_calls")"
+
+export CPU_CHECK_CPUINFO="$v2"
+[ "$(get_installed_version)" = "2.1.292" ] || fail "x86-64-v2: version lookup must run Claude"
+launch_claude_new < /dev/null > /dev/null 2>&1
+grep -q . "$claude_calls" || fail "x86-64-v2: new session did not start Claude"
+unset CPU_CHECK_ARCH CPU_CHECK_CPUINFO
+
 echo "cpu-check suite passed"

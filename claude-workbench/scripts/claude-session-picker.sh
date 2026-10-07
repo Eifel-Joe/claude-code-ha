@@ -3,6 +3,32 @@
 # Claude Session Picker - Interactive menu for choosing Claude session type
 # Provides options for new session, continue, resume, manual command, or regular shell
 
+CLAUDE_BIN="${CLAUDE_BIN:-/usr/local/bin/claude}"
+# CPU check shared with run.sh and the health check (cpu-check.sh).
+# shellcheck source=/dev/null
+[ -f "${CPU_CHECK_SCRIPT:-/opt/scripts/cpu-check.sh}" ] && . "${CPU_CHECK_SCRIPT:-/opt/scripts/cpu-check.sh}"
+
+# Missing CPU flags for Claude Code, empty when it can run (or cpu-check.sh
+# is absent). Claude hangs without a word on such a CPU, so nothing below
+# may run the binary then - not even for its version.
+claude_cpu_missing() {
+    command -v claude_cpu_missing_flags >/dev/null 2>&1 || return 0
+    claude_cpu_missing_flags
+}
+
+# Explains and waits when Claude cannot run here; returns 1 then.
+claude_runs_here() {
+    local missing
+    missing=$(claude_cpu_missing)
+    [ -z "$missing" ] && return 0
+    echo ""
+    claude_cpu_explain "$missing"
+    echo ""
+    printf "Press Enter to return to menu..." >&2
+    read -r
+    return 1
+}
+
 # Get Claude flags from environment
 get_claude_flags() {
     local flags=""
@@ -49,8 +75,22 @@ LATEST_VERSION_TTL=3600
 
 # "2.1.226 (Claude Code)" -> "2.1.226"
 get_installed_version() {
-    [ -x /usr/local/bin/claude ] || return 0
-    /usr/local/bin/claude --version 2>/dev/null | awk 'NR==1 {print $1}'
+    [ -z "$(claude_cpu_missing)" ] || return 0
+    [ -x "$CLAUDE_BIN" ] || return 0
+    "$CLAUDE_BIN" --version 2>/dev/null | awk 'NR==1 {print $1}'
+}
+
+# Version line for the menu; never runs the binary where it would hang.
+claude_version_label() {
+    local missing
+    missing=$(claude_cpu_missing)
+    if [ -n "$missing" ]; then
+        echo "not supported on this CPU (missing: $missing)"
+    elif [ -x "$CLAUDE_BIN" ]; then
+        "$CLAUDE_BIN" --version 2>/dev/null || echo "unknown"
+    else
+        echo "unknown"
+    fi
 }
 
 # The version the Update option would install. A pinned spec is its
@@ -102,10 +142,8 @@ update_menu_label() {
 }
 
 show_menu() {
-    local ver="unknown"
-    if [ -x /usr/local/bin/claude ]; then
-        ver=$(/usr/local/bin/claude --version 2>/dev/null || echo "unknown")
-    fi
+    local ver
+    ver=$(claude_version_label)
 
     echo "Claude Code version: $ver"
     echo ""
@@ -142,28 +180,32 @@ get_user_choice() {
 }
 
 launch_claude_new() {
+    claude_runs_here || return 0
     local flags=$(get_claude_flags)
     echo "🚀 Starting new Claude session..."
     sleep 1
-    /usr/local/bin/claude $flags
+    "$CLAUDE_BIN" $flags
     # Returns here when Claude exits, loop in main() shows menu again
 }
 
 launch_claude_continue() {
+    claude_runs_here || return 0
     local flags=$(get_claude_flags)
     echo "⏩ Continuing most recent conversation..."
     sleep 1
-    /usr/local/bin/claude -c $flags
+    "$CLAUDE_BIN" -c $flags
 }
 
 launch_claude_resume() {
+    claude_runs_here || return 0
     local flags=$(get_claude_flags)
     echo "📋 Opening conversation list for selection..."
     sleep 1
-    /usr/local/bin/claude -r $flags
+    "$CLAUDE_BIN" -r $flags
 }
 
 launch_claude_custom() {
+    claude_runs_here || return 0
     local base_flags=$(get_claude_flags)
     echo ""
     echo "Enter your Claude command (e.g., 'claude --help' or 'claude -p \"hello\"'):"
@@ -181,7 +223,7 @@ launch_claude_custom() {
     else
         echo "🚀 Running: claude $custom_args $base_flags"
         sleep 1
-        eval "/usr/local/bin/claude $custom_args $base_flags"
+        eval "\"\$CLAUDE_BIN\" $custom_args $base_flags"
     fi
 }
 
@@ -201,8 +243,10 @@ launch_update_claude() {
         if [ -x "$persistent_bin" ]; then
             ln -sf "$persistent_bin" "$claude_link"
             ln -sf "$persistent_bin" "$native_bin_link"
-            local new_version
-            new_version=$("$claude_link" --version 2>/dev/null || echo "unknown")
+            local new_version="installed (cannot run on this CPU)"
+            if [ -z "$(claude_cpu_missing)" ]; then
+                new_version=$("$claude_link" --version 2>/dev/null || echo "unknown")
+            fi
             echo "✅ Claude Code updated: $new_version"
         else
             echo "⚠️  Update ran but no binary was found at $persistent_bin"
@@ -367,5 +411,5 @@ main() {
     done
 }
 
-# Run main function
-main "$@"
+# Run main function (tests source this file with CLAUDE_PICKER_SKIP_MAIN=true)
+[ "${CLAUDE_PICKER_SKIP_MAIN:-}" = true ] || main "$@"
