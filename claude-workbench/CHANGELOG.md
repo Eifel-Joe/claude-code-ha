@@ -11,7 +11,9 @@
   next to the old app; on the first panel open it takes over memories,
   `CLAUDE.md`, history, logins, packages and settings from any
   `*_claude_terminal_pro` app (ESJavadex's or this project's before 3.0.0).
-  Then uninstall the old app and remove the old repository entry.
+  Then uninstall the old app and remove the old repository entry. Install the
+  Claude Workbench whose app page address ends in `0e003122_claude_workbench`
+  (the new repository); the old entry lists it too, through GitHub's redirect.
 
 ### 📚 Documentation
 - README and store docs describe Claude Workbench as an app of its own, with

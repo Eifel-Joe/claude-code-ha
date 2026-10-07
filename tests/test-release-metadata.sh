@@ -164,9 +164,15 @@ grep -q "image.source=\"$new_repo_url\"" "$dockerfile" || \
 
 # The app calls itself Claude Workbench. "Claude Terminal" stays only where the
 # old app is meant ("another Claude Terminal Pro app", the takeover code).
-if grep -rn 'Claude Terminal' "$addon_dir/run.sh" "$addon_dir/scripts" \
-        "$addon_dir/image-service/server.js" "$addon_dir/image-service/public" \
-        --exclude-dir=app-migration | grep -v 'Claude Terminal Pro app'; then
+# Case-insensitive, so an identifier like "claude-terminal:" is caught too; a
+# missing path would make grep fail and the check pass without looking.
+self_name_paths=("$addon_dir/run.sh" "$addon_dir/scripts" \
+    "$addon_dir/image-service/server.js" "$addon_dir/image-service/public")
+for p in "${self_name_paths[@]}"; do
+    [ -e "$p" ] || fail "$p is missing; the self-name check would look at nothing"
+done
+if grep -rniE 'claude[- ]terminal' "${self_name_paths[@]}" --exclude-dir=app-migration | \
+        grep -v 'Claude Terminal Pro app'; then
     fail "the app still calls itself Claude Terminal (see lines above)"
 fi
 grep -q '"name": "claude-workbench-image-service"' "$addon_dir/image-service/package.json" || \
@@ -188,10 +194,27 @@ png_size() {
 # After the GitHub rename the old repository URL only works through GitHub's
 # redirect; links and the "add repository" button must use the new one.
 # docs/ and the changelog keep history as it was.
-if git -C "$repo_root" grep -nE 'Eifel-Joe(/|%2F)claude-code-ha' -- . ':!docs' \
-        ':!claude-workbench/CHANGELOG.md' ':!tests/test-release-metadata.sh'; then
+# git grep exits 1 for "no match" but 128 outside a repository or on a bad
+# pathspec; only 1 may count as a pass.
+old_url_rc=0
+old_url_hits=$(git -C "$repo_root" grep -nE 'Eifel-Joe(/|%2F)claude-code-ha' -- . ':!docs' \
+    ':!claude-workbench/CHANGELOG.md' ':!tests/test-release-metadata.sh') || old_url_rc=$?
+if [ "$old_url_rc" -eq 0 ]; then
+    printf '%s\n' "$old_url_hits"
     fail "the old repository URL Eifel-Joe/claude-code-ha is still used (see lines above)"
 fi
+[ "$old_url_rc" -eq 1 ] || fail "git grep for the old repository URL failed (exit $old_url_rc)"
+
+# Home Assistant names an installed app <first 8 hex of sha1(lower-cased
+# repository URL)>_<slug>. After the rename the old repository entry lists
+# Claude Workbench too (GitHub redirects), as 6ef0b4d0_claude_workbench;
+# installed from there, the old entry can never be removed. The switching guide
+# names the right one, and it has to match the repository URL.
+new_app_slug="$(printf '%s' "$new_repo_url" | tr 'A-Z' 'a-z' | sha1sum | cut -c1-8)_claude_workbench"
+for doc in README.md claude-workbench/README.md claude-workbench/DOCS.md docs/release-notes-3.0.0.md; do
+    grep -q "$new_app_slug" "$repo_root/$doc" || \
+        fail "$doc does not tell users to install $new_app_slug"
+done
 # The MIT license must name its copyright holders, not the template placeholder.
 if grep -n 'Your Name' "$repo_root/LICENSE"; then
     fail "LICENSE still carries the template placeholder instead of the copyright holders"

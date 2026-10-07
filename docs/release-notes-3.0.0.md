@@ -7,7 +7,7 @@ This project has its own name now: **Claude Workbench**, in the repository `Eife
 Home Assistant treats Claude Workbench as a new app (new slug `claude_workbench`). Your existing Claude Terminal Pro app keeps running but gets no more updates.
 
 1. Add the repository `https://github.com/Eifel-Joe/claude-workbench` (Settings → Apps → App Store → ⋮ → Repositories).
-2. Install **Claude Workbench** and start it.
+2. Install **Claude Workbench** from the repository you just added — its app page address ends in `0e003122_claude_workbench` — and start it. Coming from this project's old app, the store lists Claude Workbench twice until step 5: the other one (`6ef0b4d0_claude_workbench`) comes through the old address, and its repository entry could then never be removed.
 3. Open the panel and confirm the takeover: memories, `CLAUDE.md`, history, logins, packages and settings come over from the old app (a partial backup of it is kept).
 4. Uninstall the old app.
 5. Remove the old repository entry `https://github.com/Eifel-Joe/claude-code-ha` — GitHub redirects it, so Claude Workbench would otherwise show up twice.

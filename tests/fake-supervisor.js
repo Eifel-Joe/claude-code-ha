@@ -6,7 +6,8 @@ const path = require('node:path');
 const http = require('node:http');
 const { spawnSync } = require('node:child_process');
 
-const SELF_SLUG = '6ef0b4d0_claude_workbench';
+// 0e003122 = first 8 hex of sha1("https://github.com/eifel-joe/claude-workbench"), as the Supervisor names apps.
+const SELF_SLUG = '0e003122_claude_workbench';
 const OLD_SLUG = 'a1b2c3d4_claude_terminal_pro';
 
 function writeFile(file, content, mode) {
