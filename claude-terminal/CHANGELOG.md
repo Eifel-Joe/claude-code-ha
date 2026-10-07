@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.3.1
+
+### 🐛 Bug Fix - `persist-install --ha-cli --force` installed an old HA CLI
+- It always installed version 4.46.0, a pin meant for 32-bit builds, on every
+  architecture (the current release is 5.x). That copy lives in
+  `/data/packages/bin`, ahead of the image's newer `ha` in PATH, so it silently
+  downgraded the CLI. It now installs the latest release, like the image build,
+  and stops with an error if the version lookup fails. If you used `--force`
+  before, remove the old copy with `rm /data/packages/bin/ha`.
+
+### 🔧 Technical - Cleanup after dropping armv7
+- Removed the remaining 32-bit branches at runtime (Claude Code 1.0.128 pin)
+  and the unused `install-ha-cli.sh` (pinned HA CLI 4.42.0).
+- CI: actions moved to their Node 24 releases, test suites run on Node 22 like
+  the image.
+
 ## 2.3.0
 
 ### 🔧 Technical - Build parameters moved into the Dockerfile
