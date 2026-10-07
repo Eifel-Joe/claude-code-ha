@@ -637,15 +637,15 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ### Task 9: Branch pushen, CI (Freigabe nötig)
 
-- [ ] **Step 1:** User um Freigabe für `git push -u origin feat/claude-workbench` bitten, dann pushen.
-- [ ] **Step 2:** CI-Lauf beobachten: `gh run list --repo Eifel-Joe/claude-code-ha --branch feat/claude-workbench --limit 1`, dann `gh run watch <id> --repo Eifel-Joe/claude-code-ha`.
+- [x] **Step 1:** User um Freigabe für `git push -u origin feat/claude-workbench` bitten, dann pushen.
+- [x] **Step 2:** CI-Lauf beobachten: `gh run list --repo Eifel-Joe/claude-code-ha --branch feat/claude-workbench --limit 1`, dann `gh run watch <id> --repo Eifel-Joe/claude-code-ha`.
   Expected: alle Jobs grün, im Build-Log beider Architekturen Kontext `claude-workbench`, `Release metadata suite passed (version 3.0.0)`.
 
 ---
 
 ### Task 10: GitHub-Repo umbenennen (Freigabe nötig)
 
-- [ ] **Step 1:** User um Freigabe bitten, dann:
+- [x] **Step 1:** User um Freigabe bitten, dann:
 
 ```bash
 gh repo rename claude-workbench --repo Eifel-Joe/claude-code-ha --yes
@@ -653,7 +653,7 @@ git remote set-url origin https://github.com/Eifel-Joe/claude-workbench.git
 git fetch origin && git remote -v
 ```
 Expected: `origin https://github.com/Eifel-Joe/claude-workbench.git`, Fetch ohne Fehler.
-- [ ] **Step 2:** Weiterleitung prüfen: `curl -sI https://github.com/Eifel-Joe/claude-code-ha | head -3` → `301` auf `…/claude-workbench`.
+- [x] **Step 2:** Weiterleitung prüfen: `curl -sI https://github.com/Eifel-Joe/claude-code-ha | head -3` → `301` auf `…/claude-workbench`.
 
 ---
 
