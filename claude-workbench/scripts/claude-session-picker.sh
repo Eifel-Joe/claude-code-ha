@@ -134,10 +134,19 @@ update_menu_label() {
 
     if [ -z "$latest" ]; then
         echo "Update Claude Code (latest version unknown)"
-    elif [ -n "$installed" ] && version_is_newer "$latest" "$installed"; then
+    elif [ -z "$installed" ]; then
+        # Unknown installed version is not "up to date". On a CPU without
+        # x86-64-v2 the version is deliberately not asked for (cpu-check.sh);
+        # otherwise the binary is missing or printed no version.
+        if [ -n "$(claude_cpu_missing)" ]; then
+            echo "Update Claude Code (latest $latest; installed version not checked on this CPU)"
+        else
+            echo "Update Claude Code (latest $latest; installed version unknown)"
+        fi
+    elif version_is_newer "$latest" "$installed"; then
         echo "Update Claude Code ($installed → $latest available)"
     else
-        echo "Update Claude Code (${installed:-$latest}, up to date)"
+        echo "Update Claude Code ($installed, up to date)"
     fi
 }
 
