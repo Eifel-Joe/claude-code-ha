@@ -431,8 +431,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ### Task 6: Code-Review
 
-- [ ] **Step 1:** Subagent `superpowers:code-reviewer` mit Spec, Plan und `git diff main...fix/proxy-map-translations`; Temp-Regel (`.tmp/`, `npm_config_cache`) im Prompt. Prüfauftrag: v4-Optionen korrekt (Fehlerfall, Logger, Pfade HTTP/WS), require(esm) in Node 22 ohne Warnung, `map`-Dict gültig für den Supervisor, Übersetzungs-YAML gültig und vollständig, Bash-Tests ohne stilles Bestehen.
-- [ ] **Step 2:** Befunde über `superpowers:receiving-code-review` prüfen, berechtigte per TDD beheben.
+- [x] **Step 1:** Subagent `superpowers:code-reviewer` mit Spec, Plan und `git diff main...fix/proxy-map-translations`; Temp-Regel (`.tmp/`, `npm_config_cache`) im Prompt. Prüfauftrag: v4-Optionen korrekt (Fehlerfall, Logger, Pfade HTTP/WS), require(esm) in Node 22 ohne Warnung, `map`-Dict gültig für den Supervisor, Übersetzungs-YAML gültig und vollständig, Bash-Tests ohne stilles Bestehen.
+- [x] **Step 2:** Befunde über `superpowers:receiving-code-review` prüfen, berechtigte per TDD beheben.
 
 ---
 
