@@ -1,6 +1,6 @@
 # Umbenennung in „Claude Workbench“ (3.0.0) — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Release 3.0.0: die App heißt „Claude Workbench“ (Slug `claude_workbench`), liegt in `claude-workbench/`, im Repo `Eifel-Joe/claude-workbench`, hat ein eigenes Logo und eine eigene README mit Credits; die Übernahme aus `*_claude_terminal_pro` (ESJavadex und bisherige Eifel-Joe-App) bleibt.
 
@@ -39,15 +39,15 @@ shellcheck -S warning -e SC1008,SC1007,SC2155 -x claude-workbench/run.sh claude-
 - Rename: `claude-terminal/` → `claude-workbench/`
 - Modify: `.github/workflows/ci.yml`, `tests/run-tests.sh`, `tests/test-persist-install.sh`, `tests/test-production-run.sh`, `tests/test-release-metadata.sh`, `tests/test-startup-hardening.sh`, `tests/test-startup-timeouts.sh`, `tests/test-app-migration.js`, `tests/test-image-service.js`, `tests/test-terminal-clipboard.js`, `flake.nix`, `CLAUDE.md`, `DEVELOPMENT.md`, `README.md`
 
-- [ ] **Step 1: Ausgangslage grün** — lokale Suiten mit dem alten Pfad laufen lassen (Shellcheck-Pfade `claude-terminal/…`). Erwartet: alle grün.
+- [x] **Step 1: Ausgangslage grün** — lokale Suiten mit dem alten Pfad laufen lassen (Shellcheck-Pfade `claude-terminal/…`). Erwartet: alle grün.
 
-- [ ] **Step 2: Ordner verschieben**
+- [x] **Step 2: Ordner verschieben**
 
 ```bash
 git mv claude-terminal claude-workbench
 ```
 
-- [ ] **Step 3: Pfade ersetzen** (einzeiliges `sed`, keine Backslashes nötig):
+- [x] **Step 3: Pfade ersetzen** (einzeiliges `sed`, keine Backslashes nötig):
 
 ```bash
 sed -i 's#claude-terminal#claude-workbench#g' \
@@ -60,16 +60,16 @@ sed -i 's#claude-terminal#claude-workbench#g' \
 
 Betroffen sind auch Image-Tags wie `local/claude-terminal:test` → `local/claude-workbench:test` und `local/claude-terminal-pro` → `local/claude-workbench-pro` in `CLAUDE.md` — Letzteres per Edit-Tool auf `local/claude-workbench` korrigieren (2 Stellen, `CLAUDE.md` Zeilen ~31 und ~34).
 
-- [ ] **Step 4: Kontrolle**
+- [x] **Step 4: Kontrolle**
 
 ```bash
 git grep -n "claude-terminal" -- . ':!docs' ':!claude-workbench/CHANGELOG.md'
 ```
 Erwartet: nur `claude-workbench/image-service/package.json`, `package-lock.json` (Paketname, Task 4), `claude-workbench/image-service/public/terminal-clipboard.js:660` (Task 4), `claude-workbench/PERSISTENT_PACKAGES.md` (Task 6). `git diff --stat` zeigt die Renames als `R100`-Einträge (`git status` → `renamed:`).
 
-- [ ] **Step 5: Lokale Suiten** (jetzt mit `claude-workbench/…`). Erwartet: alle grün, gleiche Testanzahl wie in Step 1.
+- [x] **Step 5: Lokale Suiten** (jetzt mit `claude-workbench/…`). Erwartet: alle grün, gleiche Testanzahl wie in Step 1.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A claude-terminal claude-workbench
@@ -90,7 +90,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `tests/test-release-metadata.sh` (vor der letzten `echo`-Zeile)
 - Modify: `claude-workbench/config.yaml:2-5,14,20`, `repository.yaml`, `claude-workbench/Dockerfile:8,10`
 
-- [ ] **Step 1: Schutztest schreiben** — direkt vor `echo "Release metadata suite passed (version $config_version)"` (Edit-Tool):
+- [x] **Step 1: Schutztest schreiben** — direkt vor `echo "Release metadata suite passed (version $config_version)"` (Edit-Tool):
 
 ```bash
 # Claude Workbench is an app of its own (spec 2026-10-07-claude-workbench-rename):
@@ -118,12 +118,12 @@ grep -q "image.source=\"$new_repo_url\"" "$dockerfile" || \
     fail "Dockerfile image.source label does not point to $new_repo_url"
 ```
 
-- [ ] **Step 2: RED prüfen**
+- [x] **Step 2: RED prüfen**
 
 Run: `bash tests/test-release-metadata.sh`
 Expected: `FAIL (release metadata): config.yaml name is 'Claude Terminal Pro', expected 'Claude Workbench'`
 
-- [ ] **Step 3: `config.yaml`** (Edit-Tool):
+- [x] **Step 3: `config.yaml`** (Edit-Tool):
 
 ```yaml
 name: "Claude Workbench"
@@ -133,7 +133,7 @@ slug: "claude_workbench"
 ```
 (Version bleibt hier 2.3.4 — Bump in Task 7.) Außerdem `url: "https://github.com/Eifel-Joe/claude-workbench"` und `panel_title: "Claude Workbench"`.
 
-- [ ] **Step 4: `repository.yaml`** komplett:
+- [x] **Step 4: `repository.yaml`** komplett:
 
 ```yaml
 name: Claude Workbench for Home Assistant
@@ -141,7 +141,7 @@ url: https://github.com/Eifel-Joe/claude-workbench
 maintainer: Eifel-Joe
 ```
 
-- [ ] **Step 5: Dockerfile-Labels**
+- [x] **Step 5: Dockerfile-Labels**
 
 ```dockerfile
     org.opencontainers.image.title="Home Assistant App: Claude Workbench" \
@@ -149,9 +149,9 @@ maintainer: Eifel-Joe
     org.opencontainers.image.source="https://github.com/Eifel-Joe/claude-workbench" \
 ```
 
-- [ ] **Step 6: GREEN** — `bash tests/test-release-metadata.sh` → `Release metadata suite passed (version 2.3.4)`. Danach lokale Suiten komplett grün.
+- [x] **Step 6: GREEN** — `bash tests/test-release-metadata.sh` → `Release metadata suite passed (version 2.3.4)`. Danach lokale Suiten komplett grün.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add tests/test-release-metadata.sh claude-workbench/config.yaml repository.yaml claude-workbench/Dockerfile
@@ -171,7 +171,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `tests/fake-supervisor.js:9,72`, `tests/test-app-migration.js:213,623` + neuer Test nach `detect: prefers a running old app over a stopped one`
 - Modify: `claude-workbench/scripts/app-migration/apply.js:39`, `claude-workbench/scripts/app-migration/dialog.js:68`
 
-- [ ] **Step 1: Tests anpassen (RED)**
+- [x] **Step 1: Tests anpassen (RED)**
   - `tests/fake-supervisor.js:9`: `const SELF_SLUG = '6ef0b4d0_claude_workbench';`
   - `tests/fake-supervisor.js:72`: `{ slug: SELF_SLUG, name: 'Claude Workbench', version: '3.0.0', state: 'started' },`
   - `tests/test-app-migration.js:213`: `name: 'Claude Workbench – Übernahme 2026-10-06', addons: [OLD_SLUG], homeassistant: false, background: true,`
@@ -193,18 +193,18 @@ test('detect: never offers another Claude Workbench as the source', async () => 
 });
 ```
 
-- [ ] **Step 2: RED prüfen**
+- [x] **Step 2: RED prüfen**
 
 Run: `PATH="/c/WINDOWS/system32:$PATH" node --test tests/test-app-migration.js`
 Expected: genau 2 Fehlschläge — `apply: creates a named partial backup of only the old app` (Name „Claude Terminal Pro – Übernahme …“) und `summary: a fatal result says whether the backup was removed`. Der neue Detect-Test ist sofort grün (Schutztest, sichert bestehendes Verhalten).
 
-- [ ] **Step 3: Implementierung**
+- [x] **Step 3: Implementierung**
   - `apply.js:39`: ``    name: `Claude Workbench – Übernahme ${date}`,``
   - `dialog.js:68`: ``        : [`  The partial backup "Claude Workbench – Übernahme …" (${result.backupSlug}) could not be deleted;`,``
 
-- [ ] **Step 4: GREEN** — Migrationssuite: `ℹ fail 0`, Anzahl = vorher + 1. Lokale Suiten grün.
+- [x] **Step 4: GREEN** — Migrationssuite: `ℹ fail 0`, Anzahl = vorher + 1. Lokale Suiten grün.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add tests/fake-supervisor.js tests/test-app-migration.js claude-workbench/scripts/app-migration/apply.js claude-workbench/scripts/app-migration/dialog.js
@@ -225,7 +225,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `tests/test-release-metadata.sh`
 - Modify: `claude-workbench/run.sh:533,535,543,752`, `claude-workbench/scripts/claude-session-picker.sh:21,233`, `claude-workbench/scripts/health-check.sh:3,134`, `claude-workbench/scripts/ha-api-examples.sh:3`, `claude-workbench/scripts/persist-install:347`, `claude-workbench/image-service/server.js:4,160`, `claude-workbench/image-service/public/index.html:10,444`, `claude-workbench/image-service/public/terminal-clipboard.js:660`, `claude-workbench/image-service/package.json:2,4`, `claude-workbench/image-service/package-lock.json:2,8`
 
-- [ ] **Step 1: Schutztest** — nach dem Block aus Task 2 einfügen:
+- [x] **Step 1: Schutztest** — nach dem Block aus Task 2 einfügen:
 
 ```bash
 # The app calls itself Claude Workbench. "Claude Terminal" stays only where the
@@ -239,9 +239,9 @@ grep -q '"name": "claude-workbench-image-service"' "$addon_dir/image-service/pac
     fail "image-service/package.json is not named claude-workbench-image-service"
 ```
 
-- [ ] **Step 2: RED** — `bash tests/test-release-metadata.sh` listet die Fundstellen (`run.sh` Begrüßung, Session-Picker, health-check, ha-api-examples, persist-install, server.js, index.html) und endet mit `FAIL (release metadata): the app still calls itself Claude Terminal (see lines above)`.
+- [x] **Step 2: RED** — `bash tests/test-release-metadata.sh` listet die Fundstellen (`run.sh` Begrüßung, Session-Picker, health-check, ha-api-examples, persist-install, server.js, index.html) und endet mit `FAIL (release metadata): the app still calls itself Claude Terminal (see lines above)`.
 
-- [ ] **Step 3: Implementierung**
+- [x] **Step 3: Implementierung**
   - `run.sh` 533/535/543: `Welcome to Claude Terminal!` → `Welcome to Claude Workbench!` (`sed -i 's/Welcome to Claude Terminal!/Welcome to Claude Workbench!/' claude-workbench/run.sh`); 752: `Initializing Claude Workbench app...`. Kommentar 661 („another Claude Terminal Pro app (e.g. the ESJavadex original)“) bleibt.
   - `claude-session-picker.sh:21` (Rahmenbreite bleibt, ein Leerzeichen weniger):
     `    echo "║                    🤖 Claude Workbench                       ║"`
@@ -255,9 +255,9 @@ grep -q '"name": "claude-workbench-image-service"' "$addon_dir/image-service/pac
   - `terminal-clipboard.js:660`: `'claude-workbench: selection copy handled by the clipboard bridge'`
   - `package.json`: `"name": "claude-workbench-image-service"`, `"description": "Lightweight image upload service for Claude Workbench"`; `package-lock.json` Zeilen 2 und 8: `"name": "claude-workbench-image-service"`.
 
-- [ ] **Step 4: GREEN** — `bash tests/test-release-metadata.sh` grün; lokale Suiten grün (Clipboard-Suite: gleiche Anzahl).
+- [x] **Step 4: GREEN** — `bash tests/test-release-metadata.sh` grün; lokale Suiten grün (Clipboard-Suite: gleiche Anzahl).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add tests/test-release-metadata.sh claude-workbench/run.sh claude-workbench/scripts claude-workbench/image-service
@@ -279,7 +279,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `claude-workbench/icon.png` (128×128), `claude-workbench/logo.png` (256×256)
 - Modify: `tests/test-release-metadata.sh`
 
-- [ ] **Step 1: Schutztest**
+- [x] **Step 1: Schutztest**
 
 ```bash
 # Icon and logo come from tools/make-logo.py (original spark plus ">_" in a
@@ -296,15 +296,15 @@ png_size() {
     fail "tools/logo/claude-spark.png (logo source) is missing"
 ```
 
-- [ ] **Step 2: RED** — Expected: `FAIL (release metadata): icon.png is 64x64, expected 128x128 (tools/make-logo.py)`
+- [x] **Step 2: RED** — Expected: `FAIL (release metadata): icon.png is 64x64, expected 128x128 (tools/make-logo.py)`
 
-- [ ] **Step 3: Quelle sichern** (vor dem Überschreiben!)
+- [x] **Step 3: Quelle sichern** (vor dem Überschreiben!)
 
 ```bash
 mkdir -p tools/logo && cp claude-workbench/logo.png tools/logo/claude-spark.png
 ```
 
-- [ ] **Step 4: `tools/make-logo.py`** (Write-Tool):
+- [x] **Step 4: `tools/make-logo.py`** (Write-Tool):
 
 ```python
 """Builds icon.png and logo.png for Claude Workbench.
@@ -364,16 +364,16 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 5: Erzeugen und ansehen**
+- [x] **Step 5: Erzeugen und ansehen**
 
 ```bash
 python tools/make-logo.py
 ```
 Expected: `wrote …icon.png and …logo.png`. Dann beide Bilder mit dem Read-Tool ansehen und mit `docs/plans/2026-10-07-claude-workbench-logo-preview.png` (vom User bestätigt) vergleichen: Fenster mit zwei Punkten, Original-Funke rechts oben, `>_` links unten, gut lesbar. Abweichungen (z. B. `>`-Größe) im Skript korrigieren, nicht in den PNGs. Ergebnis dem User per SendUserFile zeigen.
 
-- [ ] **Step 6: GREEN** — `bash tests/test-release-metadata.sh` grün.
+- [x] **Step 6: GREEN** — `bash tests/test-release-metadata.sh` grün.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add tools/make-logo.py tools/logo/claude-spark.png claude-workbench/icon.png claude-workbench/logo.png tests/test-release-metadata.sh
@@ -393,7 +393,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `tests/test-release-metadata.sh`
 - Modify: `README.md`, `claude-workbench/README.md`, `claude-workbench/DOCS.md`, `claude-workbench/PERSISTENT_PACKAGES.md`, `claude-workbench/IMAGE_PASTE.md`, `claude-workbench/.claude/skills/persistent-package-manager/SKILL.md`, `CLAUDE.md`, `DEVELOPMENT.md`, `flake.nix`, `LICENSE`
 
-- [ ] **Step 1: Schutztest**
+- [x] **Step 1: Schutztest**
 
 ```bash
 # After the GitHub rename the old repository URL only works through GitHub's
@@ -411,9 +411,9 @@ grep -q 'Switching from Claude Terminal Pro' "$repo_root/README.md" || \
     fail "README.md has no 'Switching from Claude Terminal Pro' section"
 ```
 
-- [ ] **Step 2: RED** — Expected: Fundstellen der alten URL (README, DOCS, App-README, CLAUDE.md …), dann `FAIL (release metadata): the old repository URL …`.
+- [x] **Step 2: RED** — Expected: Fundstellen der alten URL (README, DOCS, App-README, CLAUDE.md …), dann `FAIL (release metadata): the old repository URL …`.
 
-- [ ] **Step 3: `LICENSE`** — Zeile 3 ersetzen durch:
+- [x] **Step 3: `LICENSE`** — Zeile 3 ersetzen durch:
 
 ```
 Copyright (c) 2025 Tom Cassady (original Claude Terminal app)
@@ -421,7 +421,7 @@ Copyright (c) 2025 Javier Santos (Claude Terminal Pro)
 Copyright (c) 2026 Eifel-Joe (Claude Workbench)
 ```
 
-- [ ] **Step 4: Root-`README.md`** — Zeilen 1 bis einschließlich der Zeile vor `## Install` ersetzen (Edit-Tool) durch:
+- [x] **Step 4: Root-`README.md`** — Zeilen 1 bis einschließlich der Zeile vor `## Install` ersetzen (Edit-Tool) durch:
 
 ```markdown
 # Claude Workbench for Home Assistant
@@ -492,7 +492,7 @@ Claude Workbench is an independent community project and is not made or endorsed
 
   - Übrige Vorkommen von „Claude Terminal Pro“ als Selbstbezeichnung (`grep -n "Claude Terminal" README.md`) → „Claude Workbench“; Erwähnungen der alten App bleiben.
 
-- [ ] **Step 5: `claude-workbench/README.md`** (Store-Seite der App):
+- [x] **Step 5: `claude-workbench/README.md`** (Store-Seite der App):
   - Titel `# Claude Workbench for Home Assistant`, Untertitel: `A workbench for Anthropic's Claude Code CLI in Home Assistant: web terminal, persistent packages, HA and GitHub CLIs.`
   - Bild: `![Claude Workbench screenshot](screenshot.png)`, Bildunterschrift `*Claude Workbench running in Home Assistant*`.
   - Fork-Attribution-Kasten (Zeile 9) ersetzen durch: `> Claude Workbench grew out of Claude Terminal Pro by Javier Santos ([ESJavadex/claude-code-ha](https://github.com/ESJavadex/claude-code-ha)), which builds on Tom Cassady's Claude Terminal ([heytcass/home-assistant-addons](https://github.com/heytcass/home-assistant-addons)). See [Credits](#credits).`
@@ -511,14 +511,14 @@ Claude Workbench is an independent community project and is not made or endorsed
 Claude, Claude Code and the Claude spark logo are trademarks of Anthropic. Claude Workbench is an independent community project and is not made or endorsed by Anthropic.
 ```
 
-- [ ] **Step 6: `claude-workbench/DOCS.md`** (in HA angezeigt):
+- [x] **Step 6: `claude-workbench/DOCS.md`** (in HA angezeigt):
   - Titel `# Claude Workbench`, Untertitel `A workbench for Anthropic's Claude Code CLI in Home Assistant.`
   - About: `Claude Workbench provides a web-based terminal with Claude Code CLI pre-installed plus persistent package management. It grew out of Claude Terminal Pro (ESJavadex) and the original Claude Terminal (heytcass).`
   - Installation: URL `https://github.com/Eifel-Joe/claude-workbench`, `Install the Claude Workbench app`.
   - `### Switching from another Claude Terminal Pro app` → `### Switching from Claude Terminal Pro`; erster Satz: `If a Claude Terminal Pro app is installed — ESJavadex's, or this project's own app before 3.0.0 — Claude Workbench offers on the first panel open to take over its data.` Rest (Ziffern 1–6) bleibt. Danach ergänzen: `Afterwards uninstall the old app and remove its repository entry (Settings → Apps → App Store → ⋮ → Repositories); GitHub redirects this project's old URL, so Claude Workbench would otherwise show up twice.`
   - Credits wie in Step 5 (Maintainer / Claude Terminal Pro / Original Claude Terminal + Markenhinweis).
 
-- [ ] **Step 7: Übrige Doku**
+- [x] **Step 7: Übrige Doku**
   - `PERSISTENT_PACKAGES.md`: `**Settings** → **Add-ons** → **Claude Terminal**` → `**Settings** → **Apps** → **Claude Workbench**` (Zeilen ~102, ~383); Abschnitt `### Via config file (Advanced)` (ab Zeile ~122 bis vor `## 📚 Examples`) löschen — bashio liest Optionen über die Supervisor-API, die Datei gibt es nicht.
   - `IMAGE_PASTE.md:5`: `Claude Workbench supports pasting and uploading images …`
   - `SKILL.md:14`: `… in the Claude Workbench Home Assistant app that …`; `:254`: `**Settings** → **Apps** → **Claude Workbench**`.
@@ -526,7 +526,7 @@ Claude, Claude Code and the Claude spark logo are trademarks of Anthropic. Claud
   - `DEVELOPMENT.md:3`: `… for the Claude Workbench app.`
   - `flake.nix:37`: `Build the Claude Workbench app`.
 
-- [ ] **Step 8: GREEN + Kontrolle**
+- [x] **Step 8: GREEN + Kontrolle**
 
 ```bash
 bash tests/test-release-metadata.sh
@@ -534,7 +534,7 @@ git grep -n "Claude Terminal\|claude-terminal\|claude-code-ha" -- . ':!docs' ':!
 ```
 Erwartet: Suite grün; `git grep` zeigt nur bewusst behaltene Stellen (Erwähnungen der alten App/Credits, `ESJavadex/claude-code-ha`, Übernahme-Code/-Tests, `run.sh:661`, Schutztest selbst). Liste gegen die Spec prüfen. Lokale Suiten grün.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add tests/test-release-metadata.sh README.md claude-workbench/README.md claude-workbench/DOCS.md claude-workbench/PERSISTENT_PACKAGES.md claude-workbench/IMAGE_PASTE.md claude-workbench/.claude/skills/persistent-package-manager/SKILL.md CLAUDE.md DEVELOPMENT.md flake.nix LICENSE
@@ -555,10 +555,10 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `claude-workbench/config.yaml` (`version`), `README.md` (Badge), `claude-workbench/CHANGELOG.md` (oben)
 - Create: `docs/release-notes-3.0.0.md`
 
-- [ ] **Step 1: RED** — nur `config.yaml` auf `version: "3.0.0"` setzen, dann `bash tests/test-release-metadata.sh`
+- [x] **Step 1: RED** — nur `config.yaml` auf `version: "3.0.0"` setzen, dann `bash tests/test-release-metadata.sh`
   Expected: `FAIL (release metadata): CHANGELOG.md has no '## 3.0.0' section for the current version`
 
-- [ ] **Step 2: CHANGELOG** — oberhalb von `## 2.3.4` einfügen:
+- [x] **Step 2: CHANGELOG** — oberhalb von `## 2.3.4` einfügen:
 
 ```markdown
 ## 3.0.0
@@ -585,9 +585,9 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
   icon and logo.
 ```
 
-- [ ] **Step 3: README-Badge** — `badge/version-2.3.4-` → `badge/version-3.0.0-`.
+- [x] **Step 3: README-Badge** — `badge/version-2.3.4-` → `badge/version-3.0.0-`.
 
-- [ ] **Step 4: `docs/release-notes-3.0.0.md`** (Write-Tool):
+- [x] **Step 4: `docs/release-notes-3.0.0.md`** (Write-Tool):
 
 ```markdown
 ## Claude Terminal Pro is now Claude Workbench
@@ -612,9 +612,9 @@ Claude Workbench builds on Claude Terminal Pro by Javier Santos (@ESJavadex) and
 Full details: [CHANGELOG](https://github.com/Eifel-Joe/claude-workbench/blob/main/claude-workbench/CHANGELOG.md).
 ```
 
-- [ ] **Step 5: GREEN** — `bash tests/test-release-metadata.sh` → `Release metadata suite passed (version 3.0.0)`; lokale Suiten grün; `git ls-files --eol | grep -c "crlf\|mixed"` → `0`.
+- [x] **Step 5: GREEN** — `bash tests/test-release-metadata.sh` → `Release metadata suite passed (version 3.0.0)`; lokale Suiten grün; `git ls-files --eol | grep -c "crlf\|mixed"` → `0`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add claude-workbench/config.yaml claude-workbench/CHANGELOG.md README.md docs/release-notes-3.0.0.md
