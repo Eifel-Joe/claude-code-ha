@@ -78,6 +78,13 @@ test.before(async () => {
 
     // Stub ttyd: answers HTTP and accepts WebSocket upgrades.
     ttyd = http.createServer((req, res) => {
+        if (req.url === '/partial') {
+            // Headers out, then the connection drops mid-body.
+            res.writeHead(200, { 'Content-Type': 'text/plain', 'Content-Length': '100' });
+            res.write('abc');
+            setTimeout(() => res.socket.destroy(), 20);
+            return;
+        }
         res.writeHead(200, { 'Content-Type': 'text/plain' });
         res.end(`ttyd-stub:${req.url}`);
     });
@@ -294,6 +301,17 @@ test('a WebSocket upgrade is proxied even as the very first proxy request', asyn
         stub.close();
         fs.rmSync(dir, { recursive: true, force: true });
     }
+});
+
+test('a ttyd connection dropped after the headers does not kill the service', async () => {
+    // The proxy error handler answered 502 unconditionally; once headers are
+    // out that throws ERR_HTTP_HEADERS_SENT inside an event listener.
+    await fetch(`http://127.0.0.1:${PORT}/terminal/partial`)
+        .then((r) => r.text())
+        .catch(() => { /* a broken body is expected */ });
+    await new Promise((r) => setTimeout(r, 200));
+    const res = await fetch(`http://127.0.0.1:${PORT}/health`);
+    assert.strictEqual(res.status, 200, 'image service died after a dropped ttyd response');
 });
 
 // http-proxy 1.x (pulled in by http-proxy-middleware 2/3) calls util._extend,

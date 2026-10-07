@@ -113,8 +113,11 @@ const terminalProxy = createProxyMiddleware({
     on: {
         error: (err, req, res) => {
             console.error('Proxy error:', err.message);
-            // res may be a raw socket (WebSocket) instead of an Express response
-            if (typeof res.status === 'function') {
+            // res may be a raw socket (WebSocket) instead of an Express response.
+            // Once ttyd's headers are out (connection dropped mid-body) a 502
+            // throws ERR_HTTP_HEADERS_SENT in this listener and kills the
+            // service; just end the response then.
+            if (typeof res.status === 'function' && !res.headersSent) {
                 res.status(502).send('Failed to connect to terminal');
             } else if (typeof res.end === 'function') {
                 res.end();
