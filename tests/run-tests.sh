@@ -14,7 +14,7 @@ node --test "$tests_dir/test-app-migration.js"
 
 # The image service is the ingress entry point. Its suite needs node and the
 # service's dependencies; skip loudly rather than pretend it ran.
-service_dir="$repo_root/claude-terminal/image-service"
+service_dir="$repo_root/claude-workbench/image-service"
 if ! command -v node >/dev/null 2>&1; then
     echo "SKIP: node not available, image service suite not run" >&2
 elif [ ! -d "$service_dir/node_modules" ]; then

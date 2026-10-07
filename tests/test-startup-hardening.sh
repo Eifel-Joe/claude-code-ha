@@ -25,7 +25,7 @@ bashio::config() { printf '%s\n' "${2:-}"; }
 # shellcheck disable=SC2034  # read by the sourced run.sh
 CLAUDE_RUN_SH_SKIP_MAIN=true
 # shellcheck source=/dev/null
-source "$repo_root/claude-terminal/run.sh"
+source "$repo_root/claude-workbench/run.sh"
 
 real_path="$PATH"
 

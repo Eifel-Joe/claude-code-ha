@@ -43,10 +43,10 @@
             echo "To get started: build-addon"
             
             # Create convenience aliases
-            alias build-addon='podman build -t local/claude-terminal ./claude-terminal'
-            alias run-addon='podman run -p 7680:7680 -v $(pwd)/config:/config -v $(pwd)/data:/data local/claude-terminal'
+            alias build-addon='podman build -t local/claude-workbench ./claude-workbench'
+            alias run-addon='podman run -p 7680:7680 -v $(pwd)/config:/config -v $(pwd)/data:/data local/claude-workbench'
             alias validate-addon='echo "Note: Home Assistant builder validation requires HA OS environment"'
-            alias lint-dockerfile='hadolint ./claude-terminal/Dockerfile'
+            alias lint-dockerfile='hadolint ./claude-workbench/Dockerfile'
             alias test-endpoint='curl -X GET http://localhost:7680/ || echo "Add-on not running. Use: run-addon"'
           '';
         };

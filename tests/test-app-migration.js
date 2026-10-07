@@ -7,7 +7,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { buildBackupFixture, startFakeSupervisor, SELF_SLUG, OLD_SLUG } = require('./fake-supervisor');
 
-const MOD = path.join(__dirname, '..', 'claude-terminal', 'scripts', 'app-migration');
+const MOD = path.join(__dirname, '..', 'claude-workbench', 'scripts', 'app-migration');
 
 // Every fixture directory is removed once the file's tests have run; they
 // used to pile up in the system temp directory.

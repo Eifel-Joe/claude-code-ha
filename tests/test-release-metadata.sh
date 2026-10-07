@@ -6,7 +6,7 @@ set -euo pipefail
 # have to agree, and nothing checked this before, so they drifted silently.
 
 repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-addon_dir="$repo_root/claude-terminal"
+addon_dir="$repo_root/claude-workbench"
 
 fail() {
     echo "FAIL (release metadata): $*" >&2
@@ -25,7 +25,7 @@ esac
 # reading it. The Dockerfile carries the base image and labels, the version
 # lives only in config.yaml (the Supervisor labels the image with it).
 [ ! -e "$addon_dir/build.yaml" ] || \
-    fail "claude-terminal/build.yaml exists; build parameters belong in the Dockerfile"
+    fail "claude-workbench/build.yaml exists; build parameters belong in the Dockerfile"
 
 dockerfile="$addon_dir/Dockerfile"
 # Dockerfile keywords are case-insensitive; a second stage would make the final

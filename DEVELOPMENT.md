@@ -16,7 +16,7 @@ The fastest way to test changes without publishing new versions:
 
 ```bash
 # 1. Build test container
-podman build -t local/claude-terminal:test ./claude-terminal
+podman build -t local/claude-workbench:test ./claude-workbench
 
 # 2. Create test directories. /config is Home Assistant's configuration,
 #    /data is the app's private storage (credentials in /data/home/.claude).
@@ -32,7 +32,7 @@ podman run -d --name test-claude-dev \
   -p 7680:7680 \
   -v /tmp/test-config:/config \
   -v /tmp/test-data:/data \
-  local/claude-terminal:test
+  local/claude-workbench:test
 
 # 4. Check startup logs
 podman logs test-claude-dev
@@ -49,17 +49,17 @@ podman stop test-claude-dev && podman rm test-claude-dev
 
 ```bash
 # Make changes to code
-vim claude-terminal/scripts/claude-session-picker.sh
+vim claude-workbench/scripts/claude-session-picker.sh
 
 # Rebuild image
-podman build -t local/claude-terminal:test ./claude-terminal
+podman build -t local/claude-workbench:test ./claude-workbench
 
 # Stop old container
 podman stop test-claude-dev && podman rm test-claude-dev
 
 # Start new container with changes
 podman run -d --name test-claude-dev -p 7680:7680 \
-  -v /tmp/test-config:/config -v /tmp/test-data:/data local/claude-terminal:test
+  -v /tmp/test-config:/config -v /tmp/test-data:/data local/claude-workbench:test
 
 # Test changes
 open http://localhost:7680
@@ -71,7 +71,7 @@ For script changes without full rebuilds:
 
 ```bash
 # Copy updated script to running container
-podman cp ./claude-terminal/scripts/claude-session-picker.sh \
+podman cp ./claude-workbench/scripts/claude-session-picker.sh \
   test-claude-dev:/opt/scripts/claude-session-picker.sh
 
 # Make executable
@@ -107,8 +107,8 @@ cp ~/.claude/.credentials.json /tmp/test-data/home/.claude/
 
 ```bash
 # Run multiple containers on different ports
-podman run -d --name test-claude-dev-8680 -p 8680:7680 -v /tmp/test-config-2:/config -v /tmp/test-data-2:/data local/claude-terminal:test
-podman run -d --name test-claude-dev-9680 -p 9680:7680 -v /tmp/test-config-3:/config -v /tmp/test-data-3:/data local/claude-terminal:test
+podman run -d --name test-claude-dev-8680 -p 8680:7680 -v /tmp/test-config-2:/config -v /tmp/test-data-2:/data local/claude-workbench:test
+podman run -d --name test-claude-dev-9680 -p 9680:7680 -v /tmp/test-config-3:/config -v /tmp/test-data-3:/data local/claude-workbench:test
 ```
 
 ### Debugging Techniques
@@ -168,10 +168,10 @@ curl --include --no-buffer \
 podman stats test-claude-dev
 
 # Check container size
-podman images local/claude-terminal:test
+podman images local/claude-workbench:test
 
 # Inspect layers
-podman history local/claude-terminal:test
+podman history local/claude-workbench:test
 ```
 
 #### Load Testing
@@ -189,7 +189,7 @@ wait
 #### Port Already In Use
 ```bash
 # Map the container's 7680 to a free host port instead
-podman run -d --name test-claude-dev -p 7682:7680 -v /tmp/test-config:/config -v /tmp/test-data:/data local/claude-terminal:test
+podman run -d --name test-claude-dev -p 7682:7680 -v /tmp/test-config:/config -v /tmp/test-data:/data local/claude-workbench:test
 ```
 
 #### Volume Mount Issues
@@ -205,7 +205,7 @@ ls -laZ /tmp/test-config/ /tmp/test-data/
 #### Build Cache Issues
 ```bash
 # Force rebuild without cache
-podman build --no-cache -t local/claude-terminal:test ./claude-terminal
+podman build --no-cache -t local/claude-workbench:test ./claude-workbench
 
 # Clean up unused images
 podman image prune
@@ -222,7 +222,7 @@ podman stop test-claude-dev && podman rm test-claude-dev
 rm -rf /tmp/test-config* /tmp/test-data*
 
 # Clean up test images
-podman rmi local/claude-terminal:test
+podman rmi local/claude-workbench:test
 ```
 
 #### Full System Cleanup
@@ -242,8 +242,8 @@ podman volume prune
 Once testing is complete:
 
 ```bash
-# Bump the version in claude-terminal/config.yaml and add a matching section
-# at the top of claude-terminal/CHANGELOG.md; tests/test-release-metadata.sh
+# Bump the version in claude-workbench/config.yaml and add a matching section
+# at the top of claude-workbench/CHANGELOG.md; tests/test-release-metadata.sh
 # fails the build if they disagree.
 ./tests/run-tests.sh
 
@@ -264,7 +264,7 @@ Home Assistant rebuilds the app on each device once `version` in `config.yaml` c
 mkdir -p /tmp/ha-config/.storage /tmp/ha-data
 
 podman run -d --name test-ha-claude -p 7680:7680 \
-  -v /tmp/ha-config:/config -v /tmp/ha-data:/data local/claude-terminal:test
+  -v /tmp/ha-config:/config -v /tmp/ha-data:/data local/claude-workbench:test
 ```
 
 ### Cross-Platform Testing
@@ -275,5 +275,5 @@ podman run -d --name test-ha-claude -p 7680:7680 \
 # architecture, and add --platform so the emulated toolchain matches.
 podman build --platform linux/arm64 \
   --build-arg BUILD_ARCH=aarch64 \
-  -t local/claude-terminal:arm64 ./claude-terminal
+  -t local/claude-workbench:arm64 ./claude-workbench
 ```

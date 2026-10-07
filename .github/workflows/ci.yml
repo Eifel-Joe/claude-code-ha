@@ -28,15 +28,15 @@ jobs:
           # SC1007: `CDPATH= cd` is a deliberate idiom.
           # SC2155: pre-existing style across the add-on scripts.
           shellcheck -S warning -e SC1008,SC1007,SC2155 -x \
-            claude-terminal/run.sh \
-            claude-terminal/scripts/*.sh \
-            claude-terminal/scripts/persist-install \
+            claude-workbench/run.sh \
+            claude-workbench/scripts/*.sh \
+            claude-workbench/scripts/persist-install \
             tests/*.sh
 
       - name: Hadolint
         uses: hadolint/hadolint-action@v3.5.0
         with:
-          dockerfile: claude-terminal/Dockerfile
+          dockerfile: claude-workbench/Dockerfile
           # DL3018: Alpine packages are intentionally unpinned; the base image
           #         tag pins the repository snapshot.
           # DL3016: the npm fallback deliberately tracks latest; the lockfile
@@ -51,7 +51,7 @@ jobs:
               import yaml
           except ImportError:
               sys.exit("pyyaml missing")
-          for f in ("claude-terminal/config.yaml", "repository.yaml"):
+          for f in ("claude-workbench/config.yaml", "repository.yaml"):
               with open(f) as fh:
                   yaml.safe_load(fh)
               print(f"{f}: valid YAML")
@@ -68,14 +68,14 @@ jobs:
           # Same major as the image (Alpine 3.21 ships Node 22).
           node-version: "22"
           cache: npm
-          cache-dependency-path: claude-terminal/image-service/package-lock.json
+          cache-dependency-path: claude-workbench/image-service/package-lock.json
 
       - name: Install image service dependencies
-        working-directory: claude-terminal/image-service
+        working-directory: claude-workbench/image-service
         run: npm ci
 
       - name: Audit image service dependencies
-        working-directory: claude-terminal/image-service
+        working-directory: claude-workbench/image-service
         run: node ../../.github/scripts/audit-image-service.js
 
       - name: Run all suites
@@ -106,7 +106,7 @@ jobs:
       - name: Build add-on image
         uses: docker/build-push-action@v7
         with:
-          context: claude-terminal
+          context: claude-workbench
           platforms: ${{ matrix.platform }}
           push: false
           load: false

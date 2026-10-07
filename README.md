@@ -1,14 +1,14 @@
 # Claude Terminal Pro for Home Assistant
 
-[![Version](https://img.shields.io/badge/version-2.3.4-1f6feb)](claude-terminal/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.3.4-1f6feb)](claude-workbench/CHANGELOG.md)
 [![Latest release](https://img.shields.io/github/v/release/Eifel-Joe/claude-code-ha?label=release&color=1f6feb)](https://github.com/Eifel-Joe/claude-code-ha/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-3fb950)](LICENSE)
 [![Architectures](https://img.shields.io/badge/arch-amd64%20%7C%20aarch64-8957e5)](#architecture-support)
-[![Base image](https://img.shields.io/badge/base-Alpine%203.21-0db7ed)](claude-terminal/Dockerfile)
+[![Base image](https://img.shields.io/badge/base-Alpine%203.21-0db7ed)](claude-workbench/Dockerfile)
 
 A Home Assistant app that runs Anthropic's **Claude Code CLI** in a browser-based terminal, right inside your dashboard. It ships the tools you actually need for HA work — the `ha` and `gh` CLIs, git, Python — keeps your session alive across restarts with tmux, and lets you install extra packages that survive reboots.
 
-![Claude Terminal Screenshot](claude-terminal/screenshot.png)
+![Claude Terminal Screenshot](claude-workbench/screenshot.png)
 
 > **This is [Eifel-Joe](https://github.com/Eifel-Joe)'s maintained fork** of
 > [ESJavadex/claude-code-ha](https://github.com/ESJavadex/claude-code-ha) by Javier Santos,
@@ -27,7 +27,7 @@ A Home Assistant app that runs Anthropic's **Claude Code CLI** in a browser-base
 - **Phone-friendly terminal** — copy, swipe scrolling, on-screen keyboard, image paste
 - **Remote Control** and access to other apps' config folders
 
-Everything collected from community forks is credited in the [changelog](claude-terminal/CHANGELOG.md).
+Everything collected from community forks is credited in the [changelog](claude-workbench/CHANGELOG.md).
 
 **Switching from the ESJavadex app?** Install this app next to it. On first start it
 finds the old app and, when you open the panel, offers to take over your Claude
@@ -107,7 +107,7 @@ persistent_pip_packages:
   - httpx
 ```
 
-See [DOCS.md](claude-terminal/DOCS.md) for the full guide.
+See [DOCS.md](claude-workbench/DOCS.md) for the full guide.
 
 ---
 
@@ -156,9 +156,9 @@ This drops a `CLAUDE.md` into your config directory with context tailored for Ho
 
 ## Documentation
 
-- [App documentation](claude-terminal/DOCS.md) — options, usage, persistent packages
+- [App documentation](claude-workbench/DOCS.md) — options, usage, persistent packages
 - [Development guide](DEVELOPMENT.md) — build and test the app locally
-- [Changelog](claude-terminal/CHANGELOG.md) — release history
+- [Changelog](claude-workbench/CHANGELOG.md) — release history
 
 ## Community tools
 

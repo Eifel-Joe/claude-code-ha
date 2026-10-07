@@ -20,7 +20,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
 
-const SERVICE_DIR = path.join(__dirname, '..', 'claude-terminal', 'image-service');
+const SERVICE_DIR = path.join(__dirname, '..', 'claude-workbench', 'image-service');
 const SERVER = path.join(SERVICE_DIR, 'server.js');
 
 // 1x1 transparent PNG
