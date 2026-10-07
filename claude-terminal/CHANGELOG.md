@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.3.3
+
+### 🐛 Bug Fix - `persist-install --ha-cli` said "Nothing to do" over an active old copy
+- Because the image ships `ha`, `persist-install --ha-cli` (without `--force`)
+  stopped with "Nothing to do" even when a copy in `/data/packages/bin` - such
+  as the 4.46.0 an earlier `--force` installed - takes priority in PATH.
+- It now names that copy with its version (or "unknown version, installed
+  before 2.3.1") and shows both ways out: `persist-install --ha-cli --force`
+  for the latest release, or `rm` to use the image's CLI.
+
 ## 2.3.2
 
 ### 🐛 Bug Fix - `persist-install --ha-cli` printed an error instead of a version
