@@ -1,5 +1,30 @@
 # Changelog
 
+## 3.0.0
+
+### ✨ New Feature - Claude Terminal Pro is now Claude Workbench
+- **Own name, slug and repository**: the app is called Claude Workbench
+  (slug `claude_workbench`) and lives in `Eifel-Joe/claude-workbench`, so it
+  is no longer mistaken for ESJavadex's Claude Terminal Pro. New logo: the
+  Claude spark and a `>_` prompt in a terminal window.
+- **Breaking**: Home Assistant treats it as a new app. Install Claude Workbench
+  next to the old app; on the first panel open it takes over memories,
+  `CLAUDE.md`, history, logins, packages and settings from any
+  `*_claude_terminal_pro` app (ESJavadex's or this project's before 3.0.0).
+  Then uninstall the old app and remove the old repository entry.
+
+### 📚 Documentation
+- README and store docs describe Claude Workbench as an app of its own, with
+  credits to Javier Santos (Claude Terminal Pro) and Tom Cassady (Claude
+  Terminal) and a trademark note.
+- LICENSE names its copyright holders instead of a template placeholder.
+- `PERSISTENT_PACKAGES.md` no longer suggests editing an `options.json` that
+  does not exist; options are set in the app's Configuration tab.
+
+### 🔧 Technical
+- App folder renamed to `claude-workbench/`; `tools/make-logo.py` rebuilds
+  icon and logo.
+
 ## 2.3.4
 
 ### 🐛 Bug Fix - HA CLI and GitHub CLI lookups no longer hit GitHub's API limit
