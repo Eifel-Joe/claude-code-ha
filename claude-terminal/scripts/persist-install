@@ -259,8 +259,10 @@ install_ha_cli() {
     case "$resolved_url" in
         */releases/tag/?*) HA_VERSION="${resolved_url##*/releases/tag/}" ;;
     esac
+    # Tag characters only: a trailing slash, query or fragment would end in a
+    # broken download URL.
     case "$HA_VERSION" in
-        */*) HA_VERSION="" ;;
+        *[!A-Za-z0-9._+-]*) HA_VERSION="" ;;
     esac
     if [ -z "$HA_VERSION" ]; then
         echo "❌ Could not determine the latest Home Assistant CLI version"

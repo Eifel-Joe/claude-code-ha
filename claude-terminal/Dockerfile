@@ -92,8 +92,8 @@ RUN (timeout 300 bash -c "curl -fsSL https://claude.ai/install.sh | bash" \
 RUN HA_ARCH=$(cat /etc/addon-arch) && \
     echo "Fetching latest Home Assistant CLI version..." && \
     HA_URL=$(curl -fsSL -o /dev/null -w '%{url_effective}' https://github.com/home-assistant/cli/releases/latest) && \
-    case "${HA_URL}" in */releases/tag/?*) ;; *) echo "No release tag in '${HA_URL}'" && exit 1 ;; esac && \
     HA_VERSION="${HA_URL##*/releases/tag/}" && \
+    case "${HA_VERSION}" in ''|*[!A-Za-z0-9._+-]*) echo "No release tag in '${HA_URL}'" && exit 1 ;; esac && \
     echo "Installing Home Assistant CLI ${HA_VERSION} for ${HA_ARCH}..." && \
     curl -fsSL -o /usr/bin/ha \
         "https://github.com/home-assistant/cli/releases/download/${HA_VERSION}/ha_${HA_ARCH}" && \
@@ -109,8 +109,8 @@ RUN case "$(cat /etc/addon-arch)" in \
     esac && \
     echo "Fetching latest GitHub CLI version..." && \
     GH_URL=$(curl -fsSL -o /dev/null -w '%{url_effective}' https://github.com/cli/cli/releases/latest) && \
-    case "${GH_URL}" in */releases/tag/v?*) ;; *) echo "No release tag in '${GH_URL}'" && exit 1 ;; esac && \
     GH_VERSION="${GH_URL##*/releases/tag/v}" && \
+    case "${GH_VERSION}" in ''|*[!A-Za-z0-9._+-]*) echo "No release tag in '${GH_URL}'" && exit 1 ;; esac && \
     echo "Installing GitHub CLI v${GH_VERSION} for ${GH_ARCH}..." && \
     curl -fsSL -o /tmp/gh.tar.gz \
         "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_${GH_ARCH}.tar.gz" && \

@@ -1,6 +1,6 @@
 ## HA CLI and GitHub CLI lookups no longer hit GitHub's API limit
 
-The image build and `persist-install --ha-cli` asked GitHub's REST API for the latest release. Without a token it allows 60 requests per hour per IP, and builds could fail with 403. The version now comes from where `github.com/<repo>/releases/latest` redirects to, which has no such limit. If that lookup fails, nothing is downloaded and an existing copy stays.
+The image build and `persist-install --ha-cli` asked GitHub's REST API for the latest release. Without a token it allows 60 requests per hour per IP, and builds could fail with 403. The version now comes from where `github.com/<repo>/releases/latest` redirects to, which has no such limit. If that lookup fails, nothing is downloaded: the image build stops with an error, and `persist-install` keeps an existing copy.
 
 ## Mac clipboard monitor removed
 

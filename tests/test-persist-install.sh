@@ -100,11 +100,11 @@ cat > "$fake_bin/curl" <<CURL
 #!/bin/sh
 printf '%s\n' "\$*" >> "$curl_log"
 # Release lookup: persist-install asks curl where releases/latest redirects to.
+# Like real curl, the URL is printed even when -f makes it fail.
 case "\$*" in
     *url_effective*)
-        [ "\${FAKE_LATEST_STATUS:-0}" -eq 0 ] || exit "\$FAKE_LATEST_STATUS"
         printf '%s' "\${FAKE_LATEST_URL:-}"
-        exit 0
+        exit "\${FAKE_LATEST_STATUS:-0}"
         ;;
 esac
 out=""
@@ -170,8 +170,9 @@ if [ -n "$want_arch" ]; then
     [ "$(cat "$tmp_dir/ha-ok/packages/bin/.ha-version" 2>/dev/null)" = "9.9.1" ] || \
         fail "--ha-cli did not record the installed version in .ha-version"
 
-    # Lookup fails (no network) -> non-zero, nothing downloaded
-    if FAKE_LATEST_STATUS=22 run_ha_cli "$tmp_dir/ha-down"; then
+    # Lookup fails (no network) -> non-zero, nothing downloaded. Real curl
+    # still prints the URL it got to, which may look like a tag.
+    if FAKE_LATEST_URL="$latest_tag_url" FAKE_LATEST_STATUS=22 run_ha_cli "$tmp_dir/ha-down"; then
         fail "--ha-cli exited 0 although the version lookup failed: $(cat "$tmp_dir/out.log")"
     fi
     if grep -q 'releases/download' "$curl_log"; then
@@ -179,15 +180,22 @@ if [ -n "$want_arch" ]; then
     fi
     [ ! -e "$tmp_dir/ha-down/packages/bin/ha" ] || fail "--ha-cli left a binary after a failed lookup"
 
-    # Redirect ends somewhere that is not a release tag -> non-zero, no download
+    # Redirect ends somewhere that is not a release tag -> non-zero, no
+    # download, and an existing copy stays as it is.
+    make_old_copy "$tmp_dir/ha-notag"
     for bad_url in "" "https://github.com/home-assistant/cli/releases" \
-                   "https://github.com/home-assistant/cli/releases/tag/"; do
+                   "https://github.com/home-assistant/cli/releases/tag/" \
+                   "https://github.com/home-assistant/cli/releases/tag/9.9.1/" \
+                   "https://github.com/home-assistant/cli/releases/tag/9.9.1?x=1" \
+                   "https://github.com/home-assistant/cli/releases/tag/9.9.1#top"; do
         if FAKE_LATEST_URL="$bad_url" run_ha_cli "$tmp_dir/ha-notag"; then
             fail "--ha-cli exited 0 although releases/latest resolved to '$bad_url'"
         fi
         if grep -q 'releases/download' "$curl_log"; then
             fail "--ha-cli downloaded although releases/latest resolved to '$bad_url': $(cat "$curl_log")"
         fi
+        grep -q 'old-ha' "$tmp_dir/ha-notag/packages/bin/ha" || \
+            fail "--ha-cli touched the existing copy although releases/latest resolved to '$bad_url'"
     done
 
     # --force replaces an old copy with the latest release; that old copy is

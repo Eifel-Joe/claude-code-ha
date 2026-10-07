@@ -7,8 +7,9 @@
   the latest release. Without a token it allows 60 requests per hour per IP,
   and a build failed with 403. They now read the version from where
   `github.com/<repo>/releases/latest` redirects to, which has no such limit.
-  If that redirect does not end in a release, nothing is downloaded and an
-  existing copy stays in place.
+  If that redirect does not end in a release tag, nothing is downloaded: the
+  image build stops with an error, and `persist-install` keeps an existing
+  copy.
 
 ### 🛠️ Improvement - Mac clipboard monitor removed
 - `mac-clipboard-monitor.py` uploaded to `<host>:8123/upload`, which is Home
