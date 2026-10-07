@@ -1,6 +1,6 @@
 # Proxy ohne DEP0060, `map` ohne Warnung, Erklärungstexte (3.0.1) — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Release 3.0.1: `http-proxy-middleware` 4 statt 2 (kein `util._extend`/DEP0060 mehr), `map` mit `homeassistant_config` und `path: /config` (keine Supervisor-Warnung), Erklärungstexte für alle Optionen auf Deutsch und Englisch.
 
@@ -38,7 +38,7 @@ Bekannt: `test-image-service.js` endet unter Windows mit Exit 1 durch ein nachla
 **Files:**
 - Modify: `tests/test-image-service.js`
 
-- [ ] **Step 1: ttyd-Stub merkt sich die Upgrade-Pfade** — in `test.before` den Upgrade-Handler erweitern; oben bei den `let`-Variablen `let ttydUpgradeUrls = [];` ergänzen:
+- [x] **Step 1: ttyd-Stub merkt sich die Upgrade-Pfade** — in `test.before` den Upgrade-Handler erweitern; oben bei den `let`-Variablen `let ttydUpgradeUrls = [];` ergänzen:
 
 ```js
     ttyd.on('upgrade', (req, socket) => {
@@ -46,13 +46,13 @@ Bekannt: `test-image-service.js` endet unter Windows mit Exit 1 durch ein nachla
         ttydUpgradeUrls.push(req.url);
 ```
 
-- [ ] **Step 2: Pfad-Assertion im WebSocket-Test** — im Test `/terminal forwards a WebSocket upgrade to ttyd` nach der letzten Assertion:
+- [x] **Step 2: Pfad-Assertion im WebSocket-Test** — im Test `/terminal forwards a WebSocket upgrade to ttyd` nach der letzten Assertion:
 
 ```js
     assert.strictEqual(ttydUpgradeUrls.at(-1), '/ws', 'the /terminal prefix must be stripped for WebSocket upgrades');
 ```
 
-- [ ] **Step 3: Neuer Test HTTP-Pfad** — direkt nach `/terminal proxies HTTP through to ttyd`:
+- [x] **Step 3: Neuer Test HTTP-Pfad** — direkt nach `/terminal proxies HTTP through to ttyd`:
 
 ```js
 test('/terminal strips its prefix before forwarding HTTP to ttyd', async () => {
@@ -62,7 +62,7 @@ test('/terminal strips its prefix before forwarding HTTP to ttyd', async () => {
 });
 ```
 
-- [ ] **Step 4: Neuer Test 502 bei totem ttyd** — am Dateiende:
+- [x] **Step 4: Neuer Test 502 bei totem ttyd** — am Dateiende:
 
 ```js
 test('/terminal answers 502 when ttyd is not reachable', async () => {
@@ -91,10 +91,10 @@ test('/terminal answers 502 when ttyd is not reachable', async () => {
 });
 ```
 
-- [ ] **Step 5: Lauf** — `node --test tests/test-image-service.js`
+- [x] **Step 5: Lauf** — `node --test tests/test-image-service.js`
   Expected: `ℹ pass 11`, `ℹ fail 0` (9 bisher + 2 neu). Falls ein Schutztest auf hpm 2 rot ist: STOP — dann beschreibt er nicht das heutige Verhalten; Erwartung mit dem tatsächlichen Verhalten abgleichen, bevor weitergemacht wird.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add tests/test-image-service.js
@@ -115,7 +115,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `tests/test-image-service.js`, `tests/test-release-metadata.sh`
 - Modify: `claude-workbench/image-service/package.json`, `claude-workbench/image-service/package-lock.json`, `claude-workbench/image-service/server.js:22,103-117,151-155`
 
-- [ ] **Step 1: stderr des Dienstes sammeln** — in `tests/test-image-service.js` bei den `let`-Variablen `let serviceStderr = '';` und in `test.before` die stderr-Zeile ersetzen:
+- [x] **Step 1: stderr des Dienstes sammeln** — in `tests/test-image-service.js` bei den `let`-Variablen `let serviceStderr = '';` und in `test.before` die stderr-Zeile ersetzen:
 
 ```js
     child.stderr.on('data', (d) => {
@@ -124,7 +124,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
     });
 ```
 
-- [ ] **Step 2: RED-Test** — als letzten Test vor dem 502-Test einfügen (läuft nach den HTTP- und WebSocket-Tests derselben Instanz):
+- [x] **Step 2: RED-Test** — als letzten Test vor dem 502-Test einfügen (läuft nach den HTTP- und WebSocket-Tests derselben Instanz):
 
 ```js
 // http-proxy 1.x (pulled in by http-proxy-middleware 2/3) calls util._extend,
@@ -135,7 +135,7 @@ test('the service proxies without deprecation or experimental warnings', () => {
 });
 ```
 
-- [ ] **Step 3: Lockfile-Schutz** — in `tests/test-release-metadata.sh` vor `echo "Release metadata suite passed …"`:
+- [x] **Step 3: Lockfile-Schutz** — in `tests/test-release-metadata.sh` vor `echo "Release metadata suite passed …"`:
 
 ```bash
 # http-proxy 1.x is unmaintained and calls util._extend (DEP0060 in the app
@@ -145,12 +145,12 @@ if grep -n '"node_modules/http-proxy"' "$addon_dir/image-service/package-lock.js
 fi
 ```
 
-- [ ] **Step 4: RED prüfen**
+- [x] **Step 4: RED prüfen**
   - `node --test tests/test-image-service.js` → der neue Test schlägt fehl, Meldung enthält `DEP0060`.
   - `bash tests/test-release-metadata.sh` → `FAIL (release metadata): image-service still installs http-proxy …`
   - Falls der Image-Service-Test **nicht** rot wird (Warnung erscheint nicht): STOP, Ursache klären (wird `util._extend` nur in bestimmten Pfaden gerufen?) und den Test so anpassen, dass er die Warnung im App-Log tatsächlich reproduziert.
 
-- [ ] **Step 5: Upgrade**
+- [x] **Step 5: Upgrade**
 
 ```bash
 cd claude-workbench/image-service && npm install http-proxy-middleware@^4.2.0 && cd ../..
@@ -159,7 +159,7 @@ grep -c '"node_modules/http-proxy"' claude-workbench/image-service/package-lock.
 ```
 Expected: `"http-proxy-middleware": "^4.2.0"`, Zähler `0`.
 
-- [ ] **Step 6: `server.js` auf die v4-API** — den Block `const terminalProxy = createProxyMiddleware({ … });` ersetzen (Kommentar darüber bleibt):
+- [x] **Step 6: `server.js` auf die v4-API** — den Block `const terminalProxy = createProxyMiddleware({ … });` ersetzen (Kommentar darüber bleibt):
 
 ```js
 const terminalProxy = createProxyMiddleware({
@@ -190,14 +190,14 @@ const terminalProxy = createProxyMiddleware({
 
 Den Kommentar über `server.on('upgrade', terminalProxy.upgrade);` prüfen: er beschreibt das interne Flag von http-proxy-middleware; in v4 existiert `upgrade` weiterhin (der Test „WebSocket upgrade … very first proxy request“ belegt es). Bei Bedarf Versionsbezug im Kommentar anpassen.
 
-- [ ] **Step 7: GREEN**
+- [x] **Step 7: GREEN**
   - `node --test tests/test-image-service.js` → `ℹ pass 12`, `ℹ fail 0`.
   - `bash tests/test-release-metadata.sh` → grün.
   - Wenn ein Pfad-Test rot ist: `pathRewrite` gegen das tatsächliche `req.url` in v4 prüfen (Debug-Ausgabe des Stubs), nicht raten.
   - Wenn der Warnungs-Test wegen `ExperimentalWarning` (require(esm)) rot ist: `server.js` lädt das Modul per `const { createProxyMiddleware } = await import('http-proxy-middleware')` in einer async-Startfunktion; erneut laufen lassen.
-- [ ] **Step 8: Audit wie in der CI** — `cd claude-workbench/image-service && node ../../.github/scripts/audit-image-service.js; cd ../..` → `npm audit: no blocking advisories …`. Ist der Allowlist-Eintrag `GHSA-vfj7-8cjw-p6xm` (braces) nicht mehr nötig, bleibt er trotzdem (harmlos); Kommentar nur anpassen, wenn er falsch geworden ist.
-- [ ] **Step 9: Lokale Suiten** grün.
-- [ ] **Step 10: Commit**
+- [x] **Step 8: Audit wie in der CI** — `cd claude-workbench/image-service && node ../../.github/scripts/audit-image-service.js; cd ../..` → `npm audit: no blocking advisories …`. Ist der Allowlist-Eintrag `GHSA-vfj7-8cjw-p6xm` (braces) nicht mehr nötig, bleibt er trotzdem (harmlos); Kommentar nur anpassen, wenn er falsch geworden ist.
+- [x] **Step 9: Lokale Suiten** grün.
+- [x] **Step 10: Commit**
 
 ```bash
 git add tests/test-image-service.js tests/test-release-metadata.sh claude-workbench/image-service/package.json claude-workbench/image-service/package-lock.json claude-workbench/image-service/server.js
@@ -218,7 +218,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 **Files:**
 - Modify: `tests/test-release-metadata.sh`, `claude-workbench/config.yaml` (Block `map:`)
 
-- [ ] **Step 1: Test** — vor `echo "Release metadata suite passed …"`:
+- [x] **Step 1: Test** — vor `echo "Release metadata suite passed …"`:
 
 ```bash
 # Supervisor 2023-10: "config" became "homeassistant_config" and logs a
@@ -234,9 +234,9 @@ printf '%s\n' "$ha_map" | grep -qE '^\s+read_only: false\s*$' && \
     fail "config.yaml needs '- type: homeassistant_config' with read_only: false and path: /config"
 ```
 
-- [ ] **Step 2: RED** — Expected: Zeile `  - config:rw …` wird gelistet, dann `FAIL (release metadata): config.yaml maps the deprecated 'config' option …`
+- [x] **Step 2: RED** — Expected: Zeile `  - config:rw …` wird gelistet, dann `FAIL (release metadata): config.yaml maps the deprecated 'config' option …`
 
-- [ ] **Step 3: `config.yaml`** — den `map:`-Block ersetzen durch:
+- [x] **Step 3: `config.yaml`** — den `map:`-Block ersetzen durch:
 
 ```yaml
 map:
@@ -248,8 +248,8 @@ map:
   - all_app_configs:rw    # Config/data folders of all other apps (e.g. AppDaemon, Node-RED, ESPHome)
 ```
 
-- [ ] **Step 4: GREEN** — `bash tests/test-release-metadata.sh` grün. YAML-Syntax wie die CI prüfen: `python -c "import yaml; yaml.safe_load(open('claude-workbench/config.yaml'))"` (ohne Fehler; falls PyYAML lokal fehlt, übernimmt die CI-Prüfung „Validate add-on YAML“).
-- [ ] **Step 5: Commit**
+- [x] **Step 4: GREEN** — `bash tests/test-release-metadata.sh` grün. YAML-Syntax wie die CI prüfen: `python -c "import yaml; yaml.safe_load(open('claude-workbench/config.yaml'))"` (ohne Fehler; falls PyYAML lokal fehlt, übernimmt die CI-Prüfung „Validate add-on YAML“).
+- [x] **Step 5: Commit**
 
 ```bash
 git add tests/test-release-metadata.sh claude-workbench/config.yaml
@@ -270,7 +270,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `tests/test-release-metadata.sh`
 - Create: `claude-workbench/translations/en.yaml`, `claude-workbench/translations/de.yaml`
 
-- [ ] **Step 1: Test** — vor `echo "Release metadata suite passed …"`:
+- [x] **Step 1: Test** — vor `echo "Release metadata suite passed …"`:
 
 ```bash
 # Without translations Home Assistant shows bare option names (tmux_mouse …)
@@ -290,9 +290,9 @@ for lang in en de; do
 done
 ```
 
-- [ ] **Step 2: RED** — Expected: `FAIL (release metadata): translations/en.yaml is missing; …`
+- [x] **Step 2: RED** — Expected: `FAIL (release metadata): translations/en.yaml is missing; …`
 
-- [ ] **Step 3: `claude-workbench/translations/en.yaml`** (Write-Tool):
+- [x] **Step 3: `claude-workbench/translations/en.yaml`** (Write-Tool):
 
 ```yaml
 configuration:
@@ -325,7 +325,7 @@ configuration:
     description: "Updates Claude Code on every start. Only with “Keep Claude Code current in /data”; off: update from the session menu only."
 ```
 
-- [ ] **Step 4: `claude-workbench/translations/de.yaml`** (Write-Tool):
+- [x] **Step 4: `claude-workbench/translations/de.yaml`** (Write-Tool):
 
 ```yaml
 configuration:
@@ -358,8 +358,8 @@ configuration:
     description: "Aktualisiert Claude Code bei jedem Start. Wirkt nur mit „Claude Code in /data aktuell halten“; aus: nur über das Sitzungsmenü."
 ```
 
-- [ ] **Step 5: GREEN** — `bash tests/test-release-metadata.sh` grün. Gegenprobe: in `de.yaml` vorübergehend die `description:` von `tmux_mouse` löschen → `FAIL … no name and description for 'tmux_mouse'`; dann `git checkout -- claude-workbench/translations/de.yaml` ist nicht möglich (neue Datei) → Änderung per Edit-Tool rückgängig machen und erneut grün laufen lassen. YAML-Syntax: `python -c "import yaml; [yaml.safe_load(open(f, encoding='utf-8')) for f in ('claude-workbench/translations/en.yaml','claude-workbench/translations/de.yaml')]"`.
-- [ ] **Step 6: Commit**
+- [x] **Step 5: GREEN** — `bash tests/test-release-metadata.sh` grün. Gegenprobe: in `de.yaml` vorübergehend die `description:` von `tmux_mouse` löschen → `FAIL … no name and description for 'tmux_mouse'`; dann `git checkout -- claude-workbench/translations/de.yaml` ist nicht möglich (neue Datei) → Änderung per Edit-Tool rückgängig machen und erneut grün laufen lassen. YAML-Syntax: `python -c "import yaml; [yaml.safe_load(open(f, encoding='utf-8')) for f in ('claude-workbench/translations/en.yaml','claude-workbench/translations/de.yaml')]"`.
+- [x] **Step 6: Commit**
 
 ```bash
 git add tests/test-release-metadata.sh claude-workbench/translations/en.yaml claude-workbench/translations/de.yaml
@@ -380,8 +380,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `claude-workbench/config.yaml` (`version`), `README.md` (Badge), `claude-workbench/CHANGELOG.md`
 - Create: `docs/release-notes-3.0.1.md`
 
-- [ ] **Step 1: RED** — `version: "3.0.1"` setzen, `bash tests/test-release-metadata.sh` → `FAIL … CHANGELOG.md has no '## 3.0.1' section …`
-- [ ] **Step 2: CHANGELOG** — oberhalb von `## 3.0.0`:
+- [x] **Step 1: RED** — `version: "3.0.1"` setzen, `bash tests/test-release-metadata.sh` → `FAIL … CHANGELOG.md has no '## 3.0.1' section …`
+- [x] **Step 2: CHANGELOG** — oberhalb von `## 3.0.0`:
 
 ```markdown
 ## 3.0.1
@@ -399,8 +399,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
   `/config`, so nothing changes in the terminal.
 ```
 
-- [ ] **Step 3: Badge** — `README.md`: `badge/version-3.0.0-` → `badge/version-3.0.1-`.
-- [ ] **Step 4: `docs/release-notes-3.0.1.md`** (Write-Tool):
+- [x] **Step 3: Badge** — `README.md`: `badge/version-3.0.0-` → `badge/version-3.0.1-`.
+- [x] **Step 4: `docs/release-notes-3.0.1.md`** (Write-Tool):
 
 ```markdown
 ## Every option explained, no more log warnings
@@ -417,8 +417,8 @@ Just update — no other changes.
 Full details: [CHANGELOG](https://github.com/Eifel-Joe/claude-workbench/blob/main/claude-workbench/CHANGELOG.md).
 ```
 
-- [ ] **Step 5: GREEN** — `bash tests/test-release-metadata.sh` → `Release metadata suite passed (version 3.0.1)`; lokale Suiten grün.
-- [ ] **Step 6: Commit**
+- [x] **Step 5: GREEN** — `bash tests/test-release-metadata.sh` → `Release metadata suite passed (version 3.0.1)`; lokale Suiten grün.
+- [x] **Step 6: Commit**
 
 ```bash
 git add claude-workbench/config.yaml claude-workbench/CHANGELOG.md README.md docs/release-notes-3.0.1.md
