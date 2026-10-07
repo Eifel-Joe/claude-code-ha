@@ -34,6 +34,7 @@ let child;
 let ttyd;
 let ttydUpgrades = 0;
 let ttydUpgradeUrls = [];
+let serviceStderr = '';
 let PORT;
 let TTYD_PORT;
 
@@ -102,7 +103,10 @@ test.before(async () => {
         stdio: ['ignore', 'pipe', 'pipe']
     });
     child.stdout.on('data', () => {});
-    child.stderr.on('data', (d) => process.stderr.write(`[service] ${d}`));
+    child.stderr.on('data', (d) => {
+        serviceStderr += d;
+        process.stderr.write(`[service] ${d}`);
+    });
 
     assert.ok(await waitForHealth(PORT), 'image service never answered /health');
 });
@@ -290,6 +294,13 @@ test('a WebSocket upgrade is proxied even as the very first proxy request', asyn
         stub.close();
         fs.rmSync(dir, { recursive: true, force: true });
     }
+});
+
+// http-proxy 1.x (pulled in by http-proxy-middleware 2/3) calls util._extend,
+// which Node reports as DEP0060 in the app log. Loading the ESM-only
+// http-proxy-middleware 4 through require() must not warn either.
+test('the service proxies without deprecation or experimental warnings', () => {
+    assert.doesNotMatch(serviceStderr, /DeprecationWarning|ExperimentalWarning|DEP0060/);
 });
 
 test('/terminal answers 502 when ttyd is not reachable', async () => {

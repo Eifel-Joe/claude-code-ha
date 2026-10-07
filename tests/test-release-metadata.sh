@@ -222,4 +222,10 @@ fi
 grep -q 'Switching from Claude Terminal Pro' "$repo_root/README.md" || \
     fail "README.md has no 'Switching from Claude Terminal Pro' section"
 
+# http-proxy 1.x is unmaintained and calls util._extend (DEP0060 in the app
+# log); http-proxy-middleware 4 replaced it with httpxy.
+if grep -n '"node_modules/http-proxy"' "$addon_dir/image-service/package-lock.json"; then
+    fail "image-service still installs http-proxy (util._extend, DEP0060); use http-proxy-middleware 4"
+fi
+
 echo "Release metadata suite passed (version $config_version)"
