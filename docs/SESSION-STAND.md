@@ -1,5 +1,45 @@
 # Sitzungsstand
 
+## 2026-10-07 (8) — Release 3.1.2 (Picker-Label) und Fork-🟡-Entscheidungen
+
+### Stand
+- Spec `docs/specs/2026-10-07-picker-update-label-design.md`, Plan
+  `docs/plans/2026-10-07-picker-update-label.md`. Auf `main` (`7a810b3`),
+  Tag/Release `v3.1.2`. CI grün: Branch 37625705821, `main` 37626581553.
+- `update_menu_label` sagt bei unbekannter installierter Version nicht mehr
+  „up to date“ (CPU ohne x86-64-v2, fehlende Binary). Review fand den
+  Spiegelfall „Fehlertext statt Version“ (`(Error:, up to date)`), per Test
+  belegt und in `get_installed_version` behoben (`5ef3dea`).
+- HA-Test 3.1.2 (Update per MCP 15:14): Log „CPU meets …“, „All checks
+  passed“, Image-Service healthy; Picker (User-Screenshot) zeigt
+  „Update Claude Code (2.1.292, up to date)“, Update über Punkt 7 läuft,
+  Claude startet. CPU-Zweig nur per Unit-Test (HA-Test auf `host`).
+- HA-Prod: noch 3.1.1 — Update startet der User.
+- Fork-Survey-🟡 alle zurückgestellt (Begründungen im Memory
+  `claude-code-ha-followups`): scholarnemo API-Optionen, marcjay HA-MCP
+  (SSH/Telegram verworfen), Moulbi Paket-Persistenz (kleine Variante
+  besprochen, offen: Alt-Kopien in `/data/packages/bin|lib`; `hassio_role`
+  nicht entschieden). Neuer Folgepunkt 19: neue Fork-Runde.
+
+### Verworfen
+- Update-Menüpunkt auf nicht unterstützten CPUs ausblenden (Menünummern),
+  installierte Version aus `package.json` lesen (Zusatzpfad ohne Nutzen).
+
+### Fallen
+- Review-Minor-Befunde nicht übernommen: leere `--version`-Ausgabe mit
+  Exit 0 lässt Versionszeile/Update-Meldung leer (schon auf `main` so);
+  kein Test für „latest unknown“.
+- CI-Hinweis: `ubuntu-latest` wird ab 2026-10-19 Ubuntu 26 (Probe in 2.3.3
+  war grün).
+
+### Nächste Schritte
+- HA-Prod auf 3.1.2 (User), danach Supervisor-/App-Log per MCP prüfen.
+- Remote-Branch `fix/picker-update-label` löschen (Freigabe).
+- Folgepunkte im Memory `claude-code-ha-followups` (7 zurückgestellt, 19).
+
+### Empfohlene Skills
+- `task-loop` für den nächsten Folgepunkt.
+
 ## 2026-10-07 (7) — Release 3.1.1 (Folgepunkt 3: CPU ohne x86-64-v2)
 
 ### Stand

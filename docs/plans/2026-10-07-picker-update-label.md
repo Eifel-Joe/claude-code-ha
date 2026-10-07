@@ -173,8 +173,8 @@ git commit -m "chore(release): 3.1.2"
 ### Task 4: Review, CI, HA-Test, Release (je mit Freigabe)
 
 - [x] **Step 1:** Code-Review per Subagent (`superpowers:requesting-code-review`) über `main..fix/picker-update-label` gegen Spec und Plan.
-- [ ] **Step 2:** Push des Branches (Freigabe), CI über `gh run list --repo Eifel-Joe/claude-workbench --branch fix/picker-update-label` (bei zwei Läufen den zweiten nehmen) → grün.
-- [ ] **Step 3:** Merge nach `main` (`--no-ff`), Push (Freigabe), CI auf `main` grün.
-- [ ] **Step 4:** HA-Test: `ha_manage_app` check_updates, dann update auf 3.1.2; App-Log prüfen. User prüft im Picker (bei `use_persistent_claude: true`) das Label auf CPU-Typ `host`: zeigt die installierte Version wie bisher.
-- [ ] **Step 5:** Tag `v3.1.2` und GitHub-Release mit `docs/release-notes-3.1.2.md` (Freigabe).
-- [ ] **Step 6:** `docs/SESSION-STAND.md` ergänzen, Memory `claude-code-ha-followups` aktualisieren, `.tmp/` leeren.
+- [x] **Step 2:** Push des Branches (Freigabe), CI über `gh run list --repo Eifel-Joe/claude-workbench --branch fix/picker-update-label` (bei zwei Läufen den zweiten nehmen) → grün.
+- [x] **Step 3:** Merge nach `main` (`--no-ff`), Push (Freigabe), CI auf `main` grün.
+- [x] **Step 4:** HA-Test: `ha_manage_app` check_updates, dann update auf 3.1.2; App-Log prüfen. User prüft im Picker (bei `use_persistent_claude: true`) das Label auf CPU-Typ `host`: zeigt die installierte Version wie bisher.
+- [x] **Step 5:** Tag `v3.1.2` und GitHub-Release mit `docs/release-notes-3.1.2.md` (Freigabe).
+- [x] **Step 6:** `docs/SESSION-STAND.md` ergänzen, Memory `claude-code-ha-followups` aktualisieren, `.tmp/` leeren.
