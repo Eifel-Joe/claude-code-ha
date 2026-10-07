@@ -659,27 +659,27 @@ Expected: `origin https://github.com/Eifel-Joe/claude-workbench.git`, Fetch ohne
 
 ### Task 11: Merge nach `main`, Push (Freigabe nötig)
 
-- [ ] **Step 1:** `git switch main && git merge --no-ff feat/claude-workbench -m "Merge branch 'feat/claude-workbench': Claude Terminal Pro is now Claude Workbench (3.0.0)"`
-- [ ] **Step 2:** Lokale Suiten auf `main` grün.
-- [ ] **Step 3:** Freigabe → `git push origin main`; CI auf `main` grün (`gh run list --repo Eifel-Joe/claude-workbench --branch main --limit 1`).
+- [x] **Step 1:** `git switch main && git merge --no-ff feat/claude-workbench -m "Merge branch 'feat/claude-workbench': Claude Terminal Pro is now Claude Workbench (3.0.0)"`
+- [x] **Step 2:** Lokale Suiten auf `main` grün.
+- [x] **Step 3:** Freigabe → `git push origin main`; CI auf `main` grün (`gh run list --repo Eifel-Joe/claude-workbench --branch main --limit 1`).
 
 ---
 
 ### Task 12: HA-Test Ende-zu-Ende
 
-- [ ] **Step 1:** Supervisor- und App-Log von `6ef0b4d0_claude_terminal_pro` als Ausgangslage per MCP sichern.
+- [x] **Step 1:** Supervisor- und App-Log von `6ef0b4d0_claude_terminal_pro` als Ausgangslage per MCP sichern.
 - Hinweis: Nach dem Merge zeigt der *alte* Repository-Eintrag (alte URL, über GitHubs Weiterleitung) ebenfalls schon „Claude Workbench“. Bis Step 5 steht sie deshalb zweimal im Store — erwartet. Installiert wird aus dem *neuen* Eintrag; den alten Eintrag lässt HA erst entfernen, wenn die alte App deinstalliert ist.
-- [ ] **Step 2:** User fügt in HA-Test die Repository-URL `https://github.com/Eifel-Joe/claude-workbench` hinzu (oder per MCP, falls `ha_manage_app` das anbietet; sonst User). Per MCP prüfen: „Claude Workbench“ 3.0.0 mit neuem Logo im Store.
-- [ ] **Step 3:** Aus dem *neuen* Eintrag installieren und starten (per MCP auf HA-Test): Slug muss `0e003122_claude_workbench` sein, nicht `6ef0b4d0_claude_workbench`. Bei „Request timed out“ Supervisor-Log prüfen, nicht erneut auslösen. App-Log: „Initializing Claude Workbench app...“, Übernahme-Angebot für `6ef0b4d0_claude_terminal_pro` erkannt.
-- [ ] **Step 4:** User öffnet das Panel, bestätigt die Übernahme; Ergebnis im Terminal zeigen lassen. Danach: Claude startet ohne Login, Memories vorhanden, `persist-install --list` zeigt die Pakete.
-- [ ] **Step 5:** User deinstalliert die alte App und entfernt den alten Repository-Eintrag; per MCP prüfen: alte App weg, Claude Workbench genau einmal im Store.
+- [x] **Step 2:** User fügt in HA-Test die Repository-URL `https://github.com/Eifel-Joe/claude-workbench` hinzu (oder per MCP, falls `ha_manage_app` das anbietet; sonst User). Per MCP prüfen: „Claude Workbench“ 3.0.0 mit neuem Logo im Store.
+- [x] **Step 3:** Aus dem *neuen* Eintrag installieren und starten (per MCP auf HA-Test): Slug muss `0e003122_claude_workbench` sein, nicht `6ef0b4d0_claude_workbench`. Bei „Request timed out“ Supervisor-Log prüfen, nicht erneut auslösen. App-Log: „Initializing Claude Workbench app...“, Übernahme-Angebot für `6ef0b4d0_claude_terminal_pro` erkannt.
+- [x] **Step 4:** User öffnet das Panel, bestätigt die Übernahme; Ergebnis im Terminal zeigen lassen. Danach: Claude startet ohne Login, Memories vorhanden, `persist-install --list` zeigt die Pakete.
+- [x] **Step 5:** User deinstalliert die alte App und entfernt den alten Repository-Eintrag; per MCP prüfen: alte App weg, Claude Workbench genau einmal im Store.
 
 ---
 
 ### Task 13: Release (Freigabe nötig)
 
-- [ ] **Step 1:** Release-Text (`docs/release-notes-3.0.0.md`) dem User zeigen, Freigabe abwarten.
-- [ ] **Step 2:** `git tag v3.0.0 && git push origin v3.0.0`, dann `gh release create v3.0.0 --repo Eifel-Joe/claude-workbench --title "3.0.0 — Claude Workbench" --notes-file docs/release-notes-3.0.0.md`.
+- [x] **Step 1:** Release-Text (`docs/release-notes-3.0.0.md`) dem User zeigen, Freigabe abwarten.
+- [x] **Step 2:** `git tag v3.0.0 && git push origin v3.0.0`, dann `gh release create v3.0.0 --repo Eifel-Joe/claude-workbench --title "3.0.0 — Claude Workbench" --notes-file docs/release-notes-3.0.0.md`.
 
 ---
 
