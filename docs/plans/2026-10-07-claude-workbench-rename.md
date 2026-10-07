@@ -172,7 +172,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `claude-workbench/scripts/app-migration/apply.js:39`, `claude-workbench/scripts/app-migration/dialog.js:68`
 
 - [x] **Step 1: Tests anpassen (RED)**
-  - `tests/fake-supervisor.js:9`: `const SELF_SLUG = '6ef0b4d0_claude_workbench';`
+  - `tests/fake-supervisor.js:9`: `const SELF_SLUG = '0e003122_claude_workbench';` (nach Review; vorher `6ef0b4d0_…`)
   - `tests/fake-supervisor.js:72`: `{ slug: SELF_SLUG, name: 'Claude Workbench', version: '3.0.0', state: 'started' },`
   - `tests/test-app-migration.js:213`: `name: 'Claude Workbench – Übernahme 2026-10-06', addons: [OLD_SLUG], homeassistant: false, background: true,`
   - `tests/test-app-migration.js:623`: `assert.match(kept, /Claude Workbench – Übernahme/);`
@@ -630,8 +630,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ### Task 8: Code-Review
 
-- [ ] **Step 1:** Subagent `superpowers:code-reviewer` mit Spec, Plan und `git diff main...feat/claude-workbench`. Prüfauftrag: jede Spec-Anforderung umgesetzt? Selbstbezeichnungen vollständig, Erwähnungen der alten App korrekt behalten? Übernahme-Erkennung unverändert? Pfade in CI/Tests vollständig? Escapes in den Bash-Ergänzungen (`config_field`-`sed`) korrekt? Temp-Regel (`.tmp/`) im Prompt mitgeben.
-- [ ] **Step 2:** Befunde über `superpowers:receiving-code-review` prüfen, berechtigte per TDD beheben, je ein Commit.
+- [x] **Step 1:** Subagent `superpowers:code-reviewer` mit Spec, Plan und `git diff main...feat/claude-workbench`. Prüfauftrag: jede Spec-Anforderung umgesetzt? Selbstbezeichnungen vollständig, Erwähnungen der alten App korrekt behalten? Übernahme-Erkennung unverändert? Pfade in CI/Tests vollständig? Escapes in den Bash-Ergänzungen (`config_field`-`sed`) korrekt? Temp-Regel (`.tmp/`) im Prompt mitgeben.
+- [x] **Step 2:** Befunde über `superpowers:receiving-code-review` prüfen, berechtigte per TDD beheben, je ein Commit.
 
 ---
 
@@ -670,7 +670,7 @@ Expected: `origin https://github.com/Eifel-Joe/claude-workbench.git`, Fetch ohne
 - [ ] **Step 1:** Supervisor- und App-Log von `6ef0b4d0_claude_terminal_pro` als Ausgangslage per MCP sichern.
 - Hinweis: Nach dem Merge zeigt der *alte* Repository-Eintrag (alte URL, über GitHubs Weiterleitung) ebenfalls schon „Claude Workbench“. Bis Step 5 steht sie deshalb zweimal im Store — erwartet. Installiert wird aus dem *neuen* Eintrag; den alten Eintrag lässt HA erst entfernen, wenn die alte App deinstalliert ist.
 - [ ] **Step 2:** User fügt in HA-Test die Repository-URL `https://github.com/Eifel-Joe/claude-workbench` hinzu (oder per MCP, falls `ha_manage_app` das anbietet; sonst User). Per MCP prüfen: „Claude Workbench“ 3.0.0 mit neuem Logo im Store.
-- [ ] **Step 3:** Installieren und starten (per MCP auf HA-Test). Bei „Request timed out“ Supervisor-Log prüfen, nicht erneut auslösen. App-Log: „Initializing Claude Workbench app...“, Übernahme-Angebot für `6ef0b4d0_claude_terminal_pro` erkannt.
+- [ ] **Step 3:** Aus dem *neuen* Eintrag installieren und starten (per MCP auf HA-Test): Slug muss `0e003122_claude_workbench` sein, nicht `6ef0b4d0_claude_workbench`. Bei „Request timed out“ Supervisor-Log prüfen, nicht erneut auslösen. App-Log: „Initializing Claude Workbench app...“, Übernahme-Angebot für `6ef0b4d0_claude_terminal_pro` erkannt.
 - [ ] **Step 4:** User öffnet das Panel, bestätigt die Übernahme; Ergebnis im Terminal zeigen lassen. Danach: Claude startet ohne Login, Memories vorhanden, `persist-install --list` zeigt die Pakete.
 - [ ] **Step 5:** User deinstalliert die alte App und entfernt den alten Repository-Eintrag; per MCP prüfen: alte App weg, Claude Workbench genau einmal im Store.
 

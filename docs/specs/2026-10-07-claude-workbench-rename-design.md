@@ -62,7 +62,8 @@ bewusst für das Original entschieden („im schlimmsten Fall müssen wir es
     `DOCS.md`, `README.md` im App-Ordner
   - `DEVELOPMENT.md`, `flake.nix`, `CLAUDE.md` (Projektbeschreibung, Pfade)
 - Session-Picker-Hinweis „Update to Claude Terminal Pro v2.0.4+ …“ entfällt
-  (betrifft nur Uralt-Versionen der alten App).
+  (betrifft nur Uralt-Versionen der alten App). Umgesetzt (laut Plan) als
+  Ersatz: „Restart the app to reinstall it, or run: persist-install github-cli“.
 
 ### 2. Ordner und Pfade
 
@@ -84,7 +85,7 @@ bewusst für das Original entschieden („im schlimmsten Fall müssen wir es
 - Tests:
   - RED zuerst: erwarteter Backup-Name „Claude Workbench – Übernahme …“
     (Test und Dialog-Hinweis).
-  - `fake-supervisor.js`: `SELF_SLUG` wird `6ef0b4d0_claude_workbench`; die
+  - `fake-supervisor.js`: `SELF_SLUG` wird `0e003122_claude_workbench` (Hash der neuen Repo-URL; nach Review korrigiert, vorher `6ef0b4d0_…`); die
     bestehenden Erkennungstests müssen damit weiter grün sein (eigene
     Workbench + alte `*_claude_terminal_pro` → Angebot für die alte).
   - Schutztest (sofort grün, sichert das Verhalten ab): eine zweite
@@ -100,7 +101,12 @@ bewusst für das Original entschieden („im schlimmsten Fall müssen wir es
 - Neuer Abschnitt **„Switching from Claude Terminal Pro“** für beide Fälle
   (ESJavadex-App und bisherige Eifel-Joe-App):
   1. neue Repository-URL in HA hinzufügen
-  2. Claude Workbench installieren und starten
+  2. Claude Workbench installieren und starten — und zwar die mit der
+     App-Adresse `0e003122_claude_workbench` (neue Repo-URL). Nach Review
+     ergänzt: Der alte Repository-Eintrag zeigt per GitHub-Weiterleitung
+     ebenfalls Claude Workbench (`6ef0b4d0_claude_workbench`); daraus
+     installiert, ließe sich der alte Eintrag nie mehr entfernen. Der
+     Metadaten-Test rechnet den Hash aus der Repo-URL nach.
   3. Übernahme im Panel bestätigen
   4. alte App deinstallieren
   5. alten Repository-Eintrag entfernen (GitHub leitet die alte URL weiter,
@@ -145,7 +151,7 @@ bewusst für das Original entschieden („im schlimmsten Fall müssen wir es
    behaltenen Stellen (Übernahme-Texte zur alten App, Credits/Umstieg).
 3. HA-Test: Repository `https://github.com/Eifel-Joe/claude-workbench`
    hinzugefügt → „Claude Workbench“ mit neuem Logo im App Store →
-   installiert und gestartet → Übernahme aus `6ef0b4d0_claude_terminal_pro`
+   als `0e003122_claude_workbench` installiert und gestartet → Übernahme aus `6ef0b4d0_claude_terminal_pro`
    angeboten und durchgeführt → Claude startet ohne erneuten Login, Memories
    und persistente Pakete vorhanden → alte App und alter Repository-Eintrag
    entfernt, Workbench erscheint nur einmal.
