@@ -188,10 +188,7 @@ wait
 
 #### Port Already In Use
 ```bash
-# Find and kill process using port 7680
-sudo lsof -ti:7680 | xargs kill -9
-
-# Or use different port
+# Map the container's 7680 to a free host port instead
 podman run -d --name test-claude-dev -p 7682:7680 -v /tmp/test-config:/config -v /tmp/test-data:/data local/claude-terminal:test
 ```
 

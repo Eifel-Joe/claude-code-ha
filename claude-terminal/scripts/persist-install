@@ -246,15 +246,27 @@ install_ha_cli() {
 
     # Latest release, as the Dockerfile does. A pinned version here (kept for
     # 32-bit builds) downgraded the CLI on every arch, because this
-    # copy sits in PATH ahead of the image's. grep/sed instead of jq so it
-    # works on compact and pretty-printed JSON alike.
-    local api_url="https://api.github.com/repos/home-assistant/cli/releases/latest"
-    local HA_VERSION
-    HA_VERSION=$(curl -fsSL --max-time 30 "$api_url" 2>/dev/null \
-        | grep -o '"tag_name": *"[^"]*"' | head -n 1 | sed 's/.*"\([^"]*\)"$/\1/')
+    # copy sits in PATH ahead of the image's.
+    # The tag is read from where github.com redirects releases/latest
+    # (.../releases/tag/<tag>). GitHub's REST API allows only 60
+    # unauthenticated requests per hour per IP and failed a CI build with 403;
+    # the redirect has no such limit.
+    local latest_url="https://github.com/home-assistant/cli/releases/latest"
+    local resolved_url
+    local HA_VERSION=""
+    resolved_url=$(curl -fsSL --max-time 30 -o /dev/null -w '%{url_effective}' \
+        "$latest_url" 2>/dev/null) || resolved_url=""
+    case "$resolved_url" in
+        */releases/tag/?*) HA_VERSION="${resolved_url##*/releases/tag/}" ;;
+    esac
+    # Tag characters only: a trailing slash, query or fragment would end in a
+    # broken download URL.
+    case "$HA_VERSION" in
+        *[!A-Za-z0-9._+-]*) HA_VERSION="" ;;
+    esac
     if [ -z "$HA_VERSION" ]; then
         echo "❌ Could not determine the latest Home Assistant CLI version"
-        echo "   ($api_url — no network, or GitHub's rate limit of 60 requests/hour)"
+        echo "   ($latest_url — no network, or GitHub did not redirect to a release)"
         return 1
     fi
 

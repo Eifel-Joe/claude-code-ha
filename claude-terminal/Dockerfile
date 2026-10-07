@@ -85,24 +85,32 @@ RUN (timeout 300 bash -c "curl -fsSL https://claude.ai/install.sh | bash" \
     || { rm -f /root/.local/bin/claude; npm install -g @anthropic-ai/claude-code; }
 
 # Install Home Assistant CLI (ha command), latest release. Its asset names use
-# the same arch names as the add-on (ha_amd64, ha_aarch64).
+# the same arch names as the add-on (ha_amd64, ha_aarch64). The tag comes from
+# where github.com redirects releases/latest (.../releases/tag/<tag>); GitHub's
+# REST API allows 60 unauthenticated requests per hour per IP and failed CI
+# builds with 403.
 RUN HA_ARCH=$(cat /etc/addon-arch) && \
     echo "Fetching latest Home Assistant CLI version..." && \
-    HA_VERSION=$(curl -fsSL https://api.github.com/repos/home-assistant/cli/releases/latest | jq -r '.tag_name') && \
+    HA_URL=$(curl -fsSL -o /dev/null -w '%{url_effective}' https://github.com/home-assistant/cli/releases/latest) && \
+    HA_VERSION="${HA_URL##*/releases/tag/}" && \
+    case "${HA_VERSION}" in ''|*[!A-Za-z0-9._+-]*) echo "No release tag in '${HA_URL}'" && exit 1 ;; esac && \
     echo "Installing Home Assistant CLI ${HA_VERSION} for ${HA_ARCH}..." && \
     curl -fsSL -o /usr/bin/ha \
         "https://github.com/home-assistant/cli/releases/download/${HA_VERSION}/ha_${HA_ARCH}" && \
     chmod +x /usr/bin/ha && \
     echo "Home Assistant CLI ${HA_VERSION} installed successfully"
 
-# Install GitHub CLI (gh command), latest release.
+# Install GitHub CLI (gh command), latest release; tag from the releases/latest
+# redirect like the HA CLI above.
 RUN case "$(cat /etc/addon-arch)" in \
         amd64)   GH_ARCH="amd64" ;; \
         aarch64) GH_ARCH="arm64" ;; \
         *)       echo "Unsupported architecture for gh: $(cat /etc/addon-arch)" && exit 1 ;; \
     esac && \
     echo "Fetching latest GitHub CLI version..." && \
-    GH_VERSION=$(curl -fsSL https://api.github.com/repos/cli/cli/releases/latest | jq -r '.tag_name' | sed 's/^v//') && \
+    GH_URL=$(curl -fsSL -o /dev/null -w '%{url_effective}' https://github.com/cli/cli/releases/latest) && \
+    GH_VERSION="${GH_URL##*/releases/tag/v}" && \
+    case "${GH_VERSION}" in ''|*[!A-Za-z0-9._+-]*) echo "No release tag in '${GH_URL}'" && exit 1 ;; esac && \
     echo "Installing GitHub CLI v${GH_VERSION} for ${GH_ARCH}..." && \
     curl -fsSL -o /tmp/gh.tar.gz \
         "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_${GH_ARCH}.tar.gz" && \

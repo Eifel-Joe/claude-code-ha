@@ -122,4 +122,20 @@ if grep -niE 'armv7' "$addon_dir/DOCS.md"; then
     fail "DOCS.md still describes armv7, which is no longer built"
 fi
 
+# Release versions come from github.com's releases/latest redirect. The REST
+# API allows 60 unauthenticated requests per hour per IP; a CI image build
+# failed on its 403 (run 37584251742).
+for f in "$addon_dir/Dockerfile" "$addon_dir/scripts/persist-install"; do
+    if grep -n 'api\.github\.com' "$f"; then
+        fail "$(basename "$f") queries api.github.com; read the tag from the releases/latest redirect"
+    fi
+done
+
+# The Mac clipboard monitor uploaded to <host>:8123/upload (HA Core, not the
+# app) or the direct port that 2.1.0 closed; pasting into the terminal
+# replaces it.
+for f in mac-clipboard-monitor.py MAC_CLIPBOARD_MONITOR.md; do
+    [ ! -e "$repo_root/$f" ] || fail "$f is back; it cannot reach the app since 2.1.0"
+done
+
 echo "Release metadata suite passed (version $config_version)"

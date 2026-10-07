@@ -9,7 +9,17 @@ const { buildBackupFixture, startFakeSupervisor, SELF_SLUG, OLD_SLUG } = require
 
 const MOD = path.join(__dirname, '..', 'claude-terminal', 'scripts', 'app-migration');
 
-function tmp() { return fs.mkdtempSync(path.join(os.tmpdir(), 'mig-')); }
+// Every fixture directory is removed once the file's tests have run; they
+// used to pile up in the system temp directory.
+const tmpDirs = [];
+function tmp() {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mig-'));
+  tmpDirs.push(dir);
+  return dir;
+}
+test.after(() => {
+  for (const dir of tmpDirs) fs.rmSync(dir, { recursive: true, force: true });
+});
 
 test('fixture: backup.tar holds the old app archive with data/', () => {
   const dir = tmp();
