@@ -222,4 +222,46 @@ fi
 grep -q 'Switching from Claude Terminal Pro' "$repo_root/README.md" || \
     fail "README.md has no 'Switching from Claude Terminal Pro' section"
 
+# http-proxy 1.x is unmaintained and calls util._extend (DEP0060 in the app
+# log); http-proxy-middleware 4 replaced it with httpxy.
+# Without the leading quote a nested node_modules/<pkg>/node_modules/http-proxy
+# is caught too.
+if grep -n 'node_modules/http-proxy"' "$addon_dir/image-service/package-lock.json"; then
+    fail "image-service still installs http-proxy (util._extend, DEP0060); use http-proxy-middleware 4"
+fi
+# http-proxy-middleware 4 is ESM-only: below Node 22.12 require() throws
+# ERR_REQUIRE_ESM and the image service (the terminal panel) never starts;
+# 22.12 still warns. Keep the declared floor at the library's own.
+grep -q '"node": ">=22.15"' "$addon_dir/image-service/package.json" || \
+    fail "image-service/package.json engines.node must be >=22.15 (http-proxy-middleware 4)"
+
+# Supervisor 2023-10: "config" became "homeassistant_config" and logs a
+# deprecation warning on every store reload. Without an explicit path that
+# mount lands in /homeassistant, while the terminal, the docs and every user
+# expect the Home Assistant configuration in /config.
+if grep -nE '^\s+-\s+config(:(rw|ro))?(\s|$)' "$addon_dir/config.yaml"; then
+    fail "config.yaml maps the deprecated 'config' option; use homeassistant_config with path /config"
+fi
+ha_map=$(grep -A2 -E '^\s+- type: homeassistant_config\s*$' "$addon_dir/config.yaml" || true)
+printf '%s\n' "$ha_map" | grep -qE '^\s+read_only: false\s*$' && \
+    printf '%s\n' "$ha_map" | grep -qE '^\s+path: /config\s*$' || \
+    fail "config.yaml needs '- type: homeassistant_config' with read_only: false and path: /config"
+
+# Without translations Home Assistant shows bare option names (tmux_mouse …)
+# with no explanation. Every option needs a name and a description in each
+# language, so a new option cannot ship unexplained. Keys come from schema:,
+# which also lists options without a default.
+option_keys=$(sed -n '/^schema:/,/^[a-z]/{s/^  \([A-Za-z0-9_]*\):.*/\1/p;}' "$addon_dir/config.yaml")
+[ -n "$option_keys" ] || fail "could not read the option names from config.yaml"
+for lang in en de; do
+    tr_file="$addon_dir/translations/$lang.yaml"
+    [ -f "$tr_file" ] || fail "translations/$lang.yaml is missing; Home Assistant shows bare option names without it"
+    while IFS= read -r key; do
+        entry=$(grep -A2 -E "^  $key:\s*$" "$tr_file" || true)
+        printf '%s\n' "$entry" | grep -qE '^    name: .+' && \
+            printf '%s\n' "$entry" | grep -qE '^    description: .+' || \
+            fail "translations/$lang.yaml has no name and description for '$key'"
+    done <<< "$option_keys"
+done
+
 echo "Release metadata suite passed (version $config_version)"

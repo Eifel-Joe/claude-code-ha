@@ -104,19 +104,28 @@ const terminalProxy = createProxyMiddleware({
     target: `http://127.0.0.1:${TTYD_PORT}`,
     changeOrigin: true,
     ws: true, // Enable WebSocket proxying
+    // Express strips the /terminal mount from req.url for HTTP; WebSocket
+    // upgrades come through server.on('upgrade') with the raw path, so the
+    // prefix is removed here for those.
     pathRewrite: {
-        '^/terminal': '' // Remove /terminal prefix when forwarding
+        '^/terminal': ''
     },
-    onError: (err, req, res) => {
-        console.error('Proxy error:', err.message);
-        // res may be a raw socket (WebSocket) instead of an Express response
-        if (typeof res.status === 'function') {
-            res.status(502).send('Failed to connect to terminal');
-        } else if (typeof res.end === 'function') {
-            res.end();
+    on: {
+        error: (err, req, res) => {
+            console.error('Proxy error:', err.message);
+            // res may be a raw socket (WebSocket) instead of an Express response.
+            // Once ttyd's headers are out (connection dropped mid-body) a 502
+            // throws ERR_HTTP_HEADERS_SENT in this listener and kills the
+            // service; just end the response then.
+            if (typeof res.status === 'function' && !res.headersSent) {
+                res.status(502).send('Failed to connect to terminal');
+            } else if (typeof res.end === 'function') {
+                res.end();
+            }
         }
     },
-    logLevel: 'warn'
+    // Warnings and errors only (logLevel: 'warn' in http-proxy-middleware 2).
+    logger: { info: () => {}, warn: console.warn, error: console.error }
 });
 
 app.use('/terminal', terminalProxy);

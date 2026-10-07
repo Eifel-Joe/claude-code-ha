@@ -1,5 +1,24 @@
 # Changelog
 
+## 3.1.0
+
+### ✨ New Feature - Every option explained
+- The app's Configuration tab shows a name and a short explanation for each
+  option, in English and German, instead of bare names like `tmux_mouse`.
+
+### 🐛 Bug Fix - No more warnings in the logs
+- **App log**: the image service no longer logs `DEP0060 util._extend`. It
+  came from `http-proxy`, unmaintained since 2020, pulled in by
+  `http-proxy-middleware` 2; version 4 uses `httpxy` instead.
+- **Supervisor log**: no more "uses deprecated map option 'config'". The Home
+  Assistant configuration is mapped as `homeassistant_config`, still at
+  `/config`, so nothing changes in the terminal.
+
+### 🐛 Bug Fix - Terminal panel no longer dies on a dropped connection
+- When ttyd dropped a connection after it had started answering, the image
+  service crashed (`ERR_HTTP_HEADERS_SENT`) and the panel stayed blank until
+  the app was restarted. It now just closes that one response.
+
 ## 3.0.0
 
 ### ✨ New Feature - Claude Terminal Pro is now Claude Workbench

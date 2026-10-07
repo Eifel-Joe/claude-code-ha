@@ -1,0 +1,28 @@
+configuration:
+  auto_launch_claude:
+    name: "Start Claude automatically"
+    description: "Opens Claude Code as soon as you open the panel. Off: shows the session menu first."
+  remote_control:
+    name: "Remote Control"
+    description: "Starts Claude with Remote Control so you can drive the session from claude.ai/code or the Claude app. Only works with “Start Claude automatically”."
+  remote_control_session_name:
+    name: "Remote session name"
+    description: "Fixed title for the session in the session list. Empty: Claude picks a name."
+  tmux_mouse:
+    name: "Mouse in tmux"
+    description: "On: mouse wheel and swiping scroll Claude's history; open links with 🔗 Copy link, select text while holding Shift. Off: normal selection and clickable links."
+  dangerously_skip_permissions:
+    name: "Run without asking"
+    description: "Claude runs commands and edits files without asking first. Only use this if you trust every step."
+  persistent_apk_packages:
+    name: "Persistent system packages"
+    description: "Alpine packages (apk) installed on every start and kept across restarts, e.g. git or vim."
+  persistent_pip_packages:
+    name: "Persistent Python packages"
+    description: "Python packages (pip) installed on every start into the persistent Python environment."
+  use_persistent_claude:
+    name: "Keep Claude Code current in /data"
+    description: "Installs Claude Code in persistent storage so new versions and models arrive without a new app image."
+  auto_update_claude_on_start:
+    name: "Update Claude Code on start"
+    description: "Updates Claude Code on every start. Only with “Keep Claude Code current in /data”; off: update from the session menu only."
