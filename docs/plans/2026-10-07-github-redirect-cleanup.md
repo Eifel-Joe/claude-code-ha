@@ -474,10 +474,10 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ### Task 7: Review, CI, HA-Test, Release (mit Freigaben)
 
-- [ ] **Step 1: Code-Review** per Subagent gegen Spec/Plan (`git diff 0a2e65e..HEAD`); Subagent arbeitet nur unter `.tmp/`. Befunde über `receiving-code-review` prüfen.
-- [ ] **Step 2: Push des Branches — nur nach Freigabe.** CI abwarten (`gh run list --repo Eifel-Joe/claude-code-ha --branch fix/github-redirect-cleanup`): alle Jobs grün; im Build-Log beider Architekturen `Installing Home Assistant CLI 5.` und `Installing GitHub CLI v2.`.
-- [ ] **Step 3: Merge nach `main` (`--no-ff`) und Push — nur nach Freigabe.** CI auf `main` grün.
-- [ ] **Step 4: HA-Test auf 2.3.4** — nur nach Freigabe; `check_updates`, `update` (bei Timeout Supervisor-Log, nicht erneut auslösen); `state: started`, App-Log fehlerfrei. User im App-Terminal: `persist-install --ha-cli --force` → „Installing Home Assistant CLI v5.…“, „ha runs ✓“; danach `rm /data/packages/bin/ha /data/packages/bin/.ha-version`.
-- [ ] **Step 5: Tag `v2.3.4` + Release** — Titel und Text vorher im Chat, nur nach Freigabe.
-- [ ] **Step 6: HA-Prod auf 2.3.4** — nur nach Freigabe (User startet das Update selbst); danach Logs per MCP prüfen.
-- [ ] **Step 7: Abschluss** — Memory (Punkte 9, 13, 14 erledigt), `docs/SESSION-STAND.md`, Plan abhaken, `.tmp/` leeren.
+- [x] **Step 1: Code-Review** per Subagent gegen Spec/Plan (`git diff 0a2e65e..HEAD`); Subagent arbeitet nur unter `.tmp/`. Befunde über `receiving-code-review` prüfen.
+- [x] **Step 2: Push des Branches — nur nach Freigabe.** CI abwarten (`gh run list --repo Eifel-Joe/claude-code-ha --branch fix/github-redirect-cleanup`): alle Jobs grün; im Build-Log beider Architekturen `Installing Home Assistant CLI 5.` und `Installing GitHub CLI v2.`.
+- [x] **Step 3: Merge nach `main` (`--no-ff`) und Push — nur nach Freigabe.** CI auf `main` grün.
+- [x] **Step 4: HA-Test auf 2.3.4** — nur nach Freigabe; `check_updates`, `update` (bei Timeout Supervisor-Log, nicht erneut auslösen); `state: started`, App-Log fehlerfrei. User im App-Terminal: `persist-install --ha-cli --force` → „Installing Home Assistant CLI v5.…“, „ha runs ✓“; danach `rm /data/packages/bin/ha /data/packages/bin/.ha-version`.
+- [x] **Step 5: Tag `v2.3.4` + Release** — Titel und Text vorher im Chat, nur nach Freigabe.
+- [x] **Step 6: HA-Prod auf 2.3.4** — nur nach Freigabe (User startet das Update selbst); danach Logs per MCP prüfen.
+- [x] **Step 7: Abschluss** — Memory (Punkte 9, 13, 14 erledigt), `docs/SESSION-STAND.md`, Plan abhaken, `.tmp/` leeren.

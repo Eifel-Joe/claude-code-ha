@@ -1,5 +1,46 @@
 # Sitzungsstand
 
+## 2026-10-07 (3) — Release 2.3.4 (Folgepunkte 9, 13, 14; Prod nachgezogen)
+
+### Stand
+- Spec `docs/specs/2026-10-07-github-redirect-cleanup-design.md`, Plan
+  `docs/plans/2026-10-07-github-redirect-cleanup.md` (abgehakt). Auf `main`
+  (`8c51581`), Tag/Release `v2.3.4`.
+- CI grün: Branch-Lauf 37592072331, `main` 37592623079. Build-Log beider
+  Architekturen: „Installing Home Assistant CLI 5.5.0“, „Installing GitHub CLI
+  v2.102.0“ — ohne `api.github.com`.
+- HA-Test auf 2.3.4 (`state: started`, Log fehlerfrei); vom User im
+  App-Terminal: `persist-install --ha-cli --force` → v5.5.0, „ha runs ✓“.
+  unbestätigt: Kopie danach per `rm` entfernt (Befehl genannt, Ausgabe nicht
+  gezeigt).
+- HA-Prod: vom User von 2.3.0 auf 2.3.3 und dann auf 2.3.4 aktualisiert; per
+  MCP geprüft (Backup vor Update, `state: started`, Log fehlerfrei). Alte App
+  `789f524e` ist deinstalliert.
+
+### Verworfen
+- GitHub-Token beim Build (Supervisor baut auf den Geräten ohne Token),
+  Versions-Pinning (widerspricht „neueste Version“), `releases/latest/download`
+  ohne Version (geht nicht für `gh`, `.ha-version` ginge verloren).
+- Mac-Clipboard-Monitor auf Ingress umbauen (Einfügen im Terminal ersetzt ihn).
+
+### Fallen
+- Echtes `curl -f -w '%{url_effective}'` gibt die URL auch bei Exit 22 aus —
+  der `|| resolved_url=""` in `persist-install` ist nötig; das Fake-`curl` im
+  Test bildet das nach (Gegenprobe ohne Schutz fiel durch).
+- Node 24 lokal meldet `ℹ pass`/`ℹ fail` statt `# pass`.
+- Prod-Update per MCP blockiert der Auto-Mode-Klassifizierer („Production
+  Deploy“) — der User startet Prod-Updates selbst.
+- Docker-Cache: ein Versions-Bump ohne geänderte `RUN`-Zeilen baut in Sekunden
+  aus dem Cache; HA-CLI/gh bleiben dann auf dem Stand des älteren Builds.
+
+### Nächste Schritte
+- Folgepunkte im Memory `claude-code-ha-followups`: 3 (CPU ohne AVX2),
+  7 (Fork-Survey 🟡), 15 (Node-Warnung DEP0060 im Image-Service).
+- Remote-Branch `fix/github-redirect-cleanup` kann gelöscht werden.
+
+### Empfohlene Skills
+- `task-loop` für den nächsten Folgepunkt.
+
 ## 2026-10-07 (2) — Release 2.3.3 (Folgepunkte 10–12, persist-install --ha-cli)
 
 ### Stand
