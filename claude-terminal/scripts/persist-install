@@ -182,11 +182,8 @@ install_python_packages() {
 }
 
 install_ha_cli() {
-    # Keep this in sync with the Dockerfile's 32-bit pin. The image already
-    # ships `ha` in /usr/bin, and $PERSIST_BIN comes FIRST in PATH, so an
-    # unconditional install here silently downgraded a working newer CLI.
-    local HA_VERSION="4.46.0"
-    local BASE_URL="https://github.com/home-assistant/cli/releases/download/${HA_VERSION}"
+    # The image already ships `ha` in /usr/bin, and $PERSIST_BIN comes FIRST in
+    # PATH, so an unconditional install here would shadow it.
     local image_ha="/usr/bin/ha"
 
     if [ -x "$image_ha" ] && [ "${1:-}" != "--force" ]; then
@@ -207,16 +204,27 @@ install_ha_cli() {
     case "$machine" in
         x86_64)     arch="amd64" ;;
         aarch64)    arch="aarch64" ;;
-        armv7l)     arch="armv7" ;;
-        armv6l)     arch="armhf" ;;
-        i386|i686)  arch="i386" ;;
         *)
             echo "❌ Unsupported architecture: $machine"
             return 1
             ;;
     esac
 
-    local download_url="${BASE_URL}/ha_${arch}"
+    # Latest release, as the Dockerfile does. A pinned version here (4.46.0,
+    # kept for 32-bit builds) downgraded the CLI on every arch, because this
+    # copy sits in PATH ahead of the image's. grep/sed instead of jq so it
+    # works on compact and pretty-printed JSON alike.
+    local api_url="https://api.github.com/repos/home-assistant/cli/releases/latest"
+    local HA_VERSION
+    HA_VERSION=$(curl -fsSL "$api_url" 2>/dev/null \
+        | grep -o '"tag_name": *"[^"]*"' | head -n 1 | sed 's/.*"\([^"]*\)"$/\1/')
+    if [ -z "$HA_VERSION" ]; then
+        echo "❌ Could not determine the latest Home Assistant CLI version"
+        echo "   ($api_url)"
+        return 1
+    fi
+
+    local download_url="https://github.com/home-assistant/cli/releases/download/${HA_VERSION}/ha_${arch}"
     local target_path="${PERSIST_BIN}/ha"
 
     echo "🏠 Installing Home Assistant CLI v${HA_VERSION}"
