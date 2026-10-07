@@ -33,6 +33,7 @@ let uploadDir;
 let child;
 let ttyd;
 let ttydUpgrades = 0;
+let ttydUpgradeUrls = [];
 let PORT;
 let TTYD_PORT;
 
@@ -81,6 +82,7 @@ test.before(async () => {
     });
     ttyd.on('upgrade', (req, socket) => {
         ttydUpgrades++;
+        ttydUpgradeUrls.push(req.url);
         socket.write(
             'HTTP/1.1 101 Switching Protocols\r\n' +
             'Upgrade: websocket\r\nConnection: Upgrade\r\n\r\n'
@@ -183,6 +185,12 @@ test('/terminal proxies HTTP through to ttyd', async () => {
     assert.match(await res.text(), /^ttyd-stub:/);
 });
 
+test('/terminal strips its prefix before forwarding HTTP to ttyd', async () => {
+    const res = await fetch(`http://127.0.0.1:${PORT}/terminal/token?x=1`);
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(await res.text(), 'ttyd-stub:/token?x=1');
+});
+
 test('/terminal forwards a WebSocket upgrade to ttyd', async () => {
     const before = ttydUpgrades;
 
@@ -210,6 +218,7 @@ test('/terminal forwards a WebSocket upgrade to ttyd', async () => {
 
     assert.strictEqual(status, 101, 'proxy did not complete the WebSocket handshake');
     assert.strictEqual(ttydUpgrades, before + 1, 'ttyd did not receive exactly one upgrade');
+    assert.strictEqual(ttydUpgradeUrls.at(-1), '/ws', 'the /terminal prefix must be stripped for WebSocket upgrades');
 });
 
 test('the static UI is served at the root', async () => {
@@ -279,6 +288,31 @@ test('a WebSocket upgrade is proxied even as the very first proxy request', asyn
     } finally {
         proc.kill('SIGKILL');
         stub.close();
+        fs.rmSync(dir, { recursive: true, force: true });
+    }
+});
+
+test('/terminal answers 502 when ttyd is not reachable', async () => {
+    const port = await freePort();
+    const deadTtydPort = await freePort(); // nothing listens here
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-502-'));
+    const proc = spawn(process.execPath, [SERVER], {
+        cwd: SERVICE_DIR,
+        env: {
+            ...process.env,
+            IMAGE_SERVICE_PORT: String(port),
+            TTYD_PORT: String(deadTtydPort),
+            UPLOAD_DIR: dir
+        },
+        stdio: 'ignore'
+    });
+    try {
+        assert.ok(await waitForHealth(port), 'instance never became healthy');
+        const res = await fetch(`http://127.0.0.1:${port}/terminal/`);
+        assert.strictEqual(res.status, 502);
+        assert.strictEqual(await res.text(), 'Failed to connect to terminal');
+    } finally {
+        proc.kill('SIGKILL');
         fs.rmSync(dir, { recursive: true, force: true });
     }
 });
