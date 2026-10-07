@@ -1,6 +1,6 @@
 #!/usr/bin/with-contenv bashio
 
-# Home Assistant API Examples for Claude Terminal
+# Home Assistant API Examples for Claude Workbench
 # This script demonstrates how to interact with Home Assistant APIs
 
 # Colors for output

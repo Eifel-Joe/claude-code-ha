@@ -1,6 +1,6 @@
 #!/usr/bin/with-contenv bashio
 
-# Health check script for Claude Terminal app
+# Health check script for the Claude Workbench app
 # Validates environment and provides diagnostic information
 
 check_system_resources() {
@@ -131,7 +131,7 @@ check_network_connectivity() {
 
 run_diagnostics() {
     bashio::log.info "========================================="
-    bashio::log.info "Claude Terminal App Health Check"
+    bashio::log.info "Claude Workbench Health Check"
     bashio::log.info "========================================="
 
     local errors=0

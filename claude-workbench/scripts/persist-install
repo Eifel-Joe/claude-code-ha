@@ -344,7 +344,7 @@ main() {
     # Check if running in the app
     if [ ! -d "$PERSIST_DATA_ROOT" ]; then
         echo "❌ Error: $PERSIST_DATA_ROOT directory not found"
-        echo "This script must run inside the Claude Terminal app"
+        echo "This script must run inside the Claude Workbench app"
         exit 1
     fi
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Claude Terminal Pro - Image Upload Service
+ * Claude Workbench - Image Upload Service
  *
  * Lightweight Express server that handles image uploads from browser paste/drag-drop.
  * Designed for resource-constrained environments (Raspberry Pi).
@@ -157,7 +157,7 @@ server.on('upgrade', terminalProxy.upgrade);
 // Binds 0.0.0.0 because Home Assistant ingress connects over the internal
 // Docker network, not the loopback. No host port is published (see config.yaml).
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Claude Terminal Image Service running on port ${PORT}`);
+    console.log(`Claude Workbench image service running on port ${PORT}`);
     console.log(`Upload directory: ${UPLOAD_DIR}`);
     console.log(`ttyd terminal on port: ${TTYD_PORT}`);
     console.log(`Terminal proxy available at /terminal/`);

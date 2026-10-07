@@ -162,4 +162,14 @@ grep -q 'image.title="Home Assistant App: Claude Workbench"' "$dockerfile" || \
 grep -q "image.source=\"$new_repo_url\"" "$dockerfile" || \
     fail "Dockerfile image.source label does not point to $new_repo_url"
 
+# The app calls itself Claude Workbench. "Claude Terminal" stays only where the
+# old app is meant ("another Claude Terminal Pro app", the takeover code).
+if grep -rn 'Claude Terminal' "$addon_dir/run.sh" "$addon_dir/scripts" \
+        "$addon_dir/image-service/server.js" "$addon_dir/image-service/public" \
+        --exclude-dir=app-migration | grep -v 'Claude Terminal Pro app'; then
+    fail "the app still calls itself Claude Terminal (see lines above)"
+fi
+grep -q '"name": "claude-workbench-image-service"' "$addon_dir/image-service/package.json" || \
+    fail "image-service/package.json is not named claude-workbench-image-service"
+
 echo "Release metadata suite passed (version $config_version)"

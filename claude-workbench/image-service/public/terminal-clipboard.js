@@ -657,7 +657,7 @@
         // showing its unconditional overlay. The real copy happens below.
         doc.execCommand = function (command) {
             if (command === 'copy' && term.getSelection()) {
-                throw new Error('claude-terminal: selection copy handled by the clipboard bridge');
+                throw new Error('claude-workbench: selection copy handled by the clipboard bridge');
             }
             return originalExecCommand.apply(doc, arguments);
         };

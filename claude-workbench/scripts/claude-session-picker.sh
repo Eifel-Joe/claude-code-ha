@@ -18,7 +18,7 @@ get_claude_flags() {
 show_banner() {
     clear
     echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║                    🤖 Claude Terminal                        ║"
+    echo "║                    🤖 Claude Workbench                       ║"
     echo "║                   Interactive Session Picker                ║"
     echo "╚══════════════════════════════════════════════════════════════╝"
     echo ""
@@ -230,7 +230,7 @@ launch_github_auth() {
     # Check if gh is installed
     if ! command -v gh &>/dev/null; then
         echo "❌ GitHub CLI (gh) is not installed!"
-        echo "   Update to Claude Terminal Pro v2.0.4+ to get gh pre-installed."
+        echo "   Restart the app to reinstall it, or run: persist-install github-cli"
         echo ""
         printf "Press Enter to return to menu..." >&2
         read -r

@@ -1,7 +1,7 @@
 {
-  "name": "claude-terminal-image-service",
+  "name": "claude-workbench-image-service",
   "version": "1.0.0",
-  "description": "Lightweight image upload service for Claude Terminal Pro",
+  "description": "Lightweight image upload service for Claude Workbench",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
