@@ -1,6 +1,6 @@
-# Spec: Proxy ohne DEP0060, `map` ohne Warnung, Erklärungstexte (3.0.1)
+# Spec: Proxy ohne DEP0060, `map` ohne Warnung, Erklärungstexte (3.1.0)
 
-Stand: 2026-10-07 · Ziel-Version: 3.0.1 · Status: Entwurf im Chat bestätigt
+Stand: 2026-10-07 · Ziel-Version: 3.1.0 · Status: Entwurf im Chat bestätigt
 (Folgepunkte 15, 17, 18 aus Memory `claude-code-ha-followups`)
 
 ## Problem
@@ -25,7 +25,7 @@ Stand: 2026-10-07 · Ziel-Version: 3.0.1 · Status: Entwurf im Chat bestätigt
 | DEP0060 | `http-proxy-middleware` → **4.2** (ESM, `httpxy`), Optionen auf v4-API | npm-`overrides` `http-proxy` → `http-proxy-3` (Alias-Trick, bleibt auf hpm 2); Warnung per `--no-deprecation` stummschalten (versteckt nur) |
 | `map` | `homeassistant_config` mit **`path: /config`** | `homeassistant_config` ohne Pfad (Mount wanderte nach `/homeassistant`, Terminal/Doku/Nutzer erwarten `/config`) |
 | Sprachen | **en + de** | nur en |
-| Version | 3.0.1 (Patch, kein Verhaltenswechsel für Nutzer) | |
+| Version | 3.1.0 (nach Review: Erklärungstexte sind ein neues Feature → Minor laut CLAUDE.md; ursprünglich 3.0.1) | 3.0.1 |
 
 Belege `map`: Supervisor `apps/validate.py` (Regex `RE_VOLUME`, Warnung bei
 `MappingType.CONFIG`, Dict-Form mit `type`/`read_only`/`path`) und
@@ -110,8 +110,8 @@ Texte:
 
 ### 4. Release
 
-- `config.yaml` 3.0.1, README-Badge, CHANGELOG-Eintrag, Release-Notes
-  `docs/release-notes-3.0.1.md`.
+- `config.yaml` 3.1.0, README-Badge, CHANGELOG-Eintrag, Release-Notes
+  `docs/release-notes-3.1.0.md`.
 
 ## Nicht enthalten
 
@@ -122,7 +122,7 @@ Texte:
 ## Ende-zu-Ende-Kriterium
 
 1. CI grün (Tests inkl. neuem Deprecation-Test, Image-Build amd64/aarch64).
-2. HA-Test nach Update auf 3.0.1:
+2. HA-Test nach Update auf 3.1.0:
    - Supervisor-Log ohne „deprecated map option 'config'“ für Claude Workbench.
    - App-Log ohne `DEP0060` / `DeprecationWarning`.
    - Terminal öffnet sich (Panel), Claude startet; im Terminal ist `/config`

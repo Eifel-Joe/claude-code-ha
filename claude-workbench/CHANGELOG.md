@@ -1,6 +1,6 @@
 # Changelog
 
-## 3.0.1
+## 3.1.0
 
 ### ✨ New Feature - Every option explained
 - The app's Configuration tab shows a name and a short explanation for each

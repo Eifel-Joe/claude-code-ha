@@ -1,8 +1,8 @@
-# Proxy ohne DEP0060, `map` ohne Warnung, Erklärungstexte (3.0.1) — Implementation Plan
+# Proxy ohne DEP0060, `map` ohne Warnung, Erklärungstexte (3.1.0) — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
-**Goal:** Release 3.0.1: `http-proxy-middleware` 4 statt 2 (kein `util._extend`/DEP0060 mehr), `map` mit `homeassistant_config` und `path: /config` (keine Supervisor-Warnung), Erklärungstexte für alle Optionen auf Deutsch und Englisch.
+**Goal:** Release 3.1.0: `http-proxy-middleware` 4 statt 2 (kein `util._extend`/DEP0060 mehr), `map` mit `homeassistant_config` und `path: /config` (keine Supervisor-Warnung), Erklärungstexte für alle Optionen auf Deutsch und Englisch.
 
 **Architecture:** Erst Schutztests für das bestehende Proxy-Verhalten (Pfad-Weitergabe HTTP/WebSocket, 502 bei totem ttyd), dann ein RED-Test „keine Deprecation-/Experimental-Warnung auf stderr“, dann das Upgrade. `map` und Übersetzungen werden über `tests/test-release-metadata.sh` festgehalten.
 
@@ -374,17 +374,17 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ---
 
-### Task 5: Version 3.0.1, Changelog, Release-Notes
+### Task 5: Version 3.1.0, Changelog, Release-Notes
 
 **Files:**
 - Modify: `claude-workbench/config.yaml` (`version`), `README.md` (Badge), `claude-workbench/CHANGELOG.md`
-- Create: `docs/release-notes-3.0.1.md`
+- Create: `docs/release-notes-3.1.0.md`
 
-- [x] **Step 1: RED** — `version: "3.0.1"` setzen, `bash tests/test-release-metadata.sh` → `FAIL … CHANGELOG.md has no '## 3.0.1' section …`
+- [x] **Step 1: RED** — `version: "3.1.0"` setzen, `bash tests/test-release-metadata.sh` → `FAIL … CHANGELOG.md has no '## 3.1.0' section …`
 - [x] **Step 2: CHANGELOG** — oberhalb von `## 3.0.0`:
 
 ```markdown
-## 3.0.1
+## 3.1.0
 
 ### ✨ New Feature - Every option explained
 - The app's Configuration tab shows a name and a short explanation for each
@@ -399,8 +399,8 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
   `/config`, so nothing changes in the terminal.
 ```
 
-- [x] **Step 3: Badge** — `README.md`: `badge/version-3.0.0-` → `badge/version-3.0.1-`.
-- [x] **Step 4: `docs/release-notes-3.0.1.md`** (Write-Tool):
+- [x] **Step 3: Badge** — `README.md`: `badge/version-3.0.0-` → `badge/version-3.1.0-`.
+- [x] **Step 4: `docs/release-notes-3.1.0.md`** (Write-Tool):
 
 ```markdown
 ## Every option explained, no more log warnings
@@ -417,12 +417,12 @@ Just update — no other changes.
 Full details: [CHANGELOG](https://github.com/Eifel-Joe/claude-workbench/blob/main/claude-workbench/CHANGELOG.md).
 ```
 
-- [x] **Step 5: GREEN** — `bash tests/test-release-metadata.sh` → `Release metadata suite passed (version 3.0.1)`; lokale Suiten grün.
+- [x] **Step 5: GREEN** — `bash tests/test-release-metadata.sh` → `Release metadata suite passed (version 3.1.0)`; lokale Suiten grün.
 - [x] **Step 6: Commit**
 
 ```bash
-git add claude-workbench/config.yaml claude-workbench/CHANGELOG.md README.md docs/release-notes-3.0.1.md
-git commit -m "release: 3.0.1 - options explained, no warnings in the logs
+git add claude-workbench/config.yaml claude-workbench/CHANGELOG.md README.md docs/release-notes-3.1.0.md
+git commit -m "release: 3.1.0 - options explained, no warnings in the logs
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
@@ -439,7 +439,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 7: Push, CI, Merge (Freigaben)
 
 - [ ] **Step 1:** Freigabe → `git push -u origin fix/proxy-map-translations`; CI beobachten (`gh run list --repo Eifel-Joe/claude-workbench --branch fix/proxy-map-translations --limit 1`, `gh run watch <id> --repo Eifel-Joe/claude-workbench --exit-status`). Expected: alle Jobs grün, Image-Service-Suite `# pass 12`, Audit ohne blockierende Advisories.
-- [ ] **Step 2:** `git switch main && git merge --no-ff fix/proxy-map-translations -m "Merge branch 'fix/proxy-map-translations': options explained, no log warnings (3.0.1)"`; lokale Suiten grün.
+- [ ] **Step 2:** `git switch main && git merge --no-ff fix/proxy-map-translations -m "Merge branch 'fix/proxy-map-translations': options explained, no log warnings (3.1.0)"`; lokale Suiten grün.
 - [ ] **Step 3:** Freigabe → `git push origin main`; CI auf `main` grün.
 
 ---
@@ -455,6 +455,6 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ### Task 9: Release, Prod, Übergabe (Freigaben)
 
-- [ ] **Step 1:** Release-Text zeigen, Freigabe → `git tag v3.0.1 && git push origin v3.0.1`, `gh release create v3.0.1 --repo Eifel-Joe/claude-workbench --title "3.0.1 — Options explained, cleaner logs" --notes-file docs/release-notes-3.0.1.md`.
+- [ ] **Step 1:** Release-Text zeigen, Freigabe → `git tag v3.1.0 && git push origin v3.1.0`, `gh release create v3.1.0 --repo Eifel-Joe/claude-workbench --title "3.1.0 — Options explained, cleaner logs" --notes-file docs/release-notes-3.1.0.md`.
 - [ ] **Step 2:** User aktualisiert HA-Prod; danach per MCP Supervisor- und App-Log (wie Task 8, Steps 2–3).
 - [ ] **Step 3:** `docs/SESSION-STAND.md` ergänzen, Memory `claude-code-ha-followups` (15, 17, 18 erledigt), Plan abhaken; Commit, Push (Freigabe), gemergten Branch auf GitHub löschen (Freigabe).
