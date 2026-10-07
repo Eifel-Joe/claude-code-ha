@@ -438,23 +438,23 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ### Task 7: Push, CI, Merge (Freigaben)
 
-- [ ] **Step 1:** Freigabe → `git push -u origin fix/proxy-map-translations`; CI beobachten (`gh run list --repo Eifel-Joe/claude-workbench --branch fix/proxy-map-translations --limit 1`, `gh run watch <id> --repo Eifel-Joe/claude-workbench --exit-status`). Expected: alle Jobs grün, Image-Service-Suite `# pass 12`, Audit ohne blockierende Advisories.
-- [ ] **Step 2:** `git switch main && git merge --no-ff fix/proxy-map-translations -m "Merge branch 'fix/proxy-map-translations': options explained, no log warnings (3.1.0)"`; lokale Suiten grün.
-- [ ] **Step 3:** Freigabe → `git push origin main`; CI auf `main` grün.
+- [x] **Step 1:** Freigabe → `git push -u origin fix/proxy-map-translations`; CI beobachten (`gh run list --repo Eifel-Joe/claude-workbench --branch fix/proxy-map-translations --limit 1`, `gh run watch <id> --repo Eifel-Joe/claude-workbench --exit-status`). Expected: alle Jobs grün, Image-Service-Suite `# pass 12`, Audit ohne blockierende Advisories.
+- [x] **Step 2:** `git switch main && git merge --no-ff fix/proxy-map-translations -m "Merge branch 'fix/proxy-map-translations': options explained, no log warnings (3.1.0)"`; lokale Suiten grün.
+- [x] **Step 3:** Freigabe → `git push origin main`; CI auf `main` grün.
 
 ---
 
 ### Task 8: HA-Test
 
-- [ ] **Step 1:** `ha_manage_app check_updates` (HA-Test), dann `update` für `0e003122_claude_workbench`. Bei „Request timed out“ Supervisor-Log prüfen, nicht erneut auslösen.
-- [ ] **Step 2:** Supervisor-Log (`system_service`, `supervisor`, Suche `Claude Workbench`) ab dem Update: keine Zeile „deprecated map option“.
-- [ ] **Step 3:** App-Log: `state: started`, kein `DEP0060`/`DeprecationWarning`, „Image service is healthy“.
-- [ ] **Step 4:** User: Panel öffnen, Claude startet; im Terminal `ls /config/configuration.yaml` zeigt die Datei; Konfigurationstab zeigt die deutschen Namen/Erklärungen (Screenshot).
+- [x] **Step 1:** `ha_manage_app check_updates` (HA-Test), dann `update` für `0e003122_claude_workbench`. Bei „Request timed out“ Supervisor-Log prüfen, nicht erneut auslösen.
+- [x] **Step 2:** Supervisor-Log (`system_service`, `supervisor`, Suche `Claude Workbench`) ab dem Update: keine Zeile „deprecated map option“.
+- [x] **Step 3:** App-Log: `state: started`, kein `DEP0060`/`DeprecationWarning`, „Image service is healthy“.
+- [x] **Step 4:** User: Panel öffnen, Claude startet; im Terminal `ls /config/configuration.yaml` zeigt die Datei; Konfigurationstab zeigt die deutschen Namen/Erklärungen (Screenshot).
 
 ---
 
 ### Task 9: Release, Prod, Übergabe (Freigaben)
 
-- [ ] **Step 1:** Release-Text zeigen, Freigabe → `git tag v3.1.0 && git push origin v3.1.0`, `gh release create v3.1.0 --repo Eifel-Joe/claude-workbench --title "3.1.0 — Options explained, cleaner logs" --notes-file docs/release-notes-3.1.0.md`.
-- [ ] **Step 2:** User aktualisiert HA-Prod; danach per MCP Supervisor- und App-Log (wie Task 8, Steps 2–3).
-- [ ] **Step 3:** `docs/SESSION-STAND.md` ergänzen, Memory `claude-code-ha-followups` (15, 17, 18 erledigt), Plan abhaken; Commit, Push (Freigabe), gemergten Branch auf GitHub löschen (Freigabe).
+- [x] **Step 1:** Release-Text zeigen, Freigabe → `git tag v3.1.0 && git push origin v3.1.0`, `gh release create v3.1.0 --repo Eifel-Joe/claude-workbench --title "3.1.0 — Options explained, cleaner logs" --notes-file docs/release-notes-3.1.0.md`.
+- [x] **Step 2:** User aktualisiert HA-Prod; danach per MCP Supervisor- und App-Log (wie Task 8, Steps 2–3).
+- [x] **Step 3:** `docs/SESSION-STAND.md` ergänzen, Memory `claude-code-ha-followups` (15, 17, 18 erledigt), Plan abhaken; Commit, Push (Freigabe), gemergten Branch auf GitHub löschen (Freigabe).

@@ -1,5 +1,54 @@
 # Sitzungsstand
 
+## 2026-10-07 (6) — Release 3.1.0 (Folgepunkte 15, 17, 18; Issues)
+
+### Stand
+- Spec `docs/specs/2026-10-07-proxy-map-translations-design.md`, Plan
+  `docs/plans/2026-10-07-proxy-map-translations.md`. Auf `main` (`bbeba7b`),
+  Tag/Release `v3.1.0`. CI grün: Branch 37607065722, `main` 37607502832
+  (Image-Service-Suite unter Node 22 `# pass 13`, inkl. „keine Warnung“).
+- `http-proxy-middleware` 4.2 (statt 2.0.10, `http-proxy` raus, `httpxy`),
+  `engines.node >=22.15`; Review fand einen echten Absturz (502 nach
+  gesendeten Headern → `ERR_HTTP_HEADERS_SENT`), per Test reproduziert und
+  behoben (`2429c6b`).
+- `map`: `homeassistant_config` mit `path: /config`; Übersetzungen
+  `claude-workbench/translations/{en,de}.yaml` für alle 9 Optionen.
+- Version 3.1.0 statt 3.0.1 (neues Feature → Minor, Review-Hinweis, User).
+- GitHub: Issues eingeschaltet, Vorlagen `.github/ISSUE_TEMPLATE/`
+  (Bug, Feature, Verweis auf anthropics/claude-code); Auswahlseite vom User
+  bestätigt.
+- HA-Test 3.1.0: keine `map`-Warnung seit Store-Reload 12:28, kein `DEP0060`
+  nach Panel-Nutzung (3.0.0 hatte es um 11:36:23), `/config` ok, deutsche
+  Erklärungen sichtbar (User).
+- HA-Prod 3.1.0 (Update durch User, 12:32:04): kein `DEP0060` nach
+  Panel-Nutzung, keine `map`-Warnung für Claude Workbench beim Store-Reload
+  12:31:32 (nur noch für fremde Apps Ism7MQTT, ESPHome-Legacy). Alte
+  Repository-Einträge (`6ef0b4d0`, ESJavadex, heytcass) vom User entfernt.
+
+### Verworfen
+- `http-proxy` per npm-`overrides` auf `http-proxy-3` umbiegen (Alias-Trick,
+  bleibt auf hpm 2); `--no-deprecation` (versteckt nur).
+- `homeassistant_config` ohne `path` (Mount wanderte nach `/homeassistant`).
+
+### Fallen
+- `git checkout -- .` bei einer Gegenprobe setzte auch noch nicht committete
+  Test-Änderungen zurück; Gegenproben nur auf einzelnen Dateien rückgängig
+  machen oder vorher committen.
+- Heredoc + Python-Regex mit Backslashes → wieder verstümmelt; Edit-Tool nehmen.
+- `node --test tests/test-image-service.js` unter Windows: alle Tests pass,
+  aber ein Datei-Fehlschlag durch nachlaufendes `ECONNRESET` (auch auf altem
+  `main`); CI grün.
+- DEP0060 erscheint erst beim ersten Proxy-Aufruf (Panel öffnen), nicht beim
+  Start — Log-Prüfung erst nach Panel-Nutzung aussagekräftig.
+- npm-Cache per `npm_config_cache` nach `.tmp/`.
+
+### Nächste Schritte
+- Folgepunkte im Memory `claude-code-ha-followups`: 3 (CPU ohne AVX2),
+  7 (Fork-Survey 🟡).
+
+### Empfohlene Skills
+- `task-loop` für den nächsten Folgepunkt.
+
 ## 2026-10-07 (5) — Release 3.0.0: Claude Workbench (umgesetzt, Test + Prod)
 
 ### Stand
