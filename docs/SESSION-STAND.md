@@ -10,9 +10,8 @@
   Architekturen: „Installing Home Assistant CLI 5.5.0“, „Installing GitHub CLI
   v2.102.0“ — ohne `api.github.com`.
 - HA-Test auf 2.3.4 (`state: started`, Log fehlerfrei); vom User im
-  App-Terminal: `persist-install --ha-cli --force` → v5.5.0, „ha runs ✓“.
-  unbestätigt: Kopie danach per `rm` entfernt (Befehl genannt, Ausgabe nicht
-  gezeigt).
+  App-Terminal: `persist-install --ha-cli --force` → v5.5.0, „ha runs ✓“;
+  Kopie danach laut User per `rm` entfernt (Image-CLI gilt wieder).
 - HA-Prod: vom User von 2.3.0 auf 2.3.3 und dann auf 2.3.4 aktualisiert; per
   MCP geprüft (Backup vor Update, `state: started`, Log fehlerfrei). Alte App
   `789f524e` ist deinstalliert.
