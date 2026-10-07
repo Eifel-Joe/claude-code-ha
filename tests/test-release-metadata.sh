@@ -185,4 +185,18 @@ png_size() {
 [ -f "$repo_root/tools/logo/claude-spark.png" ] || \
     fail "tools/logo/claude-spark.png (logo source) is missing"
 
+# After the GitHub rename the old repository URL only works through GitHub's
+# redirect; links and the "add repository" button must use the new one.
+# docs/ and the changelog keep history as it was.
+if git -C "$repo_root" grep -nE 'Eifel-Joe(/|%2F)claude-code-ha' -- . ':!docs' \
+        ':!claude-workbench/CHANGELOG.md' ':!tests/test-release-metadata.sh'; then
+    fail "the old repository URL Eifel-Joe/claude-code-ha is still used (see lines above)"
+fi
+# The MIT license must name its copyright holders, not the template placeholder.
+if grep -n 'Your Name' "$repo_root/LICENSE"; then
+    fail "LICENSE still carries the template placeholder instead of the copyright holders"
+fi
+grep -q 'Switching from Claude Terminal Pro' "$repo_root/README.md" || \
+    fail "README.md has no 'Switching from Claude Terminal Pro' section"
+
 echo "Release metadata suite passed (version $config_version)"

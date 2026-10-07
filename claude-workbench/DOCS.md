@@ -1,27 +1,27 @@
-# Claude Terminal Pro
+# Claude Workbench
 
-An enhanced terminal interface for Anthropic's Claude Code CLI in Home Assistant.
+A workbench for Anthropic's Claude Code CLI in Home Assistant.
 
 ## About
 
-Claude Terminal Pro is an enhanced fork of the original Claude Terminal app, providing a web-based terminal with Claude Code CLI pre-installed plus persistent package management capabilities. Access Claude's powerful AI capabilities directly from your Home Assistant dashboard with the added benefit of installing and persisting custom packages across restarts.
+Claude Workbench provides a web-based terminal with Claude Code CLI pre-installed plus persistent package management. It grew out of Claude Terminal Pro (ESJavadex) and the original Claude Terminal (heytcass). Access Claude directly from your Home Assistant dashboard and install packages that persist across restarts.
 
 ## Installation
 
 1. Add this repository to your Home Assistant app store:
    - Go to Settings → Apps → App Store
    - Click the menu (⋮) and select Repositories
-   - Add: `https://github.com/Eifel-Joe/claude-code-ha`
-2. Install the Claude Terminal Pro app
+   - Add: `https://github.com/Eifel-Joe/claude-workbench`
+2. Install the Claude Workbench app
 3. Start the app
 4. Click "OPEN WEB UI" to access the terminal
 5. On first use, follow the OAuth prompts to log in to your Anthropic account
 
-### Switching from another Claude Terminal Pro app
+### Switching from Claude Terminal Pro
 
-If another Claude Terminal Pro app (for example from `ESJavadex/claude-code-ha`) is
-installed, this app offers on the first panel open to take over its data. Choose
-with the digits 1–6, then press Enter:
+If a Claude Terminal Pro app is installed — ESJavadex's, or this project's own app
+before 3.0.0 — Claude Workbench offers on the first panel open to take over its
+data. Choose with the digits 1–6, then press Enter:
 
 1. Claude data (memories, `CLAUDE.md`, history, settings) · 2. Claude login ·
 3. GitHub login · 4. reinstall packages (only explicitly installed pip packages; all
@@ -35,6 +35,10 @@ A partial backup of the old app is created first (progress is shown) and kept un
 Settings → System → Backups. It includes the old app's image (several hundred MB)
 and the old login, so delete it once you no longer need it. `s` asks again on the
 next start, `n` never asks again.
+
+Afterwards uninstall the old app and remove its repository entry (Settings → Apps →
+App Store → ⋮ → Repositories). GitHub redirects this project's old URL to the new
+one, so Claude Workbench would otherwise show up twice.
 
 ## Configuration
 
@@ -204,8 +208,10 @@ The terminal starts directly in your `/config` directory, giving you immediate a
 
 ## Credits
 
-**Fork Maintainer:** [@Eifel-Joe](https://github.com/Eifel-Joe)
-**Upstream:** Javier Santos ([@ESJavadex](https://github.com/ESJavadex))
-**Original Creator:** Tom Cassady ([@heytcass](https://github.com/heytcass))
+**Maintainer:** [@Eifel-Joe](https://github.com/Eifel-Joe)
+**Claude Terminal Pro:** Javier Santos ([@ESJavadex](https://github.com/ESJavadex)) — persistent package management and many enhancements Claude Workbench builds on
+**Original Claude Terminal:** Tom Cassady ([@heytcass](https://github.com/heytcass)) — the initial app
+
+Claude, Claude Code and the Claude spark logo are trademarks of Anthropic. Claude Workbench is an independent community project and is not made or endorsed by Anthropic.
 
 This app was created and enhanced with the assistance of Claude Code itself! The development process, debugging, and documentation were all completed using Claude's AI capabilities - a perfect demonstration of what this app can help you accomplish.

@@ -11,7 +11,7 @@ description: |
 
 ## Purpose
 
-This skill helps you install packages in the Claude Terminal Home Assistant add-on that will **persist across container restarts and reboots**. You must NEVER use `apk add` or `pip install` directly, as those install to ephemeral storage that disappears on restart.
+This skill helps you install packages in the Claude Workbench Home Assistant app that will **persist across container restarts and reboots**. You must NEVER use `apk add` or `pip install` directly, as those install to ephemeral storage that disappears on restart.
 
 ## Core Concept: Container Architecture
 
@@ -251,7 +251,7 @@ You: "Development tools installed:
 
 When users ask about automatic installation on startup, guide them:
 
-1. Go to **Settings** → **Add-ons** → **Claude Terminal**
+1. Go to **Settings** → **Apps** → **Claude Workbench**
 2. Click **Configuration** tab
 3. Add packages to configuration:
 

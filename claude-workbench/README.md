@@ -1,14 +1,14 @@
-# Claude Terminal Pro for Home Assistant
+# Claude Workbench for Home Assistant
 
-An enhanced, web-based terminal with Claude Code CLI and persistent package management for Home Assistant.
+A workbench for Anthropic's Claude Code CLI in Home Assistant: web terminal, persistent packages, HA and GitHub CLIs.
 
-![Claude Terminal Screenshot](screenshot.png)
+![Claude Workbench screenshot](screenshot.png)
 
-*Claude Terminal Pro running in Home Assistant*
+*Claude Workbench running in Home Assistant*
 
-> **Fork Attribution:** Maintained by [@Eifel-Joe](https://github.com/Eifel-Joe) as a fork of [ESJavadex/claude-code-ha](https://github.com/ESJavadex/claude-code-ha) by Javier Santos, which builds on [heytcass/home-assistant-addons](https://github.com/heytcass/home-assistant-addons) by Tom Cassady.
+> Claude Workbench grew out of Claude Terminal Pro by Javier Santos ([ESJavadex/claude-code-ha](https://github.com/ESJavadex/claude-code-ha)), which builds on Tom Cassady's Claude Terminal ([heytcass/home-assistant-addons](https://github.com/heytcass/home-assistant-addons)). See [Credits](#credits).
 
-## What is Claude Terminal Pro?
+## What is Claude Workbench?
 
 This app provides a web-based terminal interface with Claude Code CLI pre-installed plus persistent package management, allowing you to use Claude's powerful AI capabilities directly from your Home Assistant dashboard. It gives you direct access to Anthropic's Claude AI assistant through a terminal, ideal for:
 
@@ -31,7 +31,7 @@ This app provides a web-based terminal interface with Claude Code CLI pre-instal
 - **Secure Credential Management**: Persistent authentication with safe credential storage
 - **Automatic Recovery**: Built-in fallbacks and error handling for reliable operation
 
-### Enhanced Features (Pro)
+### Persistent Packages and Tools
 - **Persistent Package Management**: Install APK and pip packages that survive container restarts
 - **Auto-Install Configuration**: Configure packages to install automatically on startup
 - **Python Virtual Environment**: Isolated Python environment in `/data/packages`
@@ -65,11 +65,21 @@ claude-logout
 1. Add this repository to your Home Assistant app store:
    - Go to Settings → Apps → App Store
    - Click the menu (⋮) and select Repositories
-   - Add: `https://github.com/Eifel-Joe/claude-code-ha`
-2. Install the Claude Terminal Pro app
+   - Add: `https://github.com/Eifel-Joe/claude-workbench`
+2. Install the Claude Workbench app
 3. Start the app
 4. Click "OPEN WEB UI" or the sidebar icon to access
 5. On first use, follow the OAuth prompts to log in to your Anthropic account
+
+## Switching from Claude Terminal Pro
+
+This works for ESJavadex's Claude Terminal Pro and for this project's own app before 3.0.0 (it was called Claude Terminal Pro, too). Home Assistant treats Claude Workbench as a new app, so it is installed next to the old one:
+
+1. Add the repository `https://github.com/Eifel-Joe/claude-workbench` (see Installation).
+2. Install **Claude Workbench** and start it.
+3. Open the panel. Claude Workbench finds the old app and offers to take over your Claude memories, `CLAUDE.md`, history, logins, packages and settings — via a partial backup of the old app, which is kept as a fallback. The old app is stopped afterwards.
+4. Once everything works, uninstall the old app.
+5. Remove the old repository entry (**Settings → Apps → App Store → ⋮ → Repositories**). This project's old URL (ending in `claude-code-ha`) is redirected by GitHub to the new one, so Claude Workbench would otherwise show up twice.
 
 ## Configuration
 
@@ -151,21 +161,7 @@ For detailed usage instructions, see the [documentation](DOCS.md).
 
 ## Version History
 
-### v1.0.2 (Current) - Security & Bug Fix Release
-- 🔒 **CRITICAL**: Fixed dangerous filesystem operations
-- 🐛 Added missing armv7 architecture support
-- 🔧 Pinned NPM packages and improved error handling
-- 🛠️ Enhanced development environment with Podman support
-
-### v1.0.1
-- Improved credential management
-- Enhanced startup reliability
-
-### v1.0.0
-- Initial stable release
-- Web terminal interface with ttyd
-- Pre-installed Claude Code CLI
-- OAuth authentication support
+See the [changelog](CHANGELOG.md).
 
 ## Useful Links
 
@@ -176,9 +172,11 @@ For detailed usage instructions, see the [documentation](DOCS.md).
 
 ## Credits
 
-**Fork Maintainer:** [@Eifel-Joe](https://github.com/Eifel-Joe) - Maintains this fork and collects community fork fixes
-**Upstream:** Javier Santos ([@ESJavadex](https://github.com/ESJavadex)) - Created Claude Terminal Pro: persistent package management and enhancements
-**Original Creator:** Tom Cassady ([@heytcass](https://github.com/heytcass)) - Created the initial Claude Terminal app
+**Maintainer:** [@Eifel-Joe](https://github.com/Eifel-Joe)
+**Claude Terminal Pro:** Javier Santos ([@ESJavadex](https://github.com/ESJavadex)) — persistent package management and many enhancements Claude Workbench builds on
+**Original Claude Terminal:** Tom Cassady ([@heytcass](https://github.com/heytcass)) — the initial app
+
+Claude, Claude Code and the Claude spark logo are trademarks of Anthropic. Claude Workbench is an independent community project and is not made or endorsed by Anthropic.
 
 This app was created and enhanced with the assistance of Claude Code itself! The development process, debugging, and documentation were all completed using Claude's AI capabilities - a perfect demonstration of what this app can help you accomplish.
 

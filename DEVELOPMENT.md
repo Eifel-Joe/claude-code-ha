@@ -1,6 +1,6 @@
 # Development Guide
 
-This guide covers local development and testing workflows for the Claude Terminal add-on.
+This guide covers local development and testing workflows for the Claude Workbench app.
 
 ## Local Container Testing
 

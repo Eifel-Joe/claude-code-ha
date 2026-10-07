@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This repository contains Home Assistant add-ons, specifically the **Claude Terminal Pro** add-on which provides a web-based terminal interface with Claude Code CLI pre-installed and persistent package management. The add-on allows Home Assistant users to access Claude AI capabilities directly from their dashboard.
+This repository contains Home Assistant add-ons, specifically the **Claude Workbench** app (formerly Claude Terminal Pro) which provides a web-based terminal interface with Claude Code CLI pre-installed and persistent package management. The add-on allows Home Assistant users to access Claude AI capabilities directly from their dashboard.
 
-**Fork Attribution:** This repository (Eifel-Joe/claude-code-ha) is a fork of [ESJavadex/claude-code-ha](https://github.com/ESJavadex/claude-code-ha) by Javier Santos, itself an enhanced fork of [heytcass/home-assistant-addons](https://github.com/heytcass/home-assistant-addons) by Tom Cassady. The ESJavadex fork adds persistent package management, auto-install configuration, and enhanced documentation.
+**Origin:** Claude Workbench (Eifel-Joe/claude-workbench) grew out of [ESJavadex/claude-code-ha](https://github.com/ESJavadex/claude-code-ha) (Claude Terminal Pro) by Javier Santos, itself based on [heytcass/home-assistant-addons](https://github.com/heytcass/home-assistant-addons) by Tom Cassady. The ESJavadex app added persistent package management, auto-install configuration, and enhanced documentation.
 
 ## Development Environment
 
@@ -20,7 +20,7 @@ direnv allow
 ```
 
 ### Core Development Commands
-- `build-addon` - Build the Claude Terminal Pro add-on with Podman
+- `build-addon` - Build the Claude Workbench app with Podman
 - `run-addon` - Run add-on locally on port 7680 with volume mapping
 - `lint-dockerfile` - Lint Dockerfile using hadolint
 - `test-endpoint` - Test web endpoint availability (curl localhost:7680)
@@ -361,7 +361,7 @@ persistent_pip_packages:
 ```
 
 **When users ask about auto-install**, guide them to:
-1. Go to Settings → Add-ons → Claude Terminal
+1. Go to Settings → Apps → Claude Workbench
 2. Click Configuration tab
 3. Add packages to the lists above
 4. Save and restart the add-on
