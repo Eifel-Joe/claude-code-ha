@@ -240,4 +240,20 @@ printf '%s\n' "$ha_map" | grep -qE '^\s+read_only: false\s*$' && \
     printf '%s\n' "$ha_map" | grep -qE '^\s+path: /config\s*$' || \
     fail "config.yaml needs '- type: homeassistant_config' with read_only: false and path: /config"
 
+# Without translations Home Assistant shows bare option names (tmux_mouse …)
+# with no explanation. Every option needs a name and a description in each
+# language, so a new option cannot ship unexplained.
+option_keys=$(sed -n '/^options:/,/^[a-z]/{s/^  \([a-z_]*\):.*/\1/p;}' "$addon_dir/config.yaml")
+[ -n "$option_keys" ] || fail "could not read the option names from config.yaml"
+for lang in en de; do
+    tr_file="$addon_dir/translations/$lang.yaml"
+    [ -f "$tr_file" ] || fail "translations/$lang.yaml is missing; Home Assistant shows bare option names without it"
+    while IFS= read -r key; do
+        entry=$(grep -A2 -E "^  $key:\s*$" "$tr_file" || true)
+        printf '%s\n' "$entry" | grep -qE '^    name: .+' && \
+            printf '%s\n' "$entry" | grep -qE '^    description: .+' || \
+            fail "translations/$lang.yaml has no name and description for '$key'"
+    done <<< "$option_keys"
+done
+
 echo "Release metadata suite passed (version $config_version)"
