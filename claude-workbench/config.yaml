@@ -60,7 +60,11 @@ schema:
 
 # Volume mappings for file access
 map:
-  - config:rw    # Access to Home Assistant configuration files
+  # Home Assistant configuration, read-write, mounted at /config as before
+  # (homeassistant_config defaults to /homeassistant)
+  - type: homeassistant_config
+    read_only: false
+    path: /config
   - all_app_configs:rw    # Config/data folders of all other apps (e.g. AppDaemon, Node-RED, ESPHome)
 
 # API access for Home Assistant integration

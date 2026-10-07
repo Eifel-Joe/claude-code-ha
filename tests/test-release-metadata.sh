@@ -228,4 +228,16 @@ if grep -n '"node_modules/http-proxy"' "$addon_dir/image-service/package-lock.js
     fail "image-service still installs http-proxy (util._extend, DEP0060); use http-proxy-middleware 4"
 fi
 
+# Supervisor 2023-10: "config" became "homeassistant_config" and logs a
+# deprecation warning on every store reload. Without an explicit path that
+# mount lands in /homeassistant, while the terminal, the docs and every user
+# expect the Home Assistant configuration in /config.
+if grep -nE '^\s+-\s+config(:(rw|ro))?(\s|$)' "$addon_dir/config.yaml"; then
+    fail "config.yaml maps the deprecated 'config' option; use homeassistant_config with path /config"
+fi
+ha_map=$(grep -A2 -E '^\s+- type: homeassistant_config\s*$' "$addon_dir/config.yaml" || true)
+printf '%s\n' "$ha_map" | grep -qE '^\s+read_only: false\s*$' && \
+    printf '%s\n' "$ha_map" | grep -qE '^\s+path: /config\s*$' || \
+    fail "config.yaml needs '- type: homeassistant_config' with read_only: false and path: /config"
+
 echo "Release metadata suite passed (version $config_version)"
