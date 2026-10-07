@@ -685,5 +685,5 @@ Expected: `origin https://github.com/Eifel-Joe/claude-workbench.git`, Fetch ohne
 
 ### Task 14: HA-Prod (User) und Übergabe
 
-- [ ] **Step 1:** User führt auf HA-Prod den Ablauf aus Task 12 aus; per MCP Supervisor- und App-Log prüfen (gestartet, Übernahme ok, alte App weg).
-- [ ] **Step 2:** `docs/SESSION-STAND.md` ergänzen; Memory `claude-code-ha-followups` aktualisieren (neuer Name, Slug, Repo-URL); Plan-Checkboxen abhaken; Commit + Push (Freigabe).
+- [x] **Step 1:** User führt auf HA-Prod den Ablauf aus Task 12 aus; per MCP Supervisor- und App-Log prüfen (gestartet, Übernahme ok, alte App weg).
+- [x] **Step 2:** `docs/SESSION-STAND.md` ergänzen; Memory `claude-code-ha-followups` aktualisieren (neuer Name, Slug, Repo-URL); Plan-Checkboxen abhaken; Commit + Push (Freigabe).

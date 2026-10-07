@@ -1,5 +1,52 @@
 # Sitzungsstand
 
+## 2026-10-07 (5) — Release 3.0.0: Claude Workbench (umgesetzt, Test + Prod)
+
+### Stand
+- Plan `docs/plans/2026-10-07-claude-workbench-rename.md` umgesetzt (Tasks
+  1–13 abgehakt), gemergt nach `main` (`f80fd7f`), Tag/Release `v3.0.0`.
+- GitHub-Repo umbenannt: `Eifel-Joe/claude-workbench` (alte URL → 301);
+  lokales `origin` umgestellt. Das Repo ist bei GitHub kein Fork
+  (`parent` leer) — Herkunft steht in README/DOCS/LICENSE.
+- CI grün: Branch-Lauf 37600460758, `main` 37601028703 (Build aus
+  `context: claude-workbench`, amd64 + aarch64).
+- Code-Review per Subagent: wichtiger Befund umgesetzt (`37564be`): der alte
+  Repository-Eintrag listet Workbench per Weiterleitung als
+  `6ef0b4d0_claude_workbench`; Anleitung nennt `0e003122_claude_workbench`
+  (Hash = sha1 der kleingeschriebenen Repo-URL, Metadaten-Test rechnet nach).
+- HA-Test: `0e003122_claude_workbench` 3.0.0 installiert, Übernahme aus
+  `6ef0b4d0_claude_terminal_pro` (alle 6 Punkte ok, Start ohne Login, vom
+  User bestätigt), alte App deinstalliert und alter Repository-Eintrag
+  entfernt (per MCP, Supervisor-Log 11:38:53/54). Store: Workbench einmal.
+- HA-Prod (vom User): `0e003122_claude_workbench` 3.0.0 installiert, Übernahme
+  11:49–11:50 alle Punkte ok inkl. „Python packages installed!“, Start ohne
+  Login (User); `persist-install --list` zeigt fastmcp 4.0.11, pdfplumber
+  0.11.10, pypdf 6.19.0, websocket-client 1.9.2 (166 MB). Alte App vom User
+  deinstalliert (Supervisor-Log 11:52:27). Offen (User): alten
+  Repository-Eintrag `6ef0b4d0` (…/claude-code-ha) auf Prod entfernen.
+
+### Verworfen
+- Siehe Abschnitt (4); zusätzlich: Übersetzungen und `map: config` nicht mehr
+  in 3.0.0 aufgenommen (neue Folgepunkte).
+
+### Fallen
+- Store auf Prod hatte den alten Eintrag noch nicht neu eingelesen → Workbench
+  erschien dort nur einmal (richtiger Eintrag `0e003122`).
+- `gh release view --json isLatest` gibt es nicht (`gh release list` zeigt
+  „Latest“).
+- Image-Service-Tests lokal unter Windows: 9/9 pass, aber Exit 1 durch
+  nachlaufendes `ECONNRESET` (auch auf altem `main`); CI grün.
+- Mit `PATH="/c/WINDOWS/system32:$PATH"` greift Windows-`timeout` statt GNU.
+
+### Nächste Schritte
+- Neue Folgepunkte im Memory `claude-code-ha-followups`: 17 (Optionen ohne
+  Erklärung — `claude-workbench/translations/en.yaml`/`de.yaml` fehlen),
+  18 (Supervisor-Warnung „deprecated map option 'config'; use
+  'homeassistant_config'“). Daneben 3, 7, 15.
+
+### Empfohlene Skills
+- `task-loop` für den nächsten Folgepunkt.
+
 ## 2026-10-07 (4) — Umbenennung in Claude Workbench: Spec + Plan
 
 ### Stand
