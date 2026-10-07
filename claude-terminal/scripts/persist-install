@@ -8,6 +8,8 @@ PERSIST_DATA_ROOT="${PERSIST_DATA_ROOT:-/data}"
 PERSIST_ROOT="$PERSIST_DATA_ROOT/packages"
 PERSIST_BIN="$PERSIST_ROOT/bin"
 PERSIST_PYTHON="$PERSIST_ROOT/python"
+# PERSIST_IMAGE_HA: the image's ha CLI; overridable for tests only.
+PERSIST_IMAGE_HA="${PERSIST_IMAGE_HA:-/usr/bin/ha}"
 
 show_help() {
     cat << EOF
@@ -182,16 +184,36 @@ install_python_packages() {
 }
 
 install_ha_cli() {
-    # The image already ships `ha` in /usr/bin, and $PERSIST_BIN comes FIRST in
-    # PATH, so an unconditional install here would shadow it.
-    local image_ha="/usr/bin/ha"
-
+    local image_ha="$PERSIST_IMAGE_HA"
+    local target_path="${PERSIST_BIN}/ha"
     # The ha CLI has no --version flag (4.x and 5.x alike): asking for one
-    # printed "unknown flag" and the usage text where a version belonged.
+    # printed "unknown flag" and the usage text where a version belonged. So
+    # the install records the version; copies from before 2.3.1 have no
+    # record (they may be the old pinned one).
+    local version_file="${PERSIST_BIN}/.ha-version"
+    local installed_version="unknown version, installed before 2.3.1"
+    if [ -s "${version_file}" ]; then
+        installed_version="v$(head -n 1 "${version_file}")"
+    fi
+
+    # The image already ships `ha`, and $PERSIST_BIN comes FIRST in PATH, so an
+    # unconditional install here would shadow it.
     if [ -x "$image_ha" ] && [ "${1:-}" != "--force" ]; then
         echo "ℹ️  Home Assistant CLI is already provided by the app image:"
         echo "   $image_ha"
         echo ""
+        if [ -x "${target_path}" ]; then
+            # A copy left by an earlier --force runs instead of the image's.
+            # Before 2.3.1 that copy was a pinned old version.
+            echo "⚠️  But a copy in $PERSIST_BIN takes priority in PATH:"
+            echo "   ${target_path} (${installed_version})"
+            echo ""
+            echo "   Replace it with the latest release:"
+            echo "     persist-install --ha-cli --force"
+            echo "   or remove it to use the image's CLI:"
+            echo "     rm ${target_path} ${version_file}"
+            return 0
+        fi
         echo "   Installing a second copy into $PERSIST_BIN would take priority"
         echo "   in PATH and could downgrade it. Nothing to do."
         echo "   Use 'persist-install --ha-cli --force' if you really want one."
@@ -212,19 +234,10 @@ install_ha_cli() {
             ;;
     esac
 
-    local target_path="${PERSIST_BIN}/ha"
-    # The binary cannot report its own version, so the install records it.
-    # Copies from before 2.3.1 have no record (they may be the old pinned one).
-    local version_file="${PERSIST_BIN}/.ha-version"
-
     # An existing copy stays unless --force asks to replace it. --force is
     # how a copy pinned by an older release gets replaced, so it must not
     # stop here.
     if [ -x "${target_path}" ] && [ "${1:-}" != "--force" ]; then
-        local installed_version="unknown (installed before 2.3.1)"
-        if [ -s "${version_file}" ]; then
-            installed_version="v$(head -n 1 "${version_file}")"
-        fi
         echo "ℹ️  Home Assistant CLI is already installed:"
         echo "   ${target_path} (${installed_version})"
         echo "   Use 'persist-install --ha-cli --force' to replace it with the latest release."

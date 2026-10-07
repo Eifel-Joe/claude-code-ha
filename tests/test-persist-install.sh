@@ -195,7 +195,7 @@ if [ -n "$want_arch" ]; then
     [ ! -s "$curl_log" ] || fail "--ha-cli without --force called curl on an existing copy: $(cat "$curl_log")"
     grep -q 'old-ha' "$tmp_dir/ha-keep/packages/bin/ha" || fail "--ha-cli without --force touched the existing copy"
     assert_no_version_flag_noise "--ha-cli on an existing copy"
-    grep -q 'unknown (installed before 2.3.1)' "$tmp_dir/out.log" || \
+    grep -q 'unknown version, installed before 2.3.1' "$tmp_dir/out.log" || \
         fail "--ha-cli did not flag a copy without .ha-version as old: $(cat "$tmp_dir/out.log")"
 
     # A copy with a recorded version reports it.
@@ -213,5 +213,48 @@ if [ -n "$want_arch" ]; then
     grep -q 'old-ha' "$tmp_dir/ha-dlfail/packages/bin/ha" 2>/dev/null || \
         fail "--ha-cli --force lost the old copy after a failed download"
 fi
+
+# --- image ships ha, a copy in /data/packages/bin shadows it -------------------
+# The app image has /usr/bin/ha. Without --force persist-install stops there,
+# but a copy left in /data/packages/bin (an old 4.46.0 from before 2.3.1)
+# comes first in PATH. "Nothing to do" was wrong in that case.
+fake_image_ha="$tmp_dir/image-ha"
+printf '#!/bin/sh\necho image-ha\n' > "$fake_image_ha"
+chmod +x "$fake_image_ha"
+
+run_with_image_ha() {
+    local root="$1"
+    mkdir -p "$root"
+    : > "$curl_log"
+    PATH="$fake_bin:$PATH" PERSIST_DATA_ROOT="$root" PERSIST_IMAGE_HA="$fake_image_ha" \
+        bash "$script" --ha-cli > "$tmp_dir/out.log" 2>&1
+}
+
+# Image only: nothing to do, as before.
+run_with_image_ha "$tmp_dir/img-only" || fail "--ha-cli failed with only the image CLI"
+grep -q 'Nothing to do' "$tmp_dir/out.log" || \
+    fail "--ha-cli with only the image CLI did not say there is nothing to do: $(cat "$tmp_dir/out.log")"
+[ ! -s "$curl_log" ] || fail "--ha-cli with only the image CLI went to the network"
+
+# Image plus an old, unrecorded copy: name the copy and both ways out.
+make_old_copy "$tmp_dir/img-shadow"
+run_with_image_ha "$tmp_dir/img-shadow" || fail "--ha-cli failed with a shadowing copy"
+if grep -q 'Nothing to do' "$tmp_dir/out.log"; then
+    fail "--ha-cli said 'Nothing to do' although a copy shadows the image CLI: $(cat "$tmp_dir/out.log")"
+fi
+for want in "$tmp_dir/img-shadow/packages/bin/ha" 'unknown version, installed before 2.3.1' \
+            'persist-install --ha-cli --force' "rm $tmp_dir/img-shadow/packages/bin/ha"; do
+    grep -qF "$want" "$tmp_dir/out.log" || \
+        fail "--ha-cli with a shadowing copy did not mention '$want': $(cat "$tmp_dir/out.log")"
+done
+assert_no_version_flag_noise "--ha-cli with a shadowing copy"
+[ ! -s "$curl_log" ] || fail "--ha-cli with a shadowing copy went to the network"
+
+# Image plus a recorded copy: show its version.
+make_old_copy "$tmp_dir/img-known"
+printf '9.9.0\n' > "$tmp_dir/img-known/packages/bin/.ha-version"
+run_with_image_ha "$tmp_dir/img-known" || fail "--ha-cli failed with a recorded shadowing copy"
+grep -q 'v9.9.0' "$tmp_dir/out.log" || \
+    fail "--ha-cli did not show the shadowing copy's version: $(cat "$tmp_dir/out.log")"
 
 echo "persist-install tests passed"
