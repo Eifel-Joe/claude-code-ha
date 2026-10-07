@@ -1,8 +1,8 @@
 ---
-name: "Claude Terminal Pro"
-description: "Enhanced terminal interface for Anthropic's Claude Code CLI with persistent auth, package management, and image paste support. Fork of heytcass/home-assistant-addons"
+name: "Claude Workbench"
+description: "Workbench for Anthropic's Claude Code CLI in Home Assistant: web terminal, persistent auth and packages, image paste, HA and GitHub CLIs"
 version: "2.3.4"
-slug: "claude_terminal_pro"
+slug: "claude_workbench"
 init: false
 
 # Supported architectures
@@ -11,13 +11,13 @@ arch:
   - amd64
 
 # External resources
-url: "https://github.com/Eifel-Joe/claude-code-ha"
+url: "https://github.com/Eifel-Joe/claude-workbench"
 
 # Web interface configuration
 ingress: true
 ingress_port: 7680
 panel_icon: mdi:code-braces-box
-panel_title: "Claude Terminal Pro"
+panel_title: "Claude Workbench"
 panel_admin: true
 
 # Port configuration

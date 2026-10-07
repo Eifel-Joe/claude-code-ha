@@ -5,9 +5,9 @@
 FROM ghcr.io/home-assistant/base:3.21
 
 LABEL \
-    org.opencontainers.image.title="Home Assistant Add-on: Claude Terminal" \
-    org.opencontainers.image.description="Terminal interface for Anthropic's Claude Code CLI" \
-    org.opencontainers.image.source="https://github.com/Eifel-Joe/claude-code-ha" \
+    org.opencontainers.image.title="Home Assistant App: Claude Workbench" \
+    org.opencontainers.image.description="Workbench for Anthropic's Claude Code CLI in Home Assistant" \
+    org.opencontainers.image.source="https://github.com/Eifel-Joe/claude-workbench" \
     org.opencontainers.image.licenses="MIT"
 
 # Install packages in a single layer to minimize image size.

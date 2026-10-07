@@ -138,4 +138,28 @@ for f in mac-clipboard-monitor.py MAC_CLIPBOARD_MONITOR.md; do
     [ ! -e "$repo_root/$f" ] || fail "$f is back; it cannot reach the app since 2.1.0"
 done
 
+# Claude Workbench is an app of its own (spec 2026-10-07-claude-workbench-rename):
+# own name, slug and repository, so it is not mistaken for ESJavadex's
+# Claude Terminal Pro. The takeover keeps finding *_claude_terminal_pro apps.
+config_field() {
+    sed -n "s/^$1: *\"\{0,1\}\([^\"]*\)\"\{0,1\}\$/\1/p" "$addon_dir/config.yaml"
+}
+new_repo_url="https://github.com/Eifel-Joe/claude-workbench"
+[ "$(config_field name)" = "Claude Workbench" ] || \
+    fail "config.yaml name is '$(config_field name)', expected 'Claude Workbench'"
+[ "$(config_field slug)" = "claude_workbench" ] || \
+    fail "config.yaml slug is '$(config_field slug)', expected 'claude_workbench'"
+[ "$(config_field panel_title)" = "Claude Workbench" ] || \
+    fail "config.yaml panel_title is '$(config_field panel_title)', expected 'Claude Workbench'"
+[ "$(config_field url)" = "$new_repo_url" ] || \
+    fail "config.yaml url is '$(config_field url)', expected $new_repo_url"
+grep -qx "url: $new_repo_url" "$repo_root/repository.yaml" || \
+    fail "repository.yaml does not point to $new_repo_url"
+grep -qx 'name: Claude Workbench for Home Assistant' "$repo_root/repository.yaml" || \
+    fail "repository.yaml name is not 'Claude Workbench for Home Assistant'"
+grep -q 'image.title="Home Assistant App: Claude Workbench"' "$dockerfile" || \
+    fail "Dockerfile image.title label does not name Claude Workbench"
+grep -q "image.source=\"$new_repo_url\"" "$dockerfile" || \
+    fail "Dockerfile image.source label does not point to $new_repo_url"
+
 echo "Release metadata suite passed (version $config_version)"
