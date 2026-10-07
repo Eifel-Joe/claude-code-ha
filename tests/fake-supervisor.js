@@ -6,7 +6,7 @@ const path = require('node:path');
 const http = require('node:http');
 const { spawnSync } = require('node:child_process');
 
-const SELF_SLUG = '6ef0b4d0_claude_terminal_pro';
+const SELF_SLUG = '6ef0b4d0_claude_workbench';
 const OLD_SLUG = 'a1b2c3d4_claude_terminal_pro';
 
 function writeFile(file, content, mode) {
@@ -69,7 +69,7 @@ function startFakeSupervisor(opts = {}) {
     jobPolls: 0,
   };
   const apps = opts.apps || [
-    { slug: SELF_SLUG, name: 'Claude Terminal Pro', version: '2.2.0', state: 'started' },
+    { slug: SELF_SLUG, name: 'Claude Workbench', version: '3.0.0', state: 'started' },
     { slug: OLD_SLUG, name: 'Claude Terminal Pro', version: '2.0.13', state: 'started' },
   ];
   const ok = (res, data = {}) => {

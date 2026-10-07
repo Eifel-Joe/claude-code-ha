@@ -65,7 +65,7 @@ function renderSummary(result) {
   if (!result.ok) {
     const backup = !result.backupSlug ? []
       : result.backupDeleted ? ['  The partial backup created for this was deleted again.']
-        : [`  The partial backup "Claude Terminal Pro – Übernahme …" (${result.backupSlug}) could not be deleted;`,
+        : [`  The partial backup "Claude Workbench – Übernahme …" (${result.backupSlug}) could not be deleted;`,
           '  it contains the old login, delete it under Settings → System → Backups.'];
     return ['', `  Nothing was taken over: ${result.fatal}`, ...backup,
       '  The old app is unchanged. You will be asked again on the next start.', ''].join('\n');

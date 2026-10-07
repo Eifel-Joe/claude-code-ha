@@ -36,7 +36,7 @@ const FREE_SPACE_FACTOR = 2.2;
 async function createBackup(client, offer, { date, pollMs, log, progressEveryMs }) {
   log('  Creating a partial backup of the old app...');
   const created = await client.post('/backups/new/partial', {
-    name: `Claude Terminal Pro – Übernahme ${date}`,
+    name: `Claude Workbench – Übernahme ${date}`,
     addons: [offer.slug],
     homeassistant: false,
     background: true,
