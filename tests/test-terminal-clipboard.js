@@ -10,7 +10,7 @@ const path = require('path');
 const assert = require('assert');
 
 const bridge = require(
-    path.join(__dirname, '..', 'claude-terminal', 'image-service', 'public', 'terminal-clipboard.js')
+    path.join(__dirname, '..', 'claude-workbench', 'image-service', 'public', 'terminal-clipboard.js')
 );
 
 let failures = 0;

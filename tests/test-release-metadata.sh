@@ -6,7 +6,7 @@ set -euo pipefail
 # have to agree, and nothing checked this before, so they drifted silently.
 
 repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-addon_dir="$repo_root/claude-terminal"
+addon_dir="$repo_root/claude-workbench"
 
 fail() {
     echo "FAIL (release metadata): $*" >&2
@@ -25,7 +25,7 @@ esac
 # reading it. The Dockerfile carries the base image and labels, the version
 # lives only in config.yaml (the Supervisor labels the image with it).
 [ ! -e "$addon_dir/build.yaml" ] || \
-    fail "claude-terminal/build.yaml exists; build parameters belong in the Dockerfile"
+    fail "claude-workbench/build.yaml exists; build parameters belong in the Dockerfile"
 
 dockerfile="$addon_dir/Dockerfile"
 # Dockerfile keywords are case-insensitive; a second stage would make the final
@@ -137,5 +137,89 @@ done
 for f in mac-clipboard-monitor.py MAC_CLIPBOARD_MONITOR.md; do
     [ ! -e "$repo_root/$f" ] || fail "$f is back; it cannot reach the app since 2.1.0"
 done
+
+# Claude Workbench is an app of its own (spec 2026-10-07-claude-workbench-rename):
+# own name, slug and repository, so it is not mistaken for ESJavadex's
+# Claude Terminal Pro. The takeover keeps finding *_claude_terminal_pro apps.
+config_field() {
+    sed -n "s/^$1: *\"\{0,1\}\([^\"]*\)\"\{0,1\}\$/\1/p" "$addon_dir/config.yaml"
+}
+new_repo_url="https://github.com/Eifel-Joe/claude-workbench"
+[ "$(config_field name)" = "Claude Workbench" ] || \
+    fail "config.yaml name is '$(config_field name)', expected 'Claude Workbench'"
+[ "$(config_field slug)" = "claude_workbench" ] || \
+    fail "config.yaml slug is '$(config_field slug)', expected 'claude_workbench'"
+[ "$(config_field panel_title)" = "Claude Workbench" ] || \
+    fail "config.yaml panel_title is '$(config_field panel_title)', expected 'Claude Workbench'"
+[ "$(config_field url)" = "$new_repo_url" ] || \
+    fail "config.yaml url is '$(config_field url)', expected $new_repo_url"
+grep -qx "url: $new_repo_url" "$repo_root/repository.yaml" || \
+    fail "repository.yaml does not point to $new_repo_url"
+grep -qx 'name: Claude Workbench for Home Assistant' "$repo_root/repository.yaml" || \
+    fail "repository.yaml name is not 'Claude Workbench for Home Assistant'"
+grep -q 'image.title="Home Assistant App: Claude Workbench"' "$dockerfile" || \
+    fail "Dockerfile image.title label does not name Claude Workbench"
+grep -q "image.source=\"$new_repo_url\"" "$dockerfile" || \
+    fail "Dockerfile image.source label does not point to $new_repo_url"
+
+# The app calls itself Claude Workbench. "Claude Terminal" stays only where the
+# old app is meant ("another Claude Terminal Pro app", the takeover code).
+# Case-insensitive, so an identifier like "claude-terminal:" is caught too; a
+# missing path would make grep fail and the check pass without looking.
+self_name_paths=("$addon_dir/run.sh" "$addon_dir/scripts" \
+    "$addon_dir/image-service/server.js" "$addon_dir/image-service/public")
+for p in "${self_name_paths[@]}"; do
+    [ -e "$p" ] || fail "$p is missing; the self-name check would look at nothing"
+done
+if grep -rniE 'claude[- ]terminal' "${self_name_paths[@]}" --exclude-dir=app-migration | \
+        grep -v 'Claude Terminal Pro app'; then
+    fail "the app still calls itself Claude Terminal (see lines above)"
+fi
+grep -q '"name": "claude-workbench-image-service"' "$addon_dir/image-service/package.json" || \
+    fail "image-service/package.json is not named claude-workbench-image-service"
+
+# Icon and logo come from tools/make-logo.py (original spark plus ">_" in a
+# terminal window). Home Assistant expects a 128x128 icon.
+png_size() {
+    od -An -tu1 -j16 -N8 "$1" | \
+        awk '{print ($1*16777216+$2*65536+$3*256+$4) "x" ($5*16777216+$6*65536+$7*256+$8)}'
+}
+[ "$(png_size "$addon_dir/icon.png")" = "128x128" ] || \
+    fail "icon.png is $(png_size "$addon_dir/icon.png"), expected 128x128 (tools/make-logo.py)"
+[ "$(png_size "$addon_dir/logo.png")" = "256x256" ] || \
+    fail "logo.png is $(png_size "$addon_dir/logo.png"), expected 256x256 (tools/make-logo.py)"
+[ -f "$repo_root/tools/logo/claude-spark.png" ] || \
+    fail "tools/logo/claude-spark.png (logo source) is missing"
+
+# After the GitHub rename the old repository URL only works through GitHub's
+# redirect; links and the "add repository" button must use the new one.
+# docs/ and the changelog keep history as it was.
+# git grep exits 1 for "no match" but 128 outside a repository or on a bad
+# pathspec; only 1 may count as a pass.
+old_url_rc=0
+old_url_hits=$(git -C "$repo_root" grep -nE 'Eifel-Joe(/|%2F)claude-code-ha' -- . ':!docs' \
+    ':!claude-workbench/CHANGELOG.md' ':!tests/test-release-metadata.sh') || old_url_rc=$?
+if [ "$old_url_rc" -eq 0 ]; then
+    printf '%s\n' "$old_url_hits"
+    fail "the old repository URL Eifel-Joe/claude-code-ha is still used (see lines above)"
+fi
+[ "$old_url_rc" -eq 1 ] || fail "git grep for the old repository URL failed (exit $old_url_rc)"
+
+# Home Assistant names an installed app <first 8 hex of sha1(lower-cased
+# repository URL)>_<slug>. After the rename the old repository entry lists
+# Claude Workbench too (GitHub redirects), as 6ef0b4d0_claude_workbench;
+# installed from there, the old entry can never be removed. The switching guide
+# names the right one, and it has to match the repository URL.
+new_app_slug="$(printf '%s' "$new_repo_url" | tr 'A-Z' 'a-z' | sha1sum | cut -c1-8)_claude_workbench"
+for doc in README.md claude-workbench/README.md claude-workbench/DOCS.md docs/release-notes-3.0.0.md; do
+    grep -q "$new_app_slug" "$repo_root/$doc" || \
+        fail "$doc does not tell users to install $new_app_slug"
+done
+# The MIT license must name its copyright holders, not the template placeholder.
+if grep -n 'Your Name' "$repo_root/LICENSE"; then
+    fail "LICENSE still carries the template placeholder instead of the copyright holders"
+fi
+grep -q 'Switching from Claude Terminal Pro' "$repo_root/README.md" || \
+    fail "README.md has no 'Switching from Claude Terminal Pro' section"
 
 echo "Release metadata suite passed (version $config_version)"

@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This repository contains Home Assistant add-ons, specifically the **Claude Terminal Pro** add-on which provides a web-based terminal interface with Claude Code CLI pre-installed and persistent package management. The add-on allows Home Assistant users to access Claude AI capabilities directly from their dashboard.
+This repository contains Home Assistant add-ons, specifically the **Claude Workbench** app (formerly Claude Terminal Pro) which provides a web-based terminal interface with Claude Code CLI pre-installed and persistent package management. The add-on allows Home Assistant users to access Claude AI capabilities directly from their dashboard.
 
-**Fork Attribution:** This repository (Eifel-Joe/claude-code-ha) is a fork of [ESJavadex/claude-code-ha](https://github.com/ESJavadex/claude-code-ha) by Javier Santos, itself an enhanced fork of [heytcass/home-assistant-addons](https://github.com/heytcass/home-assistant-addons) by Tom Cassady. The ESJavadex fork adds persistent package management, auto-install configuration, and enhanced documentation.
+**Origin:** Claude Workbench (Eifel-Joe/claude-workbench) grew out of [ESJavadex/claude-code-ha](https://github.com/ESJavadex/claude-code-ha) (Claude Terminal Pro) by Javier Santos, itself based on [heytcass/home-assistant-addons](https://github.com/heytcass/home-assistant-addons) by Tom Cassady. The ESJavadex app added persistent package management, auto-install configuration, and enhanced documentation.
 
 ## Development Environment
 
@@ -20,7 +20,7 @@ direnv allow
 ```
 
 ### Core Development Commands
-- `build-addon` - Build the Claude Terminal Pro add-on with Podman
+- `build-addon` - Build the Claude Workbench app with Podman
 - `run-addon` - Run add-on locally on port 7680 with volume mapping
 - `lint-dockerfile` - Lint Dockerfile using hadolint
 - `test-endpoint` - Test web endpoint availability (curl localhost:7680)
@@ -28,13 +28,13 @@ direnv allow
 ### Manual Commands (without aliases)
 ```bash
 # Build
-podman build -t local/claude-terminal-pro ./claude-terminal
+podman build -t local/claude-workbench ./claude-workbench
 
 # Run locally
-podman run -p 7680:7680 -v $(pwd)/config:/config -v $(pwd)/data:/data local/claude-terminal-pro
+podman run -p 7680:7680 -v $(pwd)/config:/config -v $(pwd)/data:/data local/claude-workbench
 
 # Lint
-hadolint ./claude-terminal/Dockerfile
+hadolint ./claude-workbench/Dockerfile
 
 # Test endpoint
 curl -X GET http://localhost:7680/
@@ -61,7 +61,7 @@ production `run.sh`, startup hardening and the Node image service. CI
 (`.github/workflows/ci.yml`) runs the same suites plus shellcheck, hadolint and
 real image builds for amd64 and aarch64.
 
-### Add-on Structure (claude-terminal/)
+### Add-on Structure (claude-workbench/)
 - **config.yaml** - Home Assistant add-on configuration (version, arch list, ingress, options)
 - **Dockerfile** - Alpine-based container with Node.js and Claude Code CLI; pins the base image (`FROM ghcr.io/home-assistant/base:3.21`) and the image labels. There is no build.yaml (deprecated by the Supervisor).
 - **run.sh** - Main startup script with credential management and ttyd terminal
@@ -95,7 +95,7 @@ For rapid development and debugging without pushing new versions:
 #### Quick Build & Test
 ```bash
 # Build test version
-podman build -t local/claude-terminal:test ./claude-terminal
+podman build -t local/claude-workbench:test ./claude-workbench
 
 # Create test directories (/config = HA configuration, /data = app storage)
 mkdir -p /tmp/test-config /tmp/test-data
@@ -104,7 +104,7 @@ mkdir -p /tmp/test-config /tmp/test-data
 # local run without the Supervisor uses the defaults in run.sh (auto-launch on).
 
 # Run test container
-podman run -d --name test-claude-dev -p 7680:7680 -v /tmp/test-config:/config -v /tmp/test-data:/data local/claude-terminal:test
+podman run -d --name test-claude-dev -p 7680:7680 -v /tmp/test-config:/config -v /tmp/test-data:/data local/claude-workbench:test
 
 # Check logs
 podman logs test-claude-dev
@@ -118,19 +118,19 @@ podman stop test-claude-dev && podman rm test-claude-dev
 #### Interactive Testing
 ```bash
 # Test session picker directly
-podman run --rm -it local/claude-terminal:test /opt/scripts/claude-session-picker.sh
+podman run --rm -it local/claude-workbench:test /opt/scripts/claude-session-picker.sh
 
 # Execute commands inside running container
 podman exec -it test-claude-dev /bin/bash
 
 # Test script modifications without rebuilding
-podman cp ./claude-terminal/scripts/claude-session-picker.sh test-claude-dev:/opt/scripts/
+podman cp ./claude-workbench/scripts/claude-session-picker.sh test-claude-dev:/opt/scripts/
 podman exec test-claude-dev chmod +x /opt/scripts/claude-session-picker.sh
 ```
 
 #### Development Workflow
 1. **Make changes** to scripts or Dockerfile
-2. **Rebuild** with `podman build -t local/claude-terminal:test ./claude-terminal`
+2. **Rebuild** with `podman build -t local/claude-workbench:test ./claude-workbench`
 3. **Stop/remove** old container: `podman stop test-claude-dev && podman rm test-claude-dev`
 4. **Start new** container with updated image
 5. **Test** changes at http://localhost:7680
@@ -170,12 +170,12 @@ podman exec test-claude-dev chmod +x /opt/scripts/claude-session-picker.sh
 
 **When making ANY changes to the add-on, you MUST:**
 
-1. **Bump the version** in `claude-terminal/config.yaml`
+1. **Bump the version** in `claude-workbench/config.yaml`
    - Patch version (x.x.X) for bug fixes and small changes
    - Minor version (x.X.0) for new features
    - Major version (X.0.0) for breaking changes
 
-2. **Update the changelog** in `claude-terminal/CHANGELOG.md`
+2. **Update the changelog** in `claude-workbench/CHANGELOG.md`
    - Add new version section at the TOP of the file
    - Use the format: `## X.X.X` followed by `### Category - Description`
    - Categories: ✨ New Feature, 🐛 Bug Fix, 🛠️ Improvement, 📚 Documentation, 🔧 Technical
@@ -361,7 +361,7 @@ persistent_pip_packages:
 ```
 
 **When users ask about auto-install**, guide them to:
-1. Go to Settings → Add-ons → Claude Terminal
+1. Go to Settings → Apps → Claude Workbench
 2. Click Configuration tab
 3. Add packages to the lists above
 4. Save and restart the add-on
@@ -438,4 +438,4 @@ echo "These will persist across reboots."
 
 ### Documentation Reference
 
-For comprehensive details, see: `claude-terminal/PERSISTENT_PACKAGES.md`
+For comprehensive details, see: `claude-workbench/PERSISTENT_PACKAGES.md`

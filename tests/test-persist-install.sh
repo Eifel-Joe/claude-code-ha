@@ -14,7 +14,7 @@ fail() {
     exit 1
 }
 
-script="$repo_root/claude-terminal/scripts/persist-install"
+script="$repo_root/claude-workbench/scripts/persist-install"
 fake_bin="$tmp_dir/bin"
 pip_log="$tmp_dir/pip.log"
 mkdir -p "$fake_bin"

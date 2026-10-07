@@ -1,0 +1,380 @@
+#!/bin/bash
+
+# User-friendly command for installing packages persistently
+# Usage: persist-install python git vim
+
+# PERSIST_DATA_ROOT: overridable for tests only (tests/test-persist-install.sh).
+PERSIST_DATA_ROOT="${PERSIST_DATA_ROOT:-/data}"
+PERSIST_ROOT="$PERSIST_DATA_ROOT/packages"
+PERSIST_BIN="$PERSIST_ROOT/bin"
+PERSIST_PYTHON="$PERSIST_ROOT/python"
+# PERSIST_IMAGE_HA: the image's ha CLI; overridable for tests only.
+PERSIST_IMAGE_HA="${PERSIST_IMAGE_HA:-/usr/bin/ha}"
+
+show_help() {
+    cat << EOF
+🔧 Persistent Package Installer
+
+Install packages that survive container restarts!
+
+USAGE:
+    persist-install <package1> [package2] [...]
+    persist-install --python <package1> [package2] [...]
+    persist-install --ha-cli
+    persist-install --list
+    persist-install --help
+
+EXAMPLES:
+    persist-install git vim htop          # Install system packages
+    persist-install --python requests pandas  # Install Python packages
+    persist-install --ha-cli              # Install Home Assistant CLI
+    persist-install --list                # Show installed packages
+
+NOTES:
+    • Packages are installed to: /data/packages (persistent storage)
+    • Survives container restarts and reboots
+    • System packages copied from Alpine APK
+    • Python packages installed to virtual environment
+    • Home Assistant CLI downloaded from official GitHub releases
+
+QUICK START:
+    1. persist-install python3 py3-pip    # Install Python (first time)
+    2. persist-install --ha-cli           # Install official HA CLI
+    3. Reboot and enjoy! Packages will still be there!
+
+EOF
+}
+
+list_packages() {
+    echo "=== 📦 Persistent Packages ==="
+    echo ""
+    echo "📁 Location: $PERSIST_ROOT"
+    echo ""
+
+    echo "🔧 System Binaries ($PERSIST_BIN):"
+    if [ -d "$PERSIST_BIN" ] && [ "$(ls -A $PERSIST_BIN 2>/dev/null)" ]; then
+        ls -1 "$PERSIST_BIN" | sed 's/^/  • /'
+    else
+        echo "  (none installed)"
+    fi
+    echo ""
+
+    echo "🐍 Python Packages ($PERSIST_PYTHON/venv):"
+    if [ -f "$PERSIST_PYTHON/venv/bin/pip" ]; then
+        source "$PERSIST_PYTHON/venv/bin/activate"
+        pip list --format=columns | tail -n +3 | sed 's/^/  • /'
+    else
+        echo "  (virtual environment not created)"
+        echo "  Run: persist-install python3 py3-pip"
+    fi
+    echo ""
+
+    echo "💾 Total size:"
+    du -sh "$PERSIST_ROOT" 2>/dev/null || echo "  0B"
+}
+
+install_system_packages() {
+    local pkg
+
+    if [ "$#" -eq 0 ]; then
+        echo "❌ No system packages specified"
+        return 1
+    fi
+
+    echo "📦 Installing system packages: $*"
+    echo ""
+
+    # Install via APK first
+    echo "⏳ Installing via APK..."
+    if ! apk add --no-cache "$@"; then
+        echo "❌ Failed to install packages"
+        # return, never exit: this function is called from an interactive shell
+        # and from auto_install_packages at startup. `exit` killed the caller.
+        return 1
+    fi
+
+    # Copy to persistent storage
+    echo "💾 Copying to persistent storage..."
+    mkdir -p "$PERSIST_BIN" "$PERSIST_ROOT/lib"
+
+    for pkg in "$@"; do
+        echo "  Processing: $pkg"
+
+        # Get list of files installed by package
+        apk info -L "$pkg" 2>/dev/null | while read -r file; do
+            # Copy executables
+            if [[ "$file" == /usr/bin/* ]] || [[ "$file" == /usr/sbin/* ]] || [[ "$file" == /bin/* ]]; then
+                if [ -f "$file" ] && [ -x "$file" ]; then
+                    cp -a "$file" "$PERSIST_BIN/" 2>/dev/null && echo "    ✓ $(basename $file)"
+                fi
+            fi
+
+            # Copy shared libraries
+            if [[ "$file" == /usr/lib/* ]] && [[ "$file" == *.so* ]]; then
+                if [ -f "$file" ]; then
+                    cp -a "$file" "$PERSIST_ROOT/lib/" 2>/dev/null
+                fi
+            fi
+        done
+    done
+
+    echo ""
+    echo "✅ System packages installed and persisted!"
+    echo "💡 These packages will survive container restarts"
+    echo ""
+    echo "⚠️  Note: only executables and shared libraries are copied to"
+    echo "   $PERSIST_ROOT. Packages that also need data files, config or"
+    echo "   helper files (python3, git, perl...) may not work after a restart"
+    echo "   from the persistent copy alone. For those, prefer listing them in"
+    echo "   the app's persistent_apk_packages option, which reinstalls them"
+    echo "   cleanly on each start."
+}
+
+install_python_packages() {
+    if [ "$#" -eq 0 ]; then
+        echo "❌ No Python packages specified"
+        return 1
+    fi
+
+    echo "🐍 Installing Python packages: $*"
+    echo ""
+
+    # Ensure Python and venv exist
+    if [ ! -f "$PERSIST_PYTHON/venv/bin/python" ]; then
+        echo "⚠️  Python virtual environment not found"
+        echo "📥 Creating virtual environment..."
+
+        # Check if system Python exists
+        if ! command -v python3 &>/dev/null; then
+            echo "❌ Python not installed. Installing..."
+            if ! install_system_packages python3 py3-pip; then
+                echo "❌ Could not install python3"
+                return 1
+            fi
+        fi
+
+        mkdir -p "$PERSIST_PYTHON"
+        if ! python3 -m venv "$PERSIST_PYTHON/venv"; then
+            echo "❌ Could not create the virtual environment in $PERSIST_PYTHON/venv"
+            return 1
+        fi
+        echo "✅ Virtual environment created"
+        echo ""
+    fi
+
+    # Activate and install
+    # shellcheck source=/dev/null
+    if ! source "$PERSIST_PYTHON/venv/bin/activate"; then
+        echo "❌ Could not activate the virtual environment in $PERSIST_PYTHON/venv"
+        return 1
+    fi
+
+    echo "⏳ Installing packages..."
+    # A failed self-upgrade is harmless: the existing pip still installs.
+    pip install --upgrade pip -q || true
+    # Callers (app migration, auto_install_packages) rely on the exit status.
+    if ! pip install "$@"; then
+        echo "❌ Failed to install Python packages: $*"
+        return 1
+    fi
+
+    echo ""
+    echo "✅ Python packages installed!"
+    echo "💡 Use 'source $PERSIST_PYTHON/venv/bin/activate' to activate venv"
+}
+
+install_ha_cli() {
+    local image_ha="$PERSIST_IMAGE_HA"
+    local target_path="${PERSIST_BIN}/ha"
+    # The ha CLI has no --version flag (4.x and 5.x alike): asking for one
+    # printed "unknown flag" and the usage text where a version belonged. So
+    # the install records the version; copies from before 2.3.1 have no
+    # record (they may be the old pinned one).
+    local version_file="${PERSIST_BIN}/.ha-version"
+    local installed_version="unknown version, installed before 2.3.1"
+    if [ -s "${version_file}" ]; then
+        installed_version="v$(head -n 1 "${version_file}")"
+    fi
+
+    # The image already ships `ha`, and $PERSIST_BIN comes FIRST in PATH, so an
+    # unconditional install here would shadow it.
+    if [ -x "$image_ha" ] && [ "${1:-}" != "--force" ]; then
+        echo "ℹ️  Home Assistant CLI is already provided by the app image:"
+        echo "   $image_ha"
+        echo ""
+        if [ -x "${target_path}" ]; then
+            # A copy left by an earlier --force runs instead of the image's.
+            # Before 2.3.1 that copy was a pinned old version.
+            echo "⚠️  But a copy in $PERSIST_BIN takes priority in PATH:"
+            echo "   ${target_path} (${installed_version})"
+            echo ""
+            echo "   Replace it with the latest release:"
+            echo "     persist-install --ha-cli --force"
+            echo "   or remove it to use the image's CLI:"
+            echo "     rm ${target_path} ${version_file}"
+            return 0
+        fi
+        echo "   Installing a second copy into $PERSIST_BIN would take priority"
+        echo "   in PATH and could downgrade it. Nothing to do."
+        echo "   Use 'persist-install --ha-cli --force' if you really want one."
+        return 0
+    fi
+
+    # Detect architecture
+    local machine
+    local arch=""
+    machine=$(uname -m)
+
+    case "$machine" in
+        x86_64)     arch="amd64" ;;
+        aarch64)    arch="aarch64" ;;
+        *)
+            echo "❌ Unsupported architecture: $machine"
+            return 1
+            ;;
+    esac
+
+    # An existing copy stays unless --force asks to replace it. --force is
+    # how a copy pinned by an older release gets replaced, so it must not
+    # stop here.
+    if [ -x "${target_path}" ] && [ "${1:-}" != "--force" ]; then
+        echo "ℹ️  Home Assistant CLI is already installed:"
+        echo "   ${target_path} (${installed_version})"
+        echo "   Use 'persist-install --ha-cli --force' to replace it with the latest release."
+        return 0
+    fi
+
+    # Latest release, as the Dockerfile does. A pinned version here (kept for
+    # 32-bit builds) downgraded the CLI on every arch, because this
+    # copy sits in PATH ahead of the image's.
+    # The tag is read from where github.com redirects releases/latest
+    # (.../releases/tag/<tag>). GitHub's REST API allows only 60
+    # unauthenticated requests per hour per IP and failed a CI build with 403;
+    # the redirect has no such limit.
+    local latest_url="https://github.com/home-assistant/cli/releases/latest"
+    local resolved_url
+    local HA_VERSION=""
+    resolved_url=$(curl -fsSL --max-time 30 -o /dev/null -w '%{url_effective}' \
+        "$latest_url" 2>/dev/null) || resolved_url=""
+    case "$resolved_url" in
+        */releases/tag/?*) HA_VERSION="${resolved_url##*/releases/tag/}" ;;
+    esac
+    # Tag characters only: a trailing slash, query or fragment would end in a
+    # broken download URL.
+    case "$HA_VERSION" in
+        *[!A-Za-z0-9._+-]*) HA_VERSION="" ;;
+    esac
+    if [ -z "$HA_VERSION" ]; then
+        echo "❌ Could not determine the latest Home Assistant CLI version"
+        echo "   ($latest_url — no network, or GitHub did not redirect to a release)"
+        return 1
+    fi
+
+    local download_url="https://github.com/home-assistant/cli/releases/download/${HA_VERSION}/ha_${arch}"
+    # Downloaded next to the target and moved over it only once it checks out,
+    # so a failed download leaves an existing copy in place.
+    local new_path="${target_path}.new"
+
+    echo "🏠 Installing Home Assistant CLI v${HA_VERSION}"
+    echo "📦 Architecture: ${arch}"
+    echo ""
+
+    # Create directory
+    mkdir -p "$PERSIST_BIN"
+
+    # Download
+    echo "⏳ Downloading from GitHub..."
+    if ! curl -fsSL -o "${new_path}" "${download_url}"; then
+        echo "❌ Failed to download ha CLI binary"
+        rm -f "${new_path}"
+        return 1
+    fi
+
+    # Make executable
+    chmod +x "${new_path}"
+
+    # Verify file was downloaded and is executable
+    if [ ! -x "${new_path}" ]; then
+        echo "❌ Binary is not executable"
+        rm -f "${new_path}"
+        return 1
+    fi
+
+    # Check file size (should be > 1MB)
+    local size
+    size=$(stat -f%z "${new_path}" 2>/dev/null || stat -c%s "${new_path}" 2>/dev/null || echo "0")
+    if [ "$size" -lt 1000000 ]; then
+        echo "❌ Downloaded file is too small (${size} bytes)"
+        rm -f "${new_path}"
+        return 1
+    fi
+
+    if ! mv -f "${new_path}" "${target_path}"; then
+        echo "❌ Could not move the new binary into place"
+        rm -f "${new_path}"
+        return 1
+    fi
+    printf '%s\n' "${HA_VERSION}" > "${version_file}"
+
+    echo ""
+    echo "✅ Home Assistant CLI v${HA_VERSION} installed successfully!"
+    echo "📦 Binary size: $((size / 1024 / 1024)) MB"
+    echo "📍 Location: ${target_path}"
+    echo ""
+
+    # `ha help` runs offline, so it shows the binary works without needing
+    # the Supervisor API.
+    echo "🔍 Testing ha command..."
+    if "${target_path}" help >/dev/null 2>&1; then
+        echo "   ha runs ✓"
+    else
+        echo "⚠️  Note: 'ha help' returned an error, but the binary is installed."
+        echo "   Try: ha core info"
+    fi
+
+    echo ""
+    echo "💡 Try these commands:"
+    echo "   ha core info"
+    echo "   ha addons list"
+    echo "   ha supervisor info"
+}
+
+# Main execution
+main() {
+    # Check if running in the app
+    if [ ! -d "$PERSIST_DATA_ROOT" ]; then
+        echo "❌ Error: $PERSIST_DATA_ROOT directory not found"
+        echo "This script must run inside the Claude Workbench app"
+        exit 1
+    fi
+
+    case "${1:-}" in
+        --help|-h|help)
+            show_help
+            ;;
+        --list|-l|list)
+            list_packages
+            ;;
+        --python|-p|python)
+            shift
+            if [ $# -eq 0 ]; then
+                echo "❌ Error: No packages specified"
+                echo "Usage: persist-install --python <package1> [package2] ..."
+                exit 1
+            fi
+            install_python_packages "$@"
+            ;;
+        --ha-cli|ha-cli|ha)
+            shift
+            install_ha_cli "$@"
+            ;;
+        "")
+            show_help
+            ;;
+        *)
+            install_system_packages "$@"
+            ;;
+    esac
+}
+
+main "$@"

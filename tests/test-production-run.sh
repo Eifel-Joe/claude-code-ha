@@ -32,7 +32,7 @@ bashio::config() {
 
 # Load only the production entrypoint. No helper script may redefine its functions.
 CLAUDE_RUN_SH_SKIP_MAIN=true
-source "$repo_root/claude-terminal/run.sh"
+source "$repo_root/claude-workbench/run.sh"
 
 HOME="$tmp_dir/home"
 TMUX_WRAPPER_PATH="$tmp_dir/tmux-claude"
@@ -57,8 +57,8 @@ grep -qx "set -as terminal-features ',\*:clipboard'" "$HOME/.tmux.conf" || \
     fail "tmux must advertise the clipboard capability so OSC 52 reaches ttyd"
 
 # The frontend fix has to be reachable from the page that embeds ttyd.
-clipboard_bridge="$repo_root/claude-terminal/image-service/public/terminal-clipboard.js"
-terminal_page="$repo_root/claude-terminal/image-service/public/index.html"
+clipboard_bridge="$repo_root/claude-workbench/image-service/public/terminal-clipboard.js"
+terminal_page="$repo_root/claude-workbench/image-service/public/index.html"
 [ -f "$clipboard_bridge" ] || fail "clipboard bridge is missing"
 grep -q 'src="terminal-clipboard.js"' "$terminal_page" || \
     fail "terminal page must load the clipboard bridge"

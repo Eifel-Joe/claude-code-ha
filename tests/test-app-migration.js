@@ -7,7 +7,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { buildBackupFixture, startFakeSupervisor, SELF_SLUG, OLD_SLUG } = require('./fake-supervisor');
 
-const MOD = path.join(__dirname, '..', 'claude-terminal', 'scripts', 'app-migration');
+const MOD = path.join(__dirname, '..', 'claude-workbench', 'scripts', 'app-migration');
 
 // Every fixture directory is removed once the file's tests have run; they
 // used to pile up in the system temp directory.
@@ -194,6 +194,19 @@ test('detect: prefers a running old app over a stopped one', async () => {
   });
 });
 
+// The renamed app (3.0.0) still takes over from *_claude_terminal_pro, but a
+// second Claude Workbench is never a source, even while it runs.
+test('detect: never offers another Claude Workbench as the source', async () => {
+  const apps = [
+    { slug: SELF_SLUG, state: 'started' },
+    { slug: 'ffff0000_claude_workbench', state: 'started' },
+    { slug: OLD_SLUG, state: 'stopped' },
+  ];
+  await withSupervisor({ apps }, async (client, p) => {
+    assert.equal((await detect(client, p)).offer.slug, OLD_SLUG);
+  });
+});
+
 const { apply } = require(path.join(MOD, 'apply'));
 const quiet = () => {}; // keeps apply's progress output out of the test report
 
@@ -210,7 +223,7 @@ test('apply: creates a named partial backup of only the old app', async () => {
   const { sup } = await detectThenApply({}, []);
   const call = sup.state.calls.find((c) => c.url === '/backups/new/partial');
   assert.deepEqual(call.body, {
-    name: 'Claude Terminal Pro – Übernahme 2026-10-06', addons: [OLD_SLUG], homeassistant: false, background: true,
+    name: 'Claude Workbench – Übernahme 2026-10-06', addons: [OLD_SLUG], homeassistant: false, background: true,
   });
 });
 
@@ -620,7 +633,7 @@ test('summary: a fatal result says whether the backup was removed', () => {
   assert.match(removed, /backup .*was deleted/i);
   const kept = renderSummary({ ok: false, fatal: 'download failed', backupSlug: 'bk1', backupDeleted: false, results: {} });
   assert.match(kept, /could not be deleted/);
-  assert.match(kept, /Claude Terminal Pro – Übernahme/);
+  assert.match(kept, /Claude Workbench – Übernahme/);
   assert.match(kept, /bk1/);
   const none = renderSummary({ ok: false, fatal: 'backup failed', backupDeleted: false, results: {} });
   assert.doesNotMatch(none, /delete/i);

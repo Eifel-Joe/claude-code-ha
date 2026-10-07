@@ -36,7 +36,7 @@ export STARTUP_NPM_TIMEOUT=1 STARTUP_APK_TIMEOUT=1 STARTUP_PIP_TIMEOUT=1
 # shellcheck disable=SC2034  # read by the sourced run.sh
 CLAUDE_RUN_SH_SKIP_MAIN=true
 # shellcheck source=/dev/null
-source "$repo_root/claude-terminal/run.sh"
+source "$repo_root/claude-workbench/run.sh"
 
 # --- run_with_timeout ---
 
@@ -80,7 +80,7 @@ grep -qx 'warning|Persistent Claude override: npm update timed out after 1s' "$l
 # start_web_terminal launches servers, so check the call instead of running it.
 # shellcheck disable=SC2016  # the literal $STARTUP_NPM_TIMEOUT is what is searched for
 grep -q 'run_with_timeout "$STARTUP_NPM_TIMEOUT" "Image service: npm install" npm install' \
-    "$repo_root/claude-terminal/run.sh" || \
+    "$repo_root/claude-workbench/run.sh" || \
     fail "the image service's npm install must run under the time limit"
 
 # --- Package auto-install ---
@@ -121,7 +121,7 @@ grep -qx 'warning|Auto-install of Python packages timed out after 1s' "$log" || 
 # around apk/pip, and an orphaned `apk add` keeps the apk database locked for
 # every later package. GNU timeout signals the process group; BusyBox timeout
 # (coreutils/timeout.c: kill(parent, signo)) only the process it started.
-grep -qE '^[[:space:]]+coreutils[[:space:]]*\\?$' "$repo_root/claude-terminal/Dockerfile" || \
+grep -qE '^[[:space:]]+coreutils[[:space:]]*\\?$' "$repo_root/claude-workbench/Dockerfile" || \
     fail "the image must install coreutils: BusyBox timeout leaves the step's children running"
 
 cat > "$PERSIST_INSTALL_BIN" << 'STUB_EOF'

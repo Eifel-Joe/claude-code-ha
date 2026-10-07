@@ -1,52 +1,50 @@
-# Claude Terminal Pro for Home Assistant
+# Claude Workbench for Home Assistant
 
-[![Version](https://img.shields.io/badge/version-2.3.4-1f6feb)](claude-terminal/CHANGELOG.md)
-[![Latest release](https://img.shields.io/github/v/release/Eifel-Joe/claude-code-ha?label=release&color=1f6feb)](https://github.com/Eifel-Joe/claude-code-ha/releases)
+[![Version](https://img.shields.io/badge/version-3.0.0-1f6feb)](claude-workbench/CHANGELOG.md)
+[![Latest release](https://img.shields.io/github/v/release/Eifel-Joe/claude-workbench?label=release&color=1f6feb)](https://github.com/Eifel-Joe/claude-workbench/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-3fb950)](LICENSE)
 [![Architectures](https://img.shields.io/badge/arch-amd64%20%7C%20aarch64-8957e5)](#architecture-support)
-[![Base image](https://img.shields.io/badge/base-Alpine%203.21-0db7ed)](claude-terminal/Dockerfile)
+[![Base image](https://img.shields.io/badge/base-Alpine%203.21-0db7ed)](claude-workbench/Dockerfile)
 
-A Home Assistant app that runs Anthropic's **Claude Code CLI** in a browser-based terminal, right inside your dashboard. It ships the tools you actually need for HA work — the `ha` and `gh` CLIs, git, Python — keeps your session alive across restarts with tmux, and lets you install extra packages that survive reboots.
+<img src="claude-workbench/logo.png" alt="Claude Workbench logo" width="96" align="right">
 
-![Claude Terminal Screenshot](claude-terminal/screenshot.png)
+Claude Workbench is a Home Assistant app that runs Anthropic's **Claude Code CLI** in a browser-based terminal, right inside your dashboard. It ships the tools you need for Home Assistant work — the `ha` and `gh` CLIs, git, Python — keeps your session alive across restarts with tmux, updates Claude Code on every start so new models work right away, and lets you install extra packages that survive reboots.
 
-> **This is [Eifel-Joe](https://github.com/Eifel-Joe)'s maintained fork** of
-> [ESJavadex/claude-code-ha](https://github.com/ESJavadex/claude-code-ha) by Javier Santos,
-> which itself builds on [heytcass/home-assistant-addons](https://github.com/heytcass/home-assistant-addons)
-> by Tom Cassady. Upstream's last release was 2.0.13 in July 2026 and several community pull
-> requests are still open, so this fork collects the fixes published across the community forks
-> and keeps Claude Code current. Huge thanks to Javier for the app this is built on.
-> Same MIT license as the original.
+![Claude Workbench screenshot](claude-workbench/screenshot.png)
 
-## What's different in this fork
+**Highlights**
 
-- **One-step switch from the ESJavadex app** — memories, logins, packages and settings are taken over on first start
-- **New models work** — Claude Code updates itself on every start (Opus 5.5, Fable, …), plus a 🔄 *Update Claude Code* menu item
-- **Security fix** — no unauthenticated root shell on port 7681; access only through the HA sidebar (ingress)
-- **Rebuilds no longer hang** on the Claude installer
-- **Phone-friendly terminal** — copy, swipe scrolling, on-screen keyboard, image paste
+- **Always current Claude Code** — updated on every start, plus a 🔄 *Update Claude Code* menu item
+- **Secure by default** — reachable only through the Home Assistant sidebar (ingress), no open port
+- **Phone-friendly terminal** — copy, swipe scrolling, on-screen keyboard, image paste, clickable login links
+- **Persistent packages** — `persist-install` keeps apk and pip packages across restarts
 - **Remote Control** and access to other apps' config folders
+- **One-step switch from Claude Terminal Pro** — see below
 
-Everything collected from community forks is credited in the [changelog](claude-terminal/CHANGELOG.md).
+Claude Workbench grew out of Claude Terminal Pro; see [Credits](#credits).
 
-**Switching from the ESJavadex app?** Install this app next to it. On first start it
-finds the old app and, when you open the panel, offers to take over your Claude
-memories, `CLAUDE.md`, history, logins, packages and settings — via a partial
-backup of the old app, which is kept as a fallback. The old app is stopped
-afterwards; uninstall it once everything works.
+## Switching from Claude Terminal Pro
+
+This works for ESJavadex's Claude Terminal Pro and for this project's own app before 3.0.0 (it was called Claude Terminal Pro, too). Home Assistant treats Claude Workbench as a new app, so it is installed next to the old one:
+
+1. Add the repository `https://github.com/Eifel-Joe/claude-workbench` (see [Install](#install)).
+2. Install **Claude Workbench** from the repository you just added — its app page address ends in `0e003122_claude_workbench` — and start it. Coming from this project's old app, the store lists Claude Workbench twice until step 5: the other one (`6ef0b4d0_claude_workbench`) comes through the old address, and its repository entry could then never be removed.
+3. Open the panel. Claude Workbench finds the old app and offers to take over your Claude memories, `CLAUDE.md`, history, logins, packages and settings — via a partial backup of the old app, which is kept as a fallback. The old app is stopped afterwards.
+4. Once everything works, uninstall the old app.
+5. Remove the old repository entry (**Settings → Apps → App Store → ⋮ → Repositories**). This project's old URL (ending in `claude-code-ha`) is redirected by GitHub to the new one, so Claude Workbench would otherwise show up twice.
 
 ---
 
 ## Install
 
-[![Open your Home Assistant instance and show the add app repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FEifel-Joe%2Fclaude-code-ha)
+[![Open your Home Assistant instance and show the add app repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FEifel-Joe%2Fclaude-workbench)
 
 Or add it manually:
 
 1. **Settings → Apps → App Store**
 2. Top-right menu (⋮) → **Repositories**
-3. Add `https://github.com/Eifel-Joe/claude-code-ha` and click **Add**
-4. Install **Claude Terminal Pro**, start it, and open the panel from the sidebar
+3. Add `https://github.com/Eifel-Joe/claude-workbench` and click **Add**
+4. Install **Claude Workbench**, start it, and open the panel from the sidebar
 
 Authentication uses OAuth — no API key or config needed for a normal setup. The terminal opens in your `/config` directory.
 
@@ -107,7 +105,7 @@ persistent_pip_packages:
   - httpx
 ```
 
-See [DOCS.md](claude-terminal/DOCS.md) for the full guide.
+See [DOCS.md](claude-workbench/DOCS.md) for the full guide.
 
 ---
 
@@ -156,9 +154,9 @@ This drops a `CLAUDE.md` into your config directory with context tailored for Ho
 
 ## Documentation
 
-- [App documentation](claude-terminal/DOCS.md) — options, usage, persistent packages
+- [App documentation](claude-workbench/DOCS.md) — options, usage, persistent packages
 - [Development guide](DEVELOPMENT.md) — build and test the app locally
-- [Changelog](claude-terminal/CHANGELOG.md) — release history
+- [Changelog](claude-workbench/CHANGELOG.md) — release history
 
 ## Community tools
 
@@ -166,20 +164,28 @@ This drops a `CLAUDE.md` into your config directory with context tailored for Ho
 
 ## Support
 
-Found a bug or have a request? [Open an issue](https://github.com/Eifel-Joe/claude-code-ha/issues).
+Found a bug or have a request? [Open an issue](https://github.com/Eifel-Joe/claude-workbench/issues).
 
 ## Credits
 
-- **Fork maintainer:** [@Eifel-Joe](https://github.com/Eifel-Joe)
-- **Upstream:** Javier Santos ([@ESJavadex](https://github.com/ESJavadex)) — creator of
-  Claude Terminal Pro: persistent packages, tmux persistence, multi-arch and much more.
-  Greetings and thanks, Javier! More of his AI + Home Assistant work: [Javadex](https://www.javadex.es/)
-- **Original creator:** Tom Cassady ([@heytcass](https://github.com/heytcass)) — the initial Claude Terminal app
-- **Community fork contributions in 2.1.0:** [@Moulbi](https://github.com/Moulbi),
+Claude Workbench is maintained by [@Eifel-Joe](https://github.com/Eifel-Joe). It grew out of
+**Claude Terminal Pro** and would not exist without the people who built it:
+
+- **Javier Santos** ([@ESJavadex](https://github.com/ESJavadex)) — created Claude Terminal Pro
+  ([ESJavadex/claude-code-ha](https://github.com/ESJavadex/claude-code-ha)): persistent packages,
+  tmux persistence, multi-arch and much more. Greetings and thanks, Javier! More of his
+  AI + Home Assistant work: [Javadex](https://www.javadex.es/)
+- **Tom Cassady** ([@heytcass](https://github.com/heytcass)) — created the original Claude Terminal app
+  ([heytcass/home-assistant-addons](https://github.com/heytcass/home-assistant-addons))
+- **Community fork contributions:** [@Moulbi](https://github.com/Moulbi),
   [@PeterLinuxOSS](https://github.com/PeterLinuxOSS), [@nsleigh](https://github.com/nsleigh),
-  [@marcjay](https://github.com/marcjay), [@martinboksa](https://github.com/martinboksa)
+  [@marcjay](https://github.com/marcjay), [@martinboksa](https://github.com/martinboksa) —
+  each change is credited in the [changelog](claude-workbench/CHANGELOG.md)
 
 Built and maintained with the help of Claude Code itself.
+
+**Trademarks:** Claude, Claude Code and the Claude spark logo are trademarks of Anthropic.
+Claude Workbench is an independent community project and is not made or endorsed by Anthropic.
 
 ## License
 
