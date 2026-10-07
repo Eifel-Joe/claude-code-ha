@@ -40,3 +40,6 @@ Thumbs.db
 # Never commit it: this is where Claude and gh drop credential files.
 /config/claude-config/
 /config/options.json
+# Local /data mount for podman test runs (DEVELOPMENT.md). The app keeps
+# credentials there (/data/home/.claude), so it must never be committed.
+/data/

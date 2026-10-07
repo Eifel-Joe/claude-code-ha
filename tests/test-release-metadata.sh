@@ -60,6 +60,14 @@ if grep -nE 'armv7|armhf|armv6|i386|1\.0\.128' "$dockerfile"; then
     fail "Dockerfile still carries 32-bit branches"
 fi
 
+# The runtime scripts had their own 32-bit branches and pins (Claude 1.0.128,
+# HA CLI 4.46.0); with only 64-bit images they are dead code at best, and the
+# HA CLI pin downgraded `persist-install --ha-cli --force` on every arch.
+if grep -rniE 'armv7|armv6|armhf|i386|i686|1\.0\.128|4\.46\.0' \
+        "$addon_dir/run.sh" "$addon_dir/scripts"; then
+    fail "run.sh or scripts/ still carry 32-bit branches or pins"
+fi
+
 grep -qx "## $config_version" "$addon_dir/CHANGELOG.md" || \
     fail "CHANGELOG.md has no '## $config_version' section for the current version"
 
