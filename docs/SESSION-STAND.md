@@ -1,5 +1,48 @@
 # Sitzungsstand
 
+## 2026-10-07 (7) — Release 3.1.1 (Folgepunkt 3: CPU ohne x86-64-v2)
+
+### Stand
+- Spec `docs/specs/2026-10-07-cpu-x86-64-v2-check-design.md`, Plan
+  `docs/plans/2026-10-07-cpu-x86-64-v2-check.md`. Auf `main` (`b477063`),
+  Tag/Release `v3.1.1`. CI grün: Branch 37611402653, `main` 37612034914.
+- Belegt (HA-Test, Proxmox-CPU-Typ umgestellt): Claude Code 2.1.292 läuft auf
+  `x86-64-v2-AES` (popcnt, sse4_2, kein avx/avx2), hängt auf `kvm64`.
+  Anforderung ist x86-64-v2, nicht AVX2. Keine baseline-Binary bei
+  Anthropic; npm-Paket ist Wrapper um dieselbe Binary.
+- `scripts/cpu-check.sh`, eingebunden in Health-Check, Autostart,
+  `setup_persistent_claude` und Session-Picker (alle Claude-Aufrufe inkl.
+  Auth-Helper und Versionsanzeige). Review fand Auth-Helper und
+  Persistent-Smoke-Test, beide nachgezogen.
+- HA-Test 3.1.1: `kvm64` → Log-Warnungen, Picker mit „not supported on this
+  CPU“, Menüpunkt 1 erklärt, Bash/`ha`/`gh` laufen; `host` → „CPU meets
+  Claude Code's requirements ✓“, Claude startet (User). HA-Test steht jetzt
+  auf CPU-Typ `host`.
+- HA-Prod 3.1.1 (Update durch User, 13:15:41): Log „CPU meets Claude Code's
+  requirements ✓“, Image-Service healthy, keine CPU-Warnung.
+
+### Verworfen
+- Prüfung auf AVX2 (belegt falsch), `install.sh` im Dockerfile überspringen
+  (npm liefert dieselbe Binary), nur Log-Warnung (Panel hinge weiter).
+
+### Fallen
+- GitHub startete für einen Push zwei CI-Läufe; `cancel-in-progress` brach
+  den ersten ab (`cancelled`, nicht rot) — auf den zweiten Lauf schauen.
+- Session-Picker ist nicht `set -u`-fest; im Test `set +u` vor dem Sourcen.
+- Menünummer der Bash ist 7 oder 8 (je nach `use_persistent_claude`) — in
+  Anleitungen den Namen „Drop to bash shell“ nennen.
+- `tests/test-production-run.sh` scheitert lokal unter Windows (auch auf
+  `main`), in der CI grün.
+
+### Nächste Schritte
+- Kleinpunkt: Picker-Menüpunkt „Update Claude Code“ zeigt auf CPUs ohne
+  x86-64-v2 „(<neueste>, up to date)“, weil die installierte Version nicht
+  abgefragt wird — irreführend, harmlos.
+- Folgepunkt 7 (Fork-Survey 🟡) im Memory `claude-code-ha-followups`.
+
+### Empfohlene Skills
+- `task-loop` für den nächsten Folgepunkt.
+
 ## 2026-10-07 (6) — Release 3.1.0 (Folgepunkte 15, 17, 18; Issues)
 
 ### Stand
