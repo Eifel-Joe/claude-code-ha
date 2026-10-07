@@ -1,0 +1,71 @@
+name: Bug report
+description: Something in the Claude Workbench app does not work
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Please remove tokens, passwords and other secrets from anything you paste below.
+        Problems with Claude Code itself (the CLI, models, login on Anthropic's side) belong in [anthropics/claude-code](https://github.com/anthropics/claude-code/issues).
+  - type: input
+    id: app_version
+    attributes:
+      label: App version
+      description: Settings → Apps → Claude Workbench, shown at the top of the app page.
+      placeholder: "3.1.0"
+    validations:
+      required: true
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant version and installation
+      description: Settings → About.
+      placeholder: "Core 2026.10.1, Supervisor 2026.10.0, Home Assistant OS 17.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: arch
+    attributes:
+      label: Architecture
+      options:
+        - amd64
+        - aarch64
+        - I don't know
+    validations:
+      required: true
+  - type: dropdown
+    id: switched
+    attributes:
+      label: Did you switch from a Claude Terminal Pro app?
+      options:
+        - "No"
+        - Yes, from ESJavadex's Claude Terminal Pro
+        - Yes, from this project's app before 3.0.0
+    validations:
+      required: true
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the panel
+        2. …
+  - type: textarea
+    id: app_log
+    attributes:
+      label: App log
+      description: Settings → Apps → Claude Workbench → Log. Paste the part around the problem.
+      render: shell
+  - type: textarea
+    id: options
+    attributes:
+      label: App configuration
+      description: Settings → Apps → Claude Workbench → Configuration → ⋮ → Edit in YAML (leave out anything private).
+      render: yaml
