@@ -1,5 +1,35 @@
 # Sitzungsstand
 
+## 2026-10-07 (4) — Umbenennung in Claude Workbench: Spec + Plan
+
+### Stand
+- GitHub aufgeräumt: `main` gepusht (`fca0da7`), 9 gemergte Remote-Branches
+  und 10 lokale gelöscht; `git ls-remote --heads origin` → nur `main`.
+- Spec `docs/specs/2026-10-07-claude-workbench-rename-design.md` und Plan
+  `docs/plans/2026-10-07-claude-workbench-rename.md` vom User freigegeben,
+  auf Branch `feat/claude-workbench` (lokal, nicht gepusht; `bcfe8c8`,
+  `4bd4928`). Noch keine Code-Änderung.
+- Bestätigtes Logo: `docs/plans/2026-10-07-claude-workbench-logo-preview.png`.
+
+### Verworfen
+- Nur Anzeigename ändern (User will eigenen Slug), Übergangsversion der alten
+  App, nachgezeichneter Funke (User wählte das Original), Ordner behalten.
+
+### Fallen
+- Nach dem Merge zeigt der alte HA-Repository-Eintrag per GitHub-Weiterleitung
+  schon Claude Workbench → zweimal im Store bis zum Entfernen des alten
+  Eintrags (erst möglich nach Deinstallation der alten App).
+- Push meldet `git: 'credential-manager-core' is not a git command` —
+  harmlos, Push klappt trotzdem.
+
+### Nächste Schritte
+- Plan ab Task 1 umsetzen (`docs/plans/2026-10-07-claude-workbench-rename.md`).
+- Danach Folgepunkte im Memory `claude-code-ha-followups` (3, 7, 15).
+
+### Empfohlene Skills
+- `superpowers:executing-plans` oder `superpowers:subagent-driven-development`,
+  pro Task `superpowers:test-driven-development`.
+
 ## 2026-10-07 (3) — Release 2.3.4 (Folgepunkte 9, 13, 14; Prod nachgezogen)
 
 ### Stand
