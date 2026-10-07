@@ -58,4 +58,29 @@ grep -q "^warning|.*Proxmox" "$log" || fail "health check warning lacks the Prox
 CPU_CHECK_ARCH=x86_64 CPU_CHECK_CPUINFO="$v2" check_cpu_compatibility
 ! grep -q '^warning|' "$log" || fail "x86-64-v2 must not warn: $(cat "$log")"
 
+# --- auto-launch in run.sh ---
+
+bashio::config() {
+    case "$1" in
+        auto_launch_claude) printf '%s\n' true ;;
+        *) printf '%s\n' "${2:-}" ;;
+    esac
+}
+# shellcheck disable=SC2034  # read by the sourced run.sh
+CLAUDE_RUN_SH_SKIP_MAIN=true
+# shellcheck source=/dev/null
+source "$repo_root/claude-workbench/run.sh"
+
+: > "$log"
+cmd=$(CPU_CHECK_ARCH=x86_64 CPU_CHECK_CPUINFO="$kvm64" get_claude_launch_command)
+case "$cmd" in
+    *"/usr/local/bin/claude "*|*"/usr/local/bin/claude") fail "auto-launch still starts Claude on kvm64: $cmd" ;;
+esac
+grep -q '^warning|.*cannot run on this CPU' "$log" || fail "auto-launch did not log why Claude is not started"
+cmd=$(CPU_CHECK_ARCH=x86_64 CPU_CHECK_CPUINFO="$v2" get_claude_launch_command)
+case "$cmd" in
+    *"/usr/local/bin/claude"*) ;;
+    *) fail "auto-launch must start Claude on x86-64-v2: $cmd" ;;
+esac
+
 echo "cpu-check suite passed"
