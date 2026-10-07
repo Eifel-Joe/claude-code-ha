@@ -92,6 +92,7 @@ for arg in "\$@"; do
     prev="\$arg"
 done
 if [ -n "\$out" ]; then
+    [ "\${FAKE_DL_STATUS:-0}" -eq 0 ] || exit "\$FAKE_DL_STATUS"
     # A runnable script over persist-install's 1 MB size check (Git Bash only
     # treats files with a shebang as executable).
     { printf '#!/bin/sh\n#'; head -c 1100000 /dev/zero | tr '\\0' x; printf '\necho fake-ha\n'; } > "\$out"
@@ -110,10 +111,18 @@ esac
 
 run_ha_cli() {
     local root="$1"
+    shift
     mkdir -p "$root"
     : > "$curl_log"
     PATH="$fake_bin:$PATH" PERSIST_DATA_ROOT="$root" \
-        bash "$script" --ha-cli --force > "$tmp_dir/out.log" 2>&1
+        bash "$script" --ha-cli "${@---force}" > "$tmp_dir/out.log" 2>&1
+}
+
+# An earlier --force left an old copy in /data/packages/bin.
+make_old_copy() {
+    mkdir -p "$1/packages/bin"
+    printf '#!/bin/sh\necho old-ha\n' > "$1/packages/bin/ha"
+    chmod +x "$1/packages/bin/ha"
 }
 
 if [ -n "$want_arch" ]; then
@@ -138,6 +147,36 @@ if [ -n "$want_arch" ]; then
     if FAKE_API_BODY='{"message":"rate limit"}' run_ha_cli "$tmp_dir/ha-notag"; then
         fail "--ha-cli exited 0 although the API returned no tag_name"
     fi
+    if grep -q 'releases/download' "$curl_log"; then
+        fail "--ha-cli downloaded although the API returned no tag_name: $(cat "$curl_log")"
+    fi
+
+    # --force replaces an old copy with the latest release; that old copy is
+    # exactly what the 4.46.0 pin left behind.
+    make_old_copy "$tmp_dir/ha-replace"
+    if ! FAKE_API_BODY='{"tag_name":"9.9.1"}' run_ha_cli "$tmp_dir/ha-replace"; then
+        fail "--ha-cli --force failed to replace an old copy: $(cat "$tmp_dir/out.log")"
+    fi
+    grep -q "releases/download/9.9.1/ha_${want_arch}" "$curl_log" || \
+        fail "--ha-cli --force did not download the latest release over an old copy: $(cat "$tmp_dir/out.log")"
+    if grep -q 'old-ha' "$tmp_dir/ha-replace/packages/bin/ha"; then
+        fail "--ha-cli --force kept the old copy: $(cat "$tmp_dir/out.log")"
+    fi
+
+    # Without --force an existing copy stays, and nothing goes to the network.
+    make_old_copy "$tmp_dir/ha-keep"
+    run_ha_cli "$tmp_dir/ha-keep" "" || \
+        fail "--ha-cli without --force failed on an existing copy: $(cat "$tmp_dir/out.log")"
+    [ ! -s "$curl_log" ] || fail "--ha-cli without --force called curl on an existing copy: $(cat "$curl_log")"
+    grep -q 'old-ha' "$tmp_dir/ha-keep/packages/bin/ha" || fail "--ha-cli without --force touched the existing copy"
+
+    # A failed download with --force keeps the old copy instead of deleting it.
+    make_old_copy "$tmp_dir/ha-dlfail"
+    if FAKE_API_BODY='{"tag_name":"9.9.1"}' FAKE_DL_STATUS=22 run_ha_cli "$tmp_dir/ha-dlfail"; then
+        fail "--ha-cli --force exited 0 although the download failed"
+    fi
+    grep -q 'old-ha' "$tmp_dir/ha-dlfail/packages/bin/ha" 2>/dev/null || \
+        fail "--ha-cli --force lost the old copy after a failed download"
 fi
 
 echo "persist-install tests passed"

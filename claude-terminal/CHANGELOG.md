@@ -7,8 +7,12 @@
   architecture (the current release is 5.x). That copy lives in
   `/data/packages/bin`, ahead of the image's newer `ha` in PATH, so it silently
   downgraded the CLI. It now installs the latest release, like the image build,
-  and stops with an error if the version lookup fails. If you used `--force`
-  before, remove the old copy with `rm /data/packages/bin/ha`.
+  and stops with an error if the version lookup fails.
+- `--force` now replaces an existing copy (it used to keep it and report
+  "already installed"); a failed download leaves the existing copy in place.
+  If you used `--force` before, run `persist-install --ha-cli --force` again to
+  get the latest release, or remove the copy with `rm /data/packages/bin/ha` to
+  use the one shipped in the image.
 
 ### 🔧 Technical - Cleanup after dropping armv7
 - Removed the remaining 32-bit branches at runtime (Claude Code 1.0.128 pin)
