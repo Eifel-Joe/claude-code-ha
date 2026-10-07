@@ -25,7 +25,7 @@
 **Files:**
 - Modify: `tests/test-release-metadata.sh` (vor der letzten Zeile `echo "Release metadata suite passed …"`)
 
-- [ ] **Step 1: Prüfungen einfügen** — direkt vor `echo "Release metadata suite passed (version $config_version)"`:
+- [x] **Step 1: Prüfungen einfügen** — direkt vor `echo "Release metadata suite passed (version $config_version)"`:
 
 ```bash
 # Release versions come from github.com's releases/latest redirect. The REST
@@ -45,7 +45,7 @@ for f in mac-clipboard-monitor.py MAC_CLIPBOARD_MONITOR.md; do
 done
 ```
 
-- [ ] **Step 2: RED prüfen**
+- [x] **Step 2: RED prüfen**
 
 Run: `bash tests/test-release-metadata.sh`
 Expected: Exit 1, Ausgabe enthält die Dockerfile-Zeilen mit `api.github.com` und `FAIL … Dockerfile queries api.github.com`.
@@ -60,7 +60,7 @@ Expected: Exit 1, Ausgabe enthält die Dockerfile-Zeilen mit `api.github.com` un
 - Modify: `tests/test-persist-install.sh:99-215`
 - Modify: `claude-terminal/scripts/persist-install:247-259`
 
-- [ ] **Step 1: Fake-`curl` umstellen** — in `tests/test-persist-install.sh` den Heredoc `cat > "$fake_bin/curl" <<CURL … CURL` (Zeilen 99–115) ersetzen durch:
+- [x] **Step 1: Fake-`curl` umstellen** — in `tests/test-persist-install.sh` den Heredoc `cat > "$fake_bin/curl" <<CURL … CURL` (Zeilen 99–115) ersetzen durch:
 
 ```bash
 cat > "$fake_bin/curl" <<CURL
@@ -95,7 +95,7 @@ Und direkt nach `chmod +x "$fake_bin/curl"` die Ziel-URL als Variable:
 latest_tag_url="https://github.com/home-assistant/cli/releases/tag/9.9.1"
 ```
 
-- [ ] **Step 2: Testfälle umstellen** — im Block `if [ -n "$want_arch" ]; then … fi` (Zeilen 148–215):
+- [x] **Step 2: Testfälle umstellen** — im Block `if [ -n "$want_arch" ]; then … fi` (Zeilen 148–215):
 
   a) Erfolgsfall (Zeilen 149–152) ersetzen:
 
@@ -145,12 +145,12 @@ latest_tag_url="https://github.com/home-assistant/cli/releases/tag/9.9.1"
 
   e) Kontrolle: `grep -n 'FAKE_API' tests/test-persist-install.sh` → keine Treffer.
 
-- [ ] **Step 3: RED prüfen**
+- [x] **Step 3: RED prüfen**
 
 Run: `bash tests/test-persist-install.sh`
 Expected: Exit 1 mit `FAIL (persist-install): --ha-cli failed although releases/latest redirected to a tag: … Could not determine the latest Home Assistant CLI version …` (der alte Code fragt die API, das Fake-`curl` antwortet dort leer).
 
-- [ ] **Step 4: Implementierung** — in `claude-terminal/scripts/persist-install` den Block von `# Latest release, as the Dockerfile does.` bis einschließlich zum schließenden `fi` der `[ -z "$HA_VERSION" ]`-Prüfung (Zeilen 247–259) ersetzen durch:
+- [x] **Step 4: Implementierung** — in `claude-terminal/scripts/persist-install` den Block von `# Latest release, as the Dockerfile does.` bis einschließlich zum schließenden `fi` der `[ -z "$HA_VERSION" ]`-Prüfung (Zeilen 247–259) ersetzen durch:
 
 ```bash
     # Latest release, as the Dockerfile does. A pinned version here (kept for
@@ -178,7 +178,7 @@ Expected: Exit 1 mit `FAIL (persist-install): --ha-cli failed although releases/
     fi
 ```
 
-- [ ] **Step 5: GREEN prüfen**
+- [x] **Step 5: GREEN prüfen**
 
 Run: `bash tests/test-persist-install.sh`
 Expected: `persist-install tests passed`, Exit 0.
@@ -186,12 +186,12 @@ Expected: `persist-install tests passed`, Exit 0.
 Run: `grep -n 'api\.github\.com' claude-terminal/scripts/persist-install`
 Expected: keine Ausgabe.
 
-- [ ] **Step 6: ShellCheck**
+- [x] **Step 6: ShellCheck**
 
 Run: `shellcheck -S warning -e SC1008,SC1007,SC2155 -x claude-terminal/scripts/persist-install tests/test-persist-install.sh`
 Expected: keine Ausgabe, Exit 0.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add claude-terminal/scripts/persist-install tests/test-persist-install.sh
@@ -213,7 +213,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 Nicht lokal baubar (kein docker/podman/hadolint). Prüfkriterium vorab: (1) Schutztest aus Task 1 grün für das Dockerfile; (2) in der CI zeigt das Build-Log für amd64 und aarch64 `Installing Home Assistant CLI 5.` und `Installing GitHub CLI v2.`; Hadolint-Job grün.
 
-- [ ] **Step 1: HA-CLI-Block ersetzen** — von `# Install Home Assistant CLI (ha command), latest release.` bis `echo "Home Assistant CLI ${HA_VERSION} installed successfully"`:
+- [x] **Step 1: HA-CLI-Block ersetzen** — von `# Install Home Assistant CLI (ha command), latest release.` bis `echo "Home Assistant CLI ${HA_VERSION} installed successfully"`:
 
 ```dockerfile
 # Install Home Assistant CLI (ha command), latest release. Its asset names use
@@ -233,7 +233,7 @@ RUN HA_ARCH=$(cat /etc/addon-arch) && \
     echo "Home Assistant CLI ${HA_VERSION} installed successfully"
 ```
 
-- [ ] **Step 2: gh-Block ersetzen** — von `# Install GitHub CLI (gh command), latest release.` bis `echo "GitHub CLI v${GH_VERSION} installed successfully"`:
+- [x] **Step 2: gh-Block ersetzen** — von `# Install GitHub CLI (gh command), latest release.` bis `echo "GitHub CLI v${GH_VERSION} installed successfully"`:
 
 ```dockerfile
 # Install GitHub CLI (gh command), latest release; tag from the releases/latest
@@ -257,7 +257,7 @@ RUN case "$(cat /etc/addon-arch)" in \
     echo "GitHub CLI v${GH_VERSION} installed successfully"
 ```
 
-- [ ] **Step 3: Lokal prüfen, was geht**
+- [x] **Step 3: Lokal prüfen, was geht**
 
 Run: `grep -n 'api\.github\.com\|jq -r' claude-terminal/Dockerfile`
 Expected: keine Treffer.
@@ -268,7 +268,7 @@ for r in home-assistant/cli cli/cli; do u=$(curl -fsSL -o /dev/null -w '%{url_ef
 ```
 Expected: `home-assistant/cli -> 5.5.0` (oder neuer), `cli/cli -> v2.102.0` (oder neuer).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add claude-terminal/Dockerfile
@@ -289,18 +289,18 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Delete: `mac-clipboard-monitor.py`, `MAC_CLIPBOARD_MONITOR.md`
 - Modify: `DEVELOPMENT.md:189-196`
 
-- [ ] **Step 1: Löschen**
+- [x] **Step 1: Löschen**
 
 ```bash
 git rm -q mac-clipboard-monitor.py MAC_CLIPBOARD_MONITOR.md
 ```
 
-- [ ] **Step 2: Verweise prüfen**
+- [x] **Step 2: Verweise prüfen**
 
 Run: `git grep -n -i 'mac-clipboard\|MAC_CLIPBOARD' -- . ':!docs/'`
 Expected: keine Treffer.
 
-- [ ] **Step 3: DEVELOPMENT.md** — Abschnitt „Port Already In Use“ ersetzen:
+- [x] **Step 3: DEVELOPMENT.md** — Abschnitt „Port Already In Use“ ersetzen:
 
 ````markdown
 #### Port Already In Use
@@ -313,12 +313,12 @@ podman run -d --name test-claude-dev -p 7682:7680 -v /tmp/test-config:/config -v
 Run: `grep -n 'sudo\|kill -9' DEVELOPMENT.md`
 Expected: keine Treffer.
 
-- [ ] **Step 4: Schutztests grün**
+- [x] **Step 4: Schutztests grün**
 
 Run: `bash tests/test-release-metadata.sh`
 Expected: `Release metadata suite passed (version 2.3.3)`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add tests/test-release-metadata.sh DEVELOPMENT.md
@@ -342,7 +342,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 Prüfkriterium (Test kann seine eigene Aufräumarbeit nicht sinnvoll prüfen): Anzahl `mig-*` unter `.tmp/` ist vor und nach einem Lauf gleich.
 
-- [ ] **Step 1: Ausgangslage messen (RED)**
+- [x] **Step 1: Ausgangslage messen (RED)**
 
 ```bash
 export TMPDIR=/d/Entwicklung/Claude-Code-HA/.tmp TMP='D:\Entwicklung\Claude-Code-HA\.tmp' TEMP='D:\Entwicklung\Claude-Code-HA\.tmp'
@@ -352,7 +352,7 @@ after=$(ls -d .tmp/mig-* 2>/dev/null | wc -l); echo "before=$before after=$after
 ```
 Expected: alle Tests `pass`, `after` > `before` (Reste bleiben liegen).
 
-- [ ] **Step 2: Implementierung** — Zeile 12 `function tmp() { … }` ersetzen durch:
+- [x] **Step 2: Implementierung** — Zeile 12 `function tmp() { … }` ersetzen durch:
 
 ```js
 // Every fixture directory is removed once the file's tests have run; they
@@ -368,7 +368,7 @@ test.after(() => {
 });
 ```
 
-- [ ] **Step 3: GREEN messen**
+- [x] **Step 3: GREEN messen**
 
 ```bash
 rm -rf .tmp/mig-*
@@ -377,7 +377,7 @@ ls -d .tmp/mig-* 2>/dev/null | wc -l
 ```
 Expected: `# fail 0`, Anzahl `mig-*` = `0`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tests/test-app-migration.js
@@ -396,7 +396,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `claude-terminal/config.yaml` (`version: "2.3.4"`), `README.md:3` (Badge `version-2.3.4-`), `claude-terminal/CHANGELOG.md` (oben)
 - Create: `docs/release-notes-2.3.4.md`
 
-- [ ] **Step 1: RED** — nur CHANGELOG-Abschnitt oben einfügen (nach `# Changelog`):
+- [x] **Step 1: RED** — nur CHANGELOG-Abschnitt oben einfügen (nach `# Changelog`):
 
 ```markdown
 ## 2.3.4
@@ -424,12 +424,12 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 Run: `bash tests/test-release-metadata.sh`
 Expected: `FAIL … newest CHANGELOG entry is '2.3.4' but config.yaml is at '2.3.3'`.
 
-- [ ] **Step 2: GREEN** — `config.yaml` `version: "2.3.4"`, README-Badge `version-2.3.4-`.
+- [x] **Step 2: GREEN** — `config.yaml` `version: "2.3.4"`, README-Badge `version-2.3.4-`.
 
 Run: `bash tests/test-release-metadata.sh`
 Expected: `Release metadata suite passed (version 2.3.4)`.
 
-- [ ] **Step 3: Release-Notes** `docs/release-notes-2.3.4.md`:
+- [x] **Step 3: Release-Notes** `docs/release-notes-2.3.4.md`:
 
 ```markdown
 ## HA CLI and GitHub CLI lookups no longer hit GitHub's API limit
@@ -447,7 +447,7 @@ The image build and `persist-install --ha-cli` asked GitHub's REST API for the l
 Full details: [CHANGELOG](https://github.com/Eifel-Joe/claude-code-ha/blob/main/claude-terminal/CHANGELOG.md).
 ```
 
-- [ ] **Step 4: Volle lokale Suite + ShellCheck + EOL**
+- [x] **Step 4: Volle lokale Suite + ShellCheck + EOL**
 
 ```bash
 export TMPDIR=/d/Entwicklung/Claude-Code-HA/.tmp TMP='D:\Entwicklung\Claude-Code-HA\.tmp' TEMP='D:\Entwicklung\Claude-Code-HA\.tmp'
@@ -461,7 +461,7 @@ git ls-files --eol | grep -c "crlf\|mixed"
 ```
 Expected: alle Suiten „passed“/`# fail 0`, ShellCheck ohne Ausgabe, EOL `0`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add claude-terminal/config.yaml README.md claude-terminal/CHANGELOG.md docs/release-notes-2.3.4.md
