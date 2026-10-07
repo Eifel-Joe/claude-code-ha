@@ -57,8 +57,10 @@ Image: Node v22.23.2 (App-Log HA-Test 2026-10-07), CI: Node 22, lokal Node 24.
   - RED: neuer Test startet den Dienst, schickt eine HTTP-Anfrage und eine
     WebSocket-Verbindung durch `/terminal` und verlangt, dass stderr keine
     `DeprecationWarning` und kein `DEP0060` enthält.
-  - Bestehende 9 Tests (HTTP-Proxy, WebSocket als erste Anfrage, Fehlerfall …)
-    bleiben grün.
+  - Bestehende 9 Tests (HTTP-Proxy, WebSocket als erste Anfrage …) bleiben
+    grün. Vorab neue Schutztests (beim Planen ergänzt — einen Fehlerfall-Test
+    gab es noch nicht): Pfad ohne `/terminal` bei HTTP und WebSocket, 502
+    „Failed to connect to terminal“ bei nicht erreichbarem ttyd.
 - Metadaten-Test: Lockfile enthält kein `"node_modules/http-proxy"`.
 
 ### 2. `map` in `config.yaml`
