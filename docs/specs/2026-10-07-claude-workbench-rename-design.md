@@ -40,7 +40,7 @@ bewusst für das Original entschieden („im schlimmsten Fall müssen wir es
 - Dockerfile-Labels: `org.opencontainers.image.title="Home Assistant App:
   Claude Workbench"`, `…source` auf das neue Repo.
 - Logo: aus dem bisherigen `logo.png` (Original-Funke) und `>_` im
-  Terminalfenster (Vorschau `.tmp/logo-preview.png`, im Chat bestätigt) neu
+  Terminalfenster (Vorschau `docs/plans/2026-10-07-claude-workbench-logo-preview.png`, im Chat bestätigt) neu
   erzeugt: `icon.png` 128×128 und `logo.png`. Das Erzeugungsskript liegt im
   Repo (`tools/make-logo.py`, braucht Pillow, läuft nur bei Logo-Änderungen
   von Hand), damit das Logo reproduzierbar bleibt.
