@@ -14,7 +14,8 @@
   passed“, Image-Service healthy; Picker (User-Screenshot) zeigt
   „Update Claude Code (2.1.292, up to date)“, Update über Punkt 7 läuft,
   Claude startet. CPU-Zweig nur per Unit-Test (HA-Test auf `host`).
-- HA-Prod: noch 3.1.1 — Update startet der User.
+- HA-Prod 3.1.2 (Update durch User, 15:20:08): Backup vorher, Log „CPU
+  meets …“, Python-Pakete da, Image-Service healthy, keine neuen Warnungen.
 - Fork-Survey-🟡 alle zurückgestellt (Begründungen im Memory
   `claude-code-ha-followups`): scholarnemo API-Optionen, marcjay HA-MCP
   (SSH/Telegram verworfen), Moulbi Paket-Persistenz (kleine Variante
@@ -33,9 +34,14 @@
   war grün).
 
 ### Nächste Schritte
-- HA-Prod auf 3.1.2 (User), danach Supervisor-/App-Log per MCP prüfen.
-- Remote-Branch `fix/picker-update-label` löschen (Freigabe).
-- Folgepunkte im Memory `claude-code-ha-followups` (7 zurückgestellt, 19).
+- 3.1.3 aus dem heytcass-Original (Remote `heytcass`; Sichtung als
+  Folgepunkt 20 im Memory `claude-code-ha-followups`): `auth_api` entfernen,
+  npm-Cache aus den Backups. Branch `fix/backup-cache-auth-api`. Vor der Spec:
+  npm-Messung im Container auf HA-Test (Befehl im Memory), dann Variante A
+  (Cache nach `/tmp`) oder B (`backup_exclude`) entscheiden. Credits an
+  heytcass (Memory `credit-adopted-ideas`).
+- Danach: Boot-Smoke-Test in der CI, Health-Check mit `claude --version`,
+  Sicherheits-Doku (alles Folgepunkt 20).
 
 ### Empfohlene Skills
 - `task-loop` für den nächsten Folgepunkt.
