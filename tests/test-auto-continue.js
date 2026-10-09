@@ -152,6 +152,50 @@ test('PaneWatcher never plans further than 24 hours ahead', () => {
     assert.equal(w.dueAt, T0 + 24 * 3600000);
 });
 
+// Claude's banners start their line; prose and tool output that mention a
+// rate limit mid-line must not plan a "continue" into an idle Claude.
+test('PaneWatcher ignores a rate limit mentioned in Claude\'s prose', () => {
+    const w = new ac.PaneWatcher();
+    const screen = '● The Shelly API answered HTTP 429 "rate limit reached" - I added a backoff.\n> ';
+    assert.equal(w.observe(screen, T0), null);
+    assert.equal(w.dueAt, null);
+});
+
+test('PaneWatcher ignores a rate limit in a tool\'s error line', () => {
+    const w = new ac.PaneWatcher();
+    assert.equal(w.observe('⎿  Error: rate limit reached\n> ', T0), null);
+    assert.equal(w.dueAt, null);
+});
+
+test('PaneWatcher takes a banner behind Claude\'s output marker', () => {
+    // What `!echo 'Claude usage limit reached. ...'` shows inside Claude.
+    const w = new ac.PaneWatcher();
+    const change = w.observe('⎿  Claude usage limit reached. Resets at 15:00 (UTC)\n> ', T0);
+    assert.equal(change.type, 'scheduled');
+    assert.equal(w.dueAt, Date.UTC(2026, 9, 9, 15, 1, 0));
+});
+
+test('PaneWatcher takes the "out of extra usage" banner', () => {
+    const w = new ac.PaneWatcher();
+    const change = w.observe("You're out of extra usage · resets 3pm (UTC)\n> ", T0);
+    assert.equal(change.type, 'scheduled');
+    assert.equal(w.dueAt, Date.UTC(2026, 9, 9, 15, 1, 0));
+});
+
+test('PaneWatcher reads the reset time from the banner, not from tool output', () => {
+    const w = new ac.PaneWatcher();
+    const change = w.observe('5-hour limit reached ∙ resets 3pm (UTC)\n⎿ curl: please try again in 2 seconds\n> ', T0);
+    assert.equal(change.type, 'scheduled');
+    assert.equal(change.matched, '5-hour limit reached');
+    assert.equal(w.dueAt, Date.UTC(2026, 9, 9, 15, 1, 0));
+});
+
+test('PaneWatcher is not misled by "reset" in a shell line', () => {
+    const w = new ac.PaneWatcher();
+    w.observe('5-hour limit reached ∙ resets 3pm (UTC)\n$ git reset 4 files\n> ', T0);
+    assert.equal(w.dueAt, Date.UTC(2026, 9, 9, 15, 1, 0));
+});
+
 // Fake /proc: { pid: 'pid (comm) state ppid pgrp session tty_nr tpgid ...' }
 function makeProc(stats) {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-proc-'));

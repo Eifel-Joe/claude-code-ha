@@ -145,9 +145,28 @@ function parseResetTime(text, nowMs) {
     return m.tz ? nextOccurrenceEpoch(null, hour, m.minute, nowMs) : null;
 }
 
+// The banner text if `line` is one of Claude's limit banners, else null.
+// Claude's banners start their line ("5-hour limit reached…", "Claude usage
+// limit reached…", "You're out of extra usage…", "You've hit your limit…",
+// "Rate limit hit…", "Please try again in 5 hours"), at most behind a frame or
+// output marker (⎿ ● │). detectLimit() matches anywhere, so Claude's prose or
+// a tool's output mentioning a rate limit mid-line would plan a "continue"
+// into an idle Claude. Accepted residual risk: a bare tool line that itself
+// starts with e.g. "Rate limit reached" still counts.
+function bannerMatch(line) {
+    const body = line
+        .replace(/^[^\p{L}\d]+/u, '')
+        .replace(/^(?:Claude(?: AI)?|You.{0,3}re)\s+/i, '');
+    for (const re of LIMIT_PATTERNS) {
+        const m = body.match(re);
+        if (m && m.index === 0) return m[0];
+    }
+    return null;
+}
+
 // Screen lines that carry a limit banner, trimmed.
 function limitLines(text) {
-    return text.split('\n').map((line) => line.trim()).filter((line) => detectLimit(line) !== null);
+    return text.split('\n').map((line) => line.trim()).filter((line) => bannerMatch(line) !== null);
 }
 
 /**
@@ -186,14 +205,16 @@ class PaneWatcher {
         if (sig === this.answeredSig) return null;
         if (this.dueAt !== null && sig === this.pendingSig) return null;
 
-        const resetAt = parseResetTime(text, nowMs);
+        // Banner lines only: "try again in 2 seconds" from curl or a
+        // "git reset 4 files" elsewhere on screen must not move the plan.
+        const resetAt = parseResetTime(lines.join('\n'), nowMs);
         const wanted = resetAt !== null ? resetAt + RESUME_GRACE_MS : nowMs + FALLBACK_DELAY_MS;
         this.dueAt = Math.min(wanted, nowMs + MAX_WAIT_MS);
         this.pendingSig = sig;
         return {
             type: 'scheduled',
             dueAt: this.dueAt,
-            matched: detectLimit(lines[lines.length - 1]),
+            matched: bannerMatch(lines[lines.length - 1]),
             hasResetTime: resetAt !== null,
         };
     }
