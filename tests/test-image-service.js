@@ -30,6 +30,7 @@ const PNG = Buffer.from(
 );
 
 let uploadDir;
+let autoContinueDir;
 let child;
 let ttyd;
 let ttydUpgrades = 0;
@@ -73,6 +74,7 @@ function multipart(fieldName, filename, contentType, body) {
 
 test.before(async () => {
     uploadDir = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-img-'));
+    autoContinueDir = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-ac-'));
     PORT = await freePort();
     TTYD_PORT = await freePort();
 
@@ -105,7 +107,8 @@ test.before(async () => {
             ...process.env,
             IMAGE_SERVICE_PORT: String(PORT),
             TTYD_PORT: String(TTYD_PORT),
-            UPLOAD_DIR: uploadDir
+            UPLOAD_DIR: uploadDir,
+            AUTO_CONTINUE_DIR: autoContinueDir
         },
         stdio: ['ignore', 'pipe', 'pipe']
     });
@@ -122,6 +125,7 @@ test.after(() => {
     if (child) child.kill('SIGKILL');
     if (ttyd) ttyd.close();
     if (uploadDir) fs.rmSync(uploadDir, { recursive: true, force: true });
+    if (autoContinueDir) fs.rmSync(autoContinueDir, { recursive: true, force: true });
 });
 
 test('/health reports ok and the active upload directory', async () => {
@@ -210,6 +214,40 @@ test('the stored extension comes from the MIME type, not the client name', async
         const body = await res.json();
         assert.match(body.filename, expected, `${name} (${type}) stored as ${body.filename}`);
     }
+});
+
+test('/auto-continue reports the switch, off by default', async () => {
+    const res = await fetch(`http://127.0.0.1:${PORT}/auto-continue`);
+    assert.strictEqual(res.status, 200);
+    assert.deepStrictEqual(await res.json(), { enabled: false, scheduled: [], lastSent: null });
+});
+
+test('POST /auto-continue switches it and writes the state file', async () => {
+    const post = (body) => fetch(`http://127.0.0.1:${PORT}/auto-continue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body
+    });
+    let res = await post(JSON.stringify({ enabled: true }));
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual((await res.json()).enabled, true);
+    assert.strictEqual(fs.readFileSync(path.join(autoContinueDir, 'auto-continue'), 'utf8'), 'on\n');
+
+    res = await post(JSON.stringify({ enabled: false }));
+    assert.strictEqual((await res.json()).enabled, false);
+    assert.strictEqual(fs.readFileSync(path.join(autoContinueDir, 'auto-continue'), 'utf8'), 'off\n');
+});
+
+test('POST /auto-continue refuses anything but a boolean', async () => {
+    for (const body of [JSON.stringify({ enabled: 'yes' }), JSON.stringify({}), '{not json']) {
+        const res = await fetch(`http://127.0.0.1:${PORT}/auto-continue`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body
+        });
+        assert.strictEqual(res.status, 400, body);
+    }
+    assert.strictEqual(fs.readFileSync(path.join(autoContinueDir, 'auto-continue'), 'utf8'), 'off\n');
 });
 
 test('/terminal proxies HTTP through to ttyd', async () => {

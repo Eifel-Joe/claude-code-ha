@@ -21,6 +21,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const { createProxyMiddleware } = require('http-proxy-middleware');
+const { createAutoContinue } = require('./auto-continue');
 
 const app = express();
 const PORT = process.env.IMAGE_SERVICE_PORT || 7680;
@@ -104,6 +105,23 @@ app.post('/upload', upload.single('image'), (req, res) => {
         filename: req.file.filename,
         size: req.file.size
     });
+});
+
+// Auto-continue after a usage limit (auto-continue.js): the panel's button
+// reads and flips the switch here; the auto-continue command and run.sh write
+// the same state file.
+const autoContinue = createAutoContinue();
+
+app.get('/auto-continue', (req, res) => {
+    res.json(autoContinue.status());
+});
+
+app.post('/auto-continue', express.json({ limit: '1kb' }), (req, res) => {
+    if (typeof req.body?.enabled !== 'boolean') {
+        return res.status(400).json({ success: false, error: 'enabled must be true or false' });
+    }
+    autoContinue.setEnabled(req.body.enabled);
+    res.json(autoContinue.status());
 });
 
 // Shown in the terminal frame while ttyd is not up yet: run.sh serves the panel
@@ -198,4 +216,5 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log(`Upload directory: ${UPLOAD_DIR}`);
     console.log(`ttyd terminal on port: ${TTYD_PORT}`);
     console.log(`Terminal proxy available at /terminal/`);
+    autoContinue.start();
 });
