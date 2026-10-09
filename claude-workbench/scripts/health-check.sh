@@ -155,12 +155,16 @@ run_diagnostics() {
 
     local errors=0
 
-    check_system_resources || ((errors++))
-    check_directory_permissions || ((errors++))
-    check_node_installation || ((errors++))
-    check_claude_cli || ((errors++))
+    # Count with an assignment: `check || ((errors++))` evaluates to the old
+    # count, 0, on the first failure, so (( )) returned 1 and bashio's errexit
+    # ended the script before the other checks and the summary
+    # (owine/claude-terminal-home-assistant#374; tests/test-health-check.sh).
+    check_system_resources || errors=$((errors + 1))
+    check_directory_permissions || errors=$((errors + 1))
+    check_node_installation || errors=$((errors + 1))
+    check_claude_cli || errors=$((errors + 1))
     check_cpu_compatibility
-    check_network_connectivity || ((errors++))
+    check_network_connectivity || errors=$((errors + 1))
 
     bashio::log.info "========================================="
 
