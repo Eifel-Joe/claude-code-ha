@@ -71,7 +71,6 @@ map:
 hassio_api: true
 hassio_role: manager
 homeassistant_api: true
-auth_api: true
 
 # Service startup configuration
 startup: services
