@@ -24,6 +24,7 @@ const { execFile } = require('child_process');
 const RESUME_GRACE_MS = 60 * 1000;              // send 1 minute after the reset time
 const FALLBACK_DELAY_MS = 30 * 60 * 1000;       // when the message names no time
 const MAX_WAIT_MS = 24 * 60 * 60 * 1000;        // never plan further ahead than this
+const PASSED_RESET_MS = 12 * 60 * 60 * 1000;    // a clock time further ahead has just passed
 const POLL_INTERVAL_MS = 30 * 1000;
 const ENTER_DELAY_MS = 500;                     // let the TUI take the text before Enter
 const TMUX_TIMEOUT_MS = 5000;
@@ -207,7 +208,18 @@ class PaneWatcher {
 
         // Banner lines only: "try again in 2 seconds" from curl or a
         // "git reset 4 files" elsewhere on screen must not move the plan.
-        const resetAt = parseResetTime(lines.join('\n'), nowMs);
+        let resetAt = parseResetTime(lines.join('\n'), nowMs);
+        // The parser rolls a clock time that has passed today to tomorrow.
+        // A banner first seen after its reset (switched on late, or the reset
+        // fell between two polls) would then wait a whole day - on HA-Test
+        // "Resets at 19:46" seen at 19:46:07 was planned for the next day.
+        // Claude's 5-hour limit never resets more than 5 h ahead, so a clock
+        // time more than 12 h away has just passed: send after the grace
+        // minute. Relative waits ("try again in 48 hours") are meant as said.
+        if (resetAt !== null && resetAt - nowMs > PASSED_RESET_MS &&
+                !/try again in \d+/i.test(sig)) {
+            resetAt = nowMs;
+        }
         const wanted = resetAt !== null ? resetAt + RESUME_GRACE_MS : nowMs + FALLBACK_DELAY_MS;
         this.dueAt = Math.min(wanted, nowMs + MAX_WAIT_MS);
         this.pendingSig = sig;
