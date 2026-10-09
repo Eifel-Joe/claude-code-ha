@@ -7,7 +7,8 @@
   limit ("5-hour limit reached ∙ resets 3pm"), the app types `continue` into
   the Claude session one minute after the reset, so a long task goes on
   unattended (mattbsea, mattbsea's heytcass fork, commits `16847c88`,
-  `533ae0ef`, `5924cd08`, `00e22fc0` - his message parser is used as is).
+  `533ae0ef`, `5924cd08`, `00e22fc0` - his message parser is used as is;
+  the app only counts messages at the start of a line).
 - **Switch it at runtime** with the new ⏩ button in the panel header (shows
   off/on and the planned time) or `auto-continue on|off|status` in the
   terminal; after a restart the option applies again.

@@ -7,4 +7,4 @@
 
 **Upgrade notes:** nothing to do. Auto-continue is off until you turn it on.
 
-Both features come from mattbsea's fork of [heytcass/home-assistant-addons](https://github.com/heytcass/home-assistant-addons) (`16847c88`, `533ae0ef`, `5924cd08`, `00e22fc0` for auto-continue, `6e44e41f` for Shift+Enter); his message parser is used as is. Thank you! Full details: [CHANGELOG](https://github.com/Eifel-Joe/claude-workbench/blob/main/claude-workbench/CHANGELOG.md).
+Both features come from mattbsea's fork of [heytcass/home-assistant-addons](https://github.com/heytcass/home-assistant-addons) (`16847c88`, `533ae0ef`, `5924cd08`, `00e22fc0` for auto-continue, `6e44e41f` for Shift+Enter); his message parser is used as is, the app only counts messages at the start of a line. Thank you! Full details: [CHANGELOG](https://github.com/Eifel-Joe/claude-workbench/blob/main/claude-workbench/CHANGELOG.md).

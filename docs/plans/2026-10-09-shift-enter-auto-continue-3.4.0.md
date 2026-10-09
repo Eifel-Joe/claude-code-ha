@@ -1048,7 +1048,7 @@ nur einmal geloggt, Test-Hygiene (`de6fb13e`). Stand: 42 Tests grün. **Für Tas
 - Modify: `claude-workbench/image-service/server.js`
 - Test: `tests/test-image-service.js`
 
-- [ ] **Step 1: Failing tests** – in `tests/test-image-service.js`:
+- [x] **Step 1: Failing tests** – in `tests/test-image-service.js`:
   - neue Variable unter `let uploadDir;`: `let autoContinueDir;`
   - in `test.before` direkt nach `uploadDir = fs.mkdtempSync(…)`:
     `autoContinueDir = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-ac-'));`
@@ -1093,13 +1093,13 @@ test('POST /auto-continue refuses anything but a boolean', async () => {
 });
 ```
 
-- [ ] **Step 2: RED**
+- [x] **Step 2: RED**
 
 Run: `cd claude-workbench/image-service && npm_config_cache='D:/Entwicklung/Claude-Code-HA/.tmp/npm-cache' npm ci && cd ../.. && node --test --test-reporter=tap tests/test-image-service.js`
 Expected: die 3 neuen Tests FAIL (404 bzw. HTML statt JSON); die übrigen 15 wie bisher.
 (`npm ci` nur, falls `node_modules` fehlt.)
 
-- [ ] **Step 3: Implementierung** – in `server.js`:
+- [x] **Step 3: Implementierung** – in `server.js`:
   - nach `const { createProxyMiddleware } = require('http-proxy-middleware');`:
 
 ```js
@@ -1136,12 +1136,12 @@ app.post('/auto-continue', express.json({ limit: '1kb' }), (req, res) => {
   Ungültiges JSON wirft in `express.json` einen Fehler mit `status: 400`; die vorhandene
   Fehler-Middleware antwortet damit (`err.status || 500`).
 
-- [ ] **Step 4: GREEN**
+- [x] **Step 4: GREEN**
 
 Run: `node --test --test-reporter=tap tests/test-image-service.js`
 Expected: 18 Einzeltests ok (unter Windows ggf. der bekannte ECONNRESET-Datei-Fehlschlag; maßgeblich sind die Einzeltests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add claude-workbench/image-service/server.js tests/test-image-service.js
@@ -1158,7 +1158,7 @@ git commit -m "feat: GET/POST /auto-continue in the image service"
 - Create: `tests/test-auto-continue-cmd.sh` (Teil `init_auto_continue`; der Befehl folgt in Task 7)
 - Modify: `tests/test-startup-order.sh`, `tests/run-tests.sh`
 
-- [ ] **Step 1: Failing test** – `tests/test-auto-continue-cmd.sh`:
+- [x] **Step 1: Failing test** – `tests/test-auto-continue-cmd.sh`:
 
 ```bash
 #!/usr/bin/env bash
@@ -1252,12 +1252,12 @@ den Schritt `init_auto_continue` ergänzen und nach der Prüfung `install_tools`
 "$tests_dir/test-auto-continue-cmd.sh"
 ```
 
-- [ ] **Step 2: RED**
+- [x] **Step 2: RED**
 
 Run: `git add tests/test-auto-continue-cmd.sh && git update-index --chmod=+x tests/test-auto-continue-cmd.sh && bash tests/test-auto-continue-cmd.sh; bash tests/test-startup-order.sh`
 Expected: `FAIL (auto-continue): run.sh has no init_auto_continue` und Startup-order FAIL für `init_auto_continue`.
 
-- [ ] **Step 3: Implementierung**
+- [x] **Step 3: Implementierung**
 
 `run.sh`, nach Zeile 25 (`IMAGE_UPLOAD_DIR="${IMAGE_UPLOAD_DIR:-/data/images}"`):
 
@@ -1313,12 +1313,12 @@ unter `schema:` nach `image_retention_days: int(0,3650)?` → `  auto_continue: 
     description: "Meldet Claude ein Nutzungslimit, tippt die App eine Minute nach dem Reset „continue“ in die Claude-Sitzung. Claude arbeitet dann ohne Aufsicht weiter, auch mit „Ohne Rückfragen ausführen“. Zur Laufzeit mit dem Knopf ⏩ oder `auto-continue on|off` umschaltbar; nach einem Neustart gilt wieder diese Einstellung."
 ```
 
-- [ ] **Step 4: GREEN**
+- [x] **Step 4: GREEN**
 
 Run: `bash tests/test-auto-continue-cmd.sh && bash tests/test-startup-order.sh && bash tests/test-release-metadata.sh`
 Expected: `Auto-continue suite passed`, `Startup order suite passed`, Release-Metadata ohne FAIL.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add claude-workbench/run.sh claude-workbench/config.yaml claude-workbench/translations/en.yaml claude-workbench/translations/de.yaml tests/test-auto-continue-cmd.sh tests/test-startup-order.sh tests/run-tests.sh
@@ -1334,7 +1334,7 @@ git commit -m "feat: option auto_continue sets the switch on every start"
 - Modify: `claude-workbench/Dockerfile:146-149`
 - Modify: `tests/test-auto-continue-cmd.sh`, `tests/test-release-metadata.sh`
 
-- [ ] **Step 1: Failing tests** – in `tests/test-auto-continue-cmd.sh` vor `echo "Auto-continue suite passed"` einfügen:
+- [x] **Step 1: Failing tests** – in `tests/test-auto-continue-cmd.sh` vor `echo "Auto-continue suite passed"` einfügen:
 
 ```bash
 # --- the auto-continue command ---
@@ -1377,12 +1377,12 @@ grep -qE '^\s*(RUN |&& )?ln -sf /opt/scripts/auto-continue\.sh /usr/local/bin/au
     fail "Dockerfile does not link /usr/local/bin/auto-continue to /opt/scripts/auto-continue.sh"
 ```
 
-- [ ] **Step 2: RED**
+- [x] **Step 2: RED**
 
 Run: `bash tests/test-auto-continue-cmd.sh; bash tests/test-release-metadata.sh`
 Expected: `FAIL (auto-continue): scripts/auto-continue.sh is missing` und der Dockerfile-FAIL.
 
-- [ ] **Step 3: Implementierung** – `claude-workbench/scripts/auto-continue.sh`:
+- [x] **Step 3: Implementierung** – `claude-workbench/scripts/auto-continue.sh`:
 
 ```bash
 #!/usr/bin/env bash
@@ -1451,7 +1451,7 @@ esac
 # auto-continue after a usage limit (mattbsea's fork, commit 00e22fc0)
 ```
 
-- [ ] **Step 4: GREEN**
+- [x] **Step 4: GREEN**
 
 Run: `bash tests/test-auto-continue-cmd.sh && bash tests/test-release-metadata.sh`
 Expected: `Auto-continue suite passed`, Release-Metadata ohne FAIL.
@@ -1459,7 +1459,7 @@ Expected: `Auto-continue suite passed`, Release-Metadata ohne FAIL.
 ShellCheck wie die CI (lokal, falls installiert; sonst in der CI):
 `shellcheck -S warning -e SC1008,SC1007,SC2155 -x claude-workbench/run.sh claude-workbench/scripts/*.sh claude-workbench/scripts/persist-install tests/*.sh`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add claude-workbench/scripts/auto-continue.sh claude-workbench/Dockerfile tests/test-auto-continue-cmd.sh tests/test-release-metadata.sh
@@ -1475,7 +1475,7 @@ git commit -m "feat: auto-continue command switches it at runtime"
 - Create: `tests/test-workbench-ui.js`
 - Modify: `tests/run-tests.sh`
 
-- [ ] **Step 1: Failing test** – `tests/test-workbench-ui.js`:
+- [x] **Step 1: Failing test** – `tests/test-workbench-ui.js`:
 
 ```js
 #!/usr/bin/env node
@@ -1579,12 +1579,12 @@ test('autoContinueLabel shows off, on, the planned time and unknown', () => {
 node --test "$tests_dir/test-workbench-ui.js"
 ```
 
-- [ ] **Step 2: RED**
+- [x] **Step 2: RED**
 
 Run: `node --test --test-reporter=tap tests/test-workbench-ui.js`
 Expected: FAIL, `Cannot find module …/workbench-ui.js`
 
-- [ ] **Step 3: Implementierung** – `claude-workbench/image-service/public/workbench-ui.js`:
+- [x] **Step 3: Implementierung** – `claude-workbench/image-service/public/workbench-ui.js`:
 
 ```js
 /**
@@ -1666,12 +1666,12 @@ Expected: FAIL, `Cannot find module …/workbench-ui.js`
 });
 ```
 
-- [ ] **Step 4: GREEN**
+- [x] **Step 4: GREEN**
 
 Run: `node --test --test-reporter=tap tests/test-workbench-ui.js`
 Expected: `# pass 5`, `# fail 0`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add claude-workbench/image-service/public/workbench-ui.js tests/test-workbench-ui.js tests/run-tests.sh
@@ -1691,7 +1691,7 @@ um; (c) am Handy (≤ 700 px) zeigt er `off`/`on`/Uhrzeit statt des langen Texts
 - Modify: `claude-workbench/image-service/public/index.html`
 - Test: `tests/test-image-service.js`
 
-- [ ] **Step 1: Failing test** – in `tests/test-image-service.js` nach `test('the static UI is served at the root', …)`:
+- [x] **Step 1: Failing test** – in `tests/test-image-service.js` nach `test('the static UI is served at the root', …)`:
 
 ```js
 test('the UI loads the panel helpers and has the auto-continue button', async () => {
@@ -1705,7 +1705,7 @@ test('the UI loads the panel helpers and has the auto-continue button', async ()
 
 Run: `node --test --test-reporter=tap tests/test-image-service.js` → dieser Test FAIL.
 
-- [ ] **Step 2: Knopf** – in `index.html` vor `<button id="link-btn" …>`:
+- [x] **Step 2: Knopf** – in `index.html` vor `<button id="link-btn" …>`:
 
 ```html
                 <button id="auto-continue-btn" class="header-btn" title="Auto-continue after a usage limit">
@@ -1715,7 +1715,7 @@ Run: `node --test --test-reporter=tap tests/test-image-service.js` → dieser Te
                 </button>
 ```
 
-- [ ] **Step 3: CSS** – nach der Regel `#voice-btn.recording { … }`:
+- [x] **Step 3: CSS** – nach der Regel `#voice-btn.recording { … }`:
 
 ```css
         #auto-continue-btn.auto-on {
@@ -1745,7 +1745,7 @@ Run: `node --test --test-reporter=tap tests/test-image-service.js` → dieser Te
             }
 ```
 
-- [ ] **Step 4: Skripte** – `<script src="terminal-clipboard.js"></script>` ergänzen zu:
+- [x] **Step 4: Skripte** – `<script src="terminal-clipboard.js"></script>` ergänzen zu:
 
 ```html
     <script src="terminal-clipboard.js"></script>
@@ -1814,12 +1814,12 @@ Run: `node --test --test-reporter=tap tests/test-image-service.js` → dieser Te
         setInterval(refreshAutoContinue, 30000);
 ```
 
-- [ ] **Step 5: GREEN**
+- [x] **Step 5: GREEN**
 
 Run: `node --test --test-reporter=tap tests/test-image-service.js && node tests/test-terminal-clipboard.js`
 Expected: alle Einzeltests ok.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add claude-workbench/image-service/public/index.html tests/test-image-service.js
@@ -1836,10 +1836,10 @@ git commit -m "feat: auto-continue button in the panel header, Shift+Enter wired
 - Create: `docs/release-notes-3.4.0.md`
 - Modify: `docs/FORK-SURVEY-heytcass.md` (Tabelle „Umsetzungsstand“)
 
-- [ ] **Step 1: Version** – `config.yaml` `version: "3.3.0"` → `"3.4.0"`; Repo-`README.md` Badge
+- [x] **Step 1: Version** – `config.yaml` `version: "3.3.0"` → `"3.4.0"`; Repo-`README.md` Badge
   `version-3.3.0` → `version-3.4.0`. `bash tests/test-release-metadata.sh` → kein FAIL.
 
-- [ ] **Step 2: CHANGELOG** – oben in `claude-workbench/CHANGELOG.md` nach `# Changelog`:
+- [x] **Step 2: CHANGELOG** – oben in `claude-workbench/CHANGELOG.md` nach `# Changelog`:
 
 ```markdown
 ## 3.4.0
@@ -1863,7 +1863,7 @@ git commit -m "feat: auto-continue button in the panel header, Shift+Enter wired
   terminal) (mattbsea, mattbsea's heytcass fork, commit `6e44e41f`).
 ```
 
-- [ ] **Step 3: DOCS.md** – nach dem Abschnitt `### Pasted Images` (vor `**Example Configuration**:`):
+- [x] **Step 3: DOCS.md** – nach dem Abschnitt `### Pasted Images` (vor `**Example Configuration**:`):
 
 ```markdown
 ### Auto-Continue After a Usage Limit
@@ -1883,21 +1883,21 @@ git commit -m "feat: auto-continue button in the panel header, Shift+Enter wired
   Wo `DOCS.md` Tastatur/Terminal-Bedienung beschreibt (Abschnitt mit „Click the link“, ca. Zeile 92),
   einen Punkt ergänzen: `- **Shift+Enter** inserts a new line in Claude's input instead of sending it.`
 
-- [ ] **Step 4: App-README** – in `claude-workbench/README.md` in der Feature-Liste je eine Zeile für
+- [x] **Step 4: App-README** – in `claude-workbench/README.md` in der Feature-Liste je eine Zeile für
   Shift+Enter und Auto-Continue (opt-in) ergänzen; im Abschnitt zur Sicherheit (enthält
   „every signed-in Home Assistant user“) einen Satz: „Auto-continue (off by default) lets Claude go on
   unattended after a usage limit; with `dangerously_skip_permissions` that includes commands.“
 
-- [ ] **Step 5: Release-Notes** – `docs/release-notes-3.4.0.md` im Stil von
+- [x] **Step 5: Release-Notes** – `docs/release-notes-3.4.0.md` im Stil von
   `docs/release-notes-3.3.0.md` (zuerst lesen), Titel „3.4.0 — Auto-continue after a usage limit,
   Shift+Enter“, Inhalt aus dem CHANGELOG plus Abschnitt „Upgrade notes“: nichts zu tun, Auto-Continue
   ist aus; Credits wie im CHANGELOG.
 
-- [ ] **Step 6: Survey** – in `docs/FORK-SURVEY-heytcass.md` Tabelle „Umsetzungsstand“ eine Zeile
+- [x] **Step 6: Survey** – in `docs/FORK-SURVEY-heytcass.md` Tabelle „Umsetzungsstand“ eine Zeile
   einfügen `| Shift+Enter, Auto-Continue nach Usage-Limit (Knopf, Befehl, Option) | mattbsea | ✅ 3.4.0 |`
   und in der Sammelzeile „offen“ „Shift+Enter (mattbsea), Auto-Continue (mattbsea)“ streichen.
 
-- [ ] **Step 7: Prüfen und committen**
+- [x] **Step 7: Prüfen und committen**
 
 Run: `bash tests/test-release-metadata.sh && git ls-files --eol | grep -c "crlf\|mixed"`
 Expected: kein FAIL, `0`.
@@ -1908,6 +1908,15 @@ git commit -m "docs: 3.4.0 - auto-continue and Shift+Enter, credits to mattbsea"
 ```
 
 ---
+
+### Nachtrag Abschluss-Review (Tasks 5–10)
+
+Behoben: zwei Test-Server in `test-image-service.js` schrieben ohne `AUTO_CONTINUE_DIR` nach
+`/run/claude-workbench` (unter Windows `D:\run`, gelöscht); Knopf startet mit `data-enabled=""`
+(Klick vor der ersten Antwort schaltet nichts); `auto-continue on|off` löscht den veralteten
+Bericht des Service; Kommentar in `run.sh` zu `/run` präzisiert; CHANGELOG/Release-Notes nennen
+die Zeilenanfang-Regel neben dem übernommenen Parser. Offen für HA-Test: `window.term.input`
+vorhanden, `comm` des echten Claude-Prozesses = `claude` (laut `ps` auf HA-Test ja).
 
 ### Task 11: Gesamtprüfung, Review, CI, HA-Test
 
