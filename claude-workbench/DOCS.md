@@ -148,7 +148,7 @@ program in the terminal cannot exfiltrate your clipboard.
 ### Pasted Images
 - **Default**: `image_retention_days: 30`
 - Images you paste or drop into the panel are stored in `/data/images`, which is part of every backup of the app
-- On start, the app deletes its own pasted images older than this many days; `0` keeps them all
+- On start, the app deletes its own pasted images older than this many days (up to 3650); `0` keeps them all
 
 **Example Configuration**:
 ```yaml

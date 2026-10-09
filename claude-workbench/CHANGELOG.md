@@ -3,18 +3,21 @@
 ## 3.2.0
 
 ### ✨ New Feature - Old pasted images are cleaned up
-- **New option `image_retention_days`** (default 30, `0` keeps everything):
-  images pasted or dropped into the panel land in `/data/images`, which is
-  part of every backup of the app, and nothing ever removed them. On start the
-  app now deletes its own pasted images older than that (owine,
+- **New option `image_retention_days`** (default 30, up to 3650, `0` keeps
+  everything): images pasted or dropped into the panel land in `/data/images`,
+  which is part of every backup of the app, and nothing ever removed them. On
+  start the app now deletes its own pasted images older than that — so the
+  first start after this update removes those older than 30 days (owine,
   owine/claude-terminal-home-assistant#380; also suggested by msvinth and
   mattbsea).
 
 ### 🐛 Bug Fix - Panel answers while the app is still starting
-- The panel only came up after Claude Code's update and the package installs;
-  until then Home Assistant showed a bare 502 (23 s on a real install). It now
-  comes up right away, and the terminal shows "Claude Workbench is starting…"
-  until it is ready (owine, owine/claude-terminal-home-assistant#380).
+- The panel only came up after the startup health check (whose network probes
+  can take up to 45 s when offline), Claude Code's update and the package
+  installs; until then Home Assistant showed a bare 502 (23 s on a real
+  install). It now comes up before all of these, and the terminal shows
+  "Claude Workbench is starting…" until it is ready (owine,
+  owine/claude-terminal-home-assistant#380).
 
 ### 🐛 Bug Fix - Health check runs every check
 - The startup health check stopped at the first failing check, so the rest of
@@ -24,8 +27,9 @@
 ### 🐛 Bug Fix - Shipped commands and skills stay current
 - The `/install`, `/install-python` and `/list-packages` commands and the
   persistent-package skill were only copied into a new install, so existing
-  installs never got updates. They are now refreshed on every start; your own
-  files in `~/.claude` stay untouched.
+  installs never got updates. They are now refreshed on every start, which
+  overwrites edits to these four files; everything else in `~/.claude` (your
+  own commands and skills, logins, settings) stays untouched.
 
 ### 🔒 Security - Safer upload names, no leftover login code
 - Uploaded images get their extension from the image type, not from the file
