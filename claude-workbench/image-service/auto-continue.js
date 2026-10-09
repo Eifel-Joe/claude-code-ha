@@ -315,12 +315,15 @@ function createAutoContinue(options = {}) {
     }
 
     function status() {
-        const scheduled = [...watchers.entries()]
+        const enabled = isEnabled();
+        // The command's "off" writes only the state file; until the next
+        // poll drops them, the plans are still in memory but will not be sent.
+        const scheduled = !enabled ? [] : [...watchers.entries()]
             .filter(([, w]) => w.dueAt !== null)
             .map(([pane, w]) => ({ pane, at: new Date(w.dueAt).toISOString() }))
             .sort((a, b) => a.at.localeCompare(b.at));
         return {
-            enabled: isEnabled(),
+            enabled,
             scheduled,
             lastSent: lastSent && { pane: lastSent.pane, at: new Date(lastSent.at).toISOString() },
         };
@@ -342,16 +345,20 @@ function createAutoContinue(options = {}) {
     }
 
     function applyEnabled(enabled) {
-        if (enabled === lastEnabled) return;
-        if (enabled) {
-            log('on');
-        } else {
-            if (lastEnabled === true) log('off');
-            for (const [pane, w] of watchers) {
-                if (w.dueAt !== null) log(`not sent to pane ${pane}: switched off`);
+        if (enabled !== lastEnabled) {
+            if (enabled) {
+                log('on');
+            } else {
+                if (lastEnabled === true) log('off');
+                for (const [pane, w] of watchers) {
+                    if (w.dueAt !== null) log(`not sent to pane ${pane}: switched off`);
+                }
             }
-            watchers.clear();
         }
+        // Cleared on every "off", not only on the change: a poll that was
+        // already waiting for tmux when the switch went off must not leave a
+        // plan behind that a later "on" would send.
+        if (!enabled) watchers.clear();
         lastEnabled = enabled;
     }
 
@@ -391,8 +398,12 @@ function createAutoContinue(options = {}) {
         watcher.done();
     }
 
+    // setEnabled() may run while this awaits tmux; it sets lastEnabled at
+    // once, so each await is followed by a check (no plan, log or send after
+    // "off").
     async function checkPanes() {
         const panes = await listPanes();
+        if (lastEnabled !== true) return;
         const ids = new Set(panes.map((p) => p.id));
         for (const [pane, w] of watchers) {
             if (ids.has(pane)) continue;
@@ -406,6 +417,7 @@ function createAutoContinue(options = {}) {
             } catch {
                 continue;
             }
+            if (lastEnabled !== true) return;
             if (!watchers.has(pane.id)) watchers.set(pane.id, new PaneWatcher());
             const w = watchers.get(pane.id);
             const t = now();
@@ -423,7 +435,9 @@ function createAutoContinue(options = {}) {
                 w.done();
                 continue;
             }
-            if (!isEnabled()) return; // switched off meanwhile; the next poll drops the plans
+            // The command's "off" writes only the state file (lastEnabled does
+            // not see it); the next poll drops the plans.
+            if (!isEnabled()) return;
             await send(pane, w);
         }
     }

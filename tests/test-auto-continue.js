@@ -241,10 +241,12 @@ test('claudeInForeground reads a comm with spaces and parentheses', () => {
 });
 
 // Fake tmux: one pane per entry of `screens` ({ '%0': { pid, screen } }).
-function makeTmux(screens) {
+// `onCall(args)` runs before each answer, to change things mid-poll.
+function makeTmux(screens, onCall = () => {}) {
     const calls = [];
     const tmux = async (args) => {
         calls.push(args);
+        onCall(args);
         if (args[0] === 'list-panes') {
             if (screens === null) throw new Error("can't find session: claude");
             return Object.entries(screens).map(([id, p]) => `${id} ${p.pid}`).join('\n') + '\n';
@@ -255,12 +257,14 @@ function makeTmux(screens) {
     return { tmux, calls };
 }
 
-function makeController(screens, stats = PROC_CLAUDE) {
+// `hooks.onCall(args, t)` is handed to the fake tmux (see makeTmux).
+function makeController(screens, stats = PROC_CLAUDE, hooks = {}) {
     const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-state-'));
     const procRoot = makeProc(stats);
     const clock = { now: T0 };
     const logs = [];
-    const fake = makeTmux(screens);
+    let t = null;
+    const fake = makeTmux(screens, (args) => { if (hooks.onCall && t) hooks.onCall(args, t); });
     const ctl = ac.createAutoContinue({
         stateDir,
         procRoot,
@@ -274,7 +278,8 @@ function makeController(screens, stats = PROC_CLAUDE) {
         fs.rmSync(procRoot, { recursive: true, force: true });
     };
     const sends = () => fake.calls.filter((a) => a[0] === 'send-keys');
-    return { ctl, stateDir, clock, logs, calls: fake.calls, sends, cleanup };
+    t = { ctl, stateDir, clock, logs, calls: fake.calls, sends, cleanup };
+    return t;
 }
 
 test('switched off: no tmux call, no log line', async () => {
@@ -378,6 +383,75 @@ test('the command\'s "off" in the state file is honoured on the next poll', asyn
         await t.ctl.poll();
         assert.deepEqual(t.sends(), []);
         assert.deepEqual(t.ctl.status().scheduled, []);
+    } finally { t.cleanup(); }
+});
+
+test('switching off while a poll waits for tmux plans nothing', async () => {
+    let switchOff = true;
+    const t = makeController({ '%0': { pid: 348, screen: RELATIVE } }, PROC_CLAUDE, {
+        onCall: (args, tc) => {
+            if (args[0] === 'capture-pane' && switchOff) {
+                switchOff = false;
+                tc.ctl.setEnabled(false);
+            }
+        },
+    });
+    try {
+        t.ctl.setEnabled(true);
+        await t.ctl.poll();
+        assert.deepEqual(t.ctl.status(), { enabled: false, scheduled: [], lastSent: null });
+        const text = fs.readFileSync(path.join(t.stateDir, 'auto-continue.status'), 'utf8');
+        assert.ok(!text.includes('Will send'), text);
+        const afterOff = t.logs.slice(t.logs.indexOf('off'));
+        assert.ok(!afterOff.some((l) => l.startsWith('limit detected')), t.logs.join('\n'));
+
+        // Back on, past the time the dropped plan would have been due: this
+        // poll only plans afresh.
+        t.ctl.setEnabled(true);
+        t.clock.now = T0 + 6 * 3600000;
+        await t.ctl.poll();
+        assert.deepEqual(t.sends(), []);
+        assert.deepEqual(t.ctl.status().scheduled,
+            [{ pane: '%0', at: new Date(t.clock.now + 5 * 3600000 + 60000).toISOString() }]);
+    } finally { t.cleanup(); }
+});
+
+test('the command\'s "off" written during a poll stops the remaining sends', async () => {
+    let armed = false;
+    const t = makeController({
+        '%0': { pid: 348, screen: RELATIVE },
+        '%1': { pid: 348, screen: RELATIVE },
+    }, PROC_CLAUDE, {
+        onCall: (args, tc) => {
+            // Pane %0 is due and gets its "continue"; then the command
+            // switches off (file only) before pane %1 is looked at.
+            if (armed && args[0] === 'capture-pane' && args[args.length - 1] === '%1') {
+                fs.writeFileSync(path.join(tc.stateDir, 'auto-continue'), 'off\n');
+            }
+        },
+    });
+    try {
+        t.ctl.setEnabled(true);
+        await t.ctl.poll();
+        assert.equal(t.ctl.status().scheduled.length, 2);
+        armed = true;
+        t.clock.now = T0 + 6 * 3600000;
+        await t.ctl.poll();
+        assert.deepEqual(t.sends(), [
+            ['send-keys', '-t', '%0', '-l', 'continue'],
+            ['send-keys', '-t', '%0', 'Enter'],
+        ]);
+    } finally { t.cleanup(); }
+});
+
+test('status shows no plans once the command has switched off', async () => {
+    const t = makeController({ '%0': { pid: 348, screen: RELATIVE } });
+    try {
+        t.ctl.setEnabled(true);
+        await t.ctl.poll();
+        assert.equal(t.ctl.status().scheduled.length, 1);
+        fs.writeFileSync(path.join(t.stateDir, 'auto-continue'), 'off\n');
+        assert.deepEqual(t.ctl.status(), { enabled: false, scheduled: [], lastSent: null });
     } finally { t.cleanup(); }
 });
 
