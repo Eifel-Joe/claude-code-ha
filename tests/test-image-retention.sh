@@ -98,7 +98,8 @@ grep -qx '  image_retention_days: int(0,3650)?' "$repo_root/claude-workbench/con
     fail "config.yaml must cap image_retention_days at 3650"
 
 # Wiring.
-sed -n '/^main() {/,/^}/p' "$run_sh" | grep -qx '    prune_uploaded_images' || \
+# grep without -q: an early exit would SIGPIPE sed and fail under pipefail.
+sed -n '/^main() {/,/^}/p' "$run_sh" | grep -x '    prune_uploaded_images' > /dev/null || \
     fail "main() does not call prune_uploaded_images"
 
 echo "Image retention suite passed"
