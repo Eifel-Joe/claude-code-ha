@@ -195,3 +195,180 @@ test('claudeInForeground reads a comm with spaces and parentheses', () => {
         fs.rmSync(root, { recursive: true, force: true });
     }
 });
+
+// Fake tmux: one pane per entry of `screens` ({ '%0': { pid, screen } }).
+function makeTmux(screens) {
+    const calls = [];
+    const tmux = async (args) => {
+        calls.push(args);
+        if (args[0] === 'list-panes') {
+            if (screens === null) throw new Error("can't find session: claude");
+            return Object.entries(screens).map(([id, p]) => `${id} ${p.pid}`).join('\n') + '\n';
+        }
+        if (args[0] === 'capture-pane') return screens[args[args.length - 1]].screen;
+        return '';
+    };
+    return { tmux, calls };
+}
+
+function makeController(screens, stats = PROC_CLAUDE) {
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-state-'));
+    const procRoot = makeProc(stats);
+    const clock = { now: T0 };
+    const logs = [];
+    const fake = makeTmux(screens);
+    const ctl = ac.createAutoContinue({
+        stateDir,
+        procRoot,
+        tmux: fake.tmux,
+        now: () => clock.now,
+        log: (m) => logs.push(m),
+        sleep: async () => {},
+    });
+    const cleanup = () => {
+        fs.rmSync(stateDir, { recursive: true, force: true });
+        fs.rmSync(procRoot, { recursive: true, force: true });
+    };
+    const sends = () => fake.calls.filter((a) => a[0] === 'send-keys');
+    return { ctl, stateDir, clock, logs, calls: fake.calls, sends, cleanup };
+}
+
+test('switched off: no tmux call, no log line', async () => {
+    const t = makeController({ '%0': { pid: 348, screen: RELATIVE } });
+    try {
+        await t.ctl.poll();
+        assert.deepEqual(t.calls, []);
+        assert.deepEqual(t.logs, []);
+        assert.equal(t.ctl.status().enabled, false);
+    } finally { t.cleanup(); }
+});
+
+test('on: plans, then sends "continue" and Enter to that pane', async () => {
+    const t = makeController({ '%0': { pid: 348, screen: RELATIVE } });
+    try {
+        t.ctl.setEnabled(true);
+        await t.ctl.poll();
+        assert.deepEqual(t.sends(), []);
+        const planned = t.ctl.status().scheduled;
+        assert.deepEqual(planned, [{ pane: '%0', at: new Date(T0 + 5 * 3600000 + 60000).toISOString() }]);
+        assert.ok(t.logs.some((l) => l.startsWith('limit detected in pane %0')), t.logs.join('\n'));
+
+        t.clock.now = T0 + 5 * 3600000 + 60000;
+        await t.ctl.poll();
+        assert.deepEqual(t.sends(), [
+            ['send-keys', '-t', '%0', '-l', 'continue'],
+            ['send-keys', '-t', '%0', 'Enter'],
+        ]);
+        assert.deepEqual(t.ctl.status().lastSent, { pane: '%0', at: new Date(t.clock.now).toISOString() });
+        assert.deepEqual(t.ctl.status().scheduled, []);
+
+        // The banner is still visible: no second "continue".
+        t.clock.now += 30 * 60000;
+        await t.ctl.poll();
+        assert.equal(t.sends().length, 2);
+    } finally { t.cleanup(); }
+});
+
+test('tmux is asked for exactly the claude session, wrapped lines joined', async () => {
+    const t = makeController({ '%0': { pid: 348, screen: RELATIVE } });
+    try {
+        t.ctl.setEnabled(true);
+        await t.ctl.poll();
+        assert.deepEqual(t.calls[0], ['list-panes', '-s', '-t', '=claude', '-F', '#{pane_id} #{pane_pid}']);
+        assert.deepEqual(t.calls[1], ['capture-pane', '-p', '-J', '-t', '%0']);
+    } finally { t.cleanup(); }
+});
+
+test('nothing is sent when the banner is gone by then', async () => {
+    const screens = { '%0': { pid: 348, screen: RELATIVE } };
+    const t = makeController(screens);
+    try {
+        t.ctl.setEnabled(true);
+        await t.ctl.poll();
+        screens['%0'].screen = 'continue\nWorking on it...\n';
+        t.clock.now = T0 + 6 * 3600000;
+        await t.ctl.poll();
+        assert.deepEqual(t.sends(), []);
+        assert.ok(t.logs.some((l) => l.includes('no longer on screen')), t.logs.join('\n'));
+    } finally { t.cleanup(); }
+});
+
+test('nothing is sent when claude is not in the foreground', async () => {
+    const t = makeController({ '%1': { pid: 500, screen: RELATIVE } }, PROC_VIM);
+    try {
+        t.ctl.setEnabled(true);
+        await t.ctl.poll();
+        t.clock.now = T0 + 6 * 3600000;
+        await t.ctl.poll();
+        assert.deepEqual(t.sends(), []);
+        assert.ok(t.logs.some((l) => l.includes('Claude is not the foreground program')), t.logs.join('\n'));
+        // Skipped on purpose: not planned again for the same banner.
+        t.clock.now += 3600000;
+        await t.ctl.poll();
+        assert.deepEqual(t.ctl.status().scheduled, []);
+    } finally { t.cleanup(); }
+});
+
+test('switching off drops the plan and nothing is sent later', async () => {
+    const t = makeController({ '%0': { pid: 348, screen: RELATIVE } });
+    try {
+        t.ctl.setEnabled(true);
+        await t.ctl.poll();
+        t.ctl.setEnabled(false);
+        assert.deepEqual(t.ctl.status(), { enabled: false, scheduled: [], lastSent: null });
+        assert.ok(t.logs.some((l) => l === 'off'), t.logs.join('\n'));
+        assert.ok(t.logs.some((l) => l.includes('switched off')), t.logs.join('\n'));
+        t.clock.now = T0 + 6 * 3600000;
+        await t.ctl.poll();
+        assert.deepEqual(t.sends(), []);
+    } finally { t.cleanup(); }
+});
+
+test('the command\'s "off" in the state file is honoured on the next poll', async () => {
+    const t = makeController({ '%0': { pid: 348, screen: RELATIVE } });
+    try {
+        t.ctl.setEnabled(true);
+        await t.ctl.poll();
+        fs.writeFileSync(path.join(t.stateDir, 'auto-continue'), 'off\n');
+        t.clock.now = T0 + 6 * 3600000;
+        await t.ctl.poll();
+        assert.deepEqual(t.sends(), []);
+        assert.deepEqual(t.ctl.status().scheduled, []);
+    } finally { t.cleanup(); }
+});
+
+test('a missing tmux session is no error and logs nothing', async () => {
+    const t = makeController(null);
+    try {
+        t.ctl.setEnabled(true);
+        await t.ctl.poll();
+        assert.deepEqual(t.logs, ['on']);
+    } finally { t.cleanup(); }
+});
+
+test('the status file is plain text for the auto-continue command', async () => {
+    const t = makeController({ '%0': { pid: 348, screen: RELATIVE } });
+    try {
+        t.ctl.setEnabled(true);
+        await t.ctl.poll();
+        const text = fs.readFileSync(path.join(t.stateDir, 'auto-continue.status'), 'utf8');
+        const due = ac.clock(T0 + 5 * 3600000 + 60000);
+        assert.equal(text,
+            'Auto-continue: on\n' +
+            `Will send "continue" to pane %0 at ${due}\n` +
+            'Last sent: never\n');
+        t.ctl.setEnabled(false);
+        assert.equal(fs.readFileSync(path.join(t.stateDir, 'auto-continue.status'), 'utf8'),
+            'Auto-continue: off\nLast sent: never\n');
+    } finally { t.cleanup(); }
+});
+
+test('setEnabled writes on/off to the state file', () => {
+    const t = makeController({});
+    try {
+        t.ctl.setEnabled(true);
+        assert.equal(fs.readFileSync(path.join(t.stateDir, 'auto-continue'), 'utf8'), 'on\n');
+        t.ctl.setEnabled(false);
+        assert.equal(fs.readFileSync(path.join(t.stateDir, 'auto-continue'), 'utf8'), 'off\n');
+    } finally { t.cleanup(); }
+});

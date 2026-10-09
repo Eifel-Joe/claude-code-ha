@@ -253,4 +253,192 @@ function claudeInForeground(procRoot, panePid) {
     });
 }
 
-module.exports = { stripAnsi, detectLimit, parseResetTime, PaneWatcher, claudeInForeground };
+function runTmux(args) {
+    return new Promise((resolve, reject) => {
+        execFile('tmux', args, { timeout: TMUX_TIMEOUT_MS }, (err, stdout) => (err ? reject(err) : resolve(stdout)));
+    });
+}
+
+// HH:MM in the container's zone (TZ), for the log and the status file.
+function clock(ms) {
+    return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+        .format(new Date(ms));
+}
+
+/**
+ * The switch lives in <stateDir>/auto-continue ("on"/"off"), written by
+ * run.sh on start (option auto_continue), by the auto-continue command and by
+ * POST /auto-continue; it is re-read on every poll. <stateDir>/auto-continue.status
+ * is the plain-text summary the command prints.
+ */
+function createAutoContinue(options = {}) {
+    const stateDir = options.stateDir || process.env.AUTO_CONTINUE_DIR || '/run/claude-workbench';
+    const procRoot = options.procRoot || '/proc';
+    const tmux = options.tmux || runTmux;
+    const now = options.now || Date.now;
+    const log = options.log || ((msg) => console.log(`[auto-continue] ${msg}`));
+    const sleep = options.sleep || ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+    const stateFile = path.join(stateDir, 'auto-continue');
+    const statusFile = path.join(stateDir, 'auto-continue.status');
+    const watchers = new Map(); // pane id -> PaneWatcher
+    let lastSent = null;        // { pane, at }
+    let lastEnabled = null;     // null until the first poll: an "off" start logs nothing
+    let polling = false;
+
+    function isEnabled() {
+        try {
+            return fs.readFileSync(stateFile, 'utf8').trim() === 'on';
+        } catch {
+            return false;
+        }
+    }
+
+    function status() {
+        const scheduled = [...watchers.entries()]
+            .filter(([, w]) => w.dueAt !== null)
+            .map(([pane, w]) => ({ pane, at: new Date(w.dueAt).toISOString() }))
+            .sort((a, b) => a.at.localeCompare(b.at));
+        return {
+            enabled: isEnabled(),
+            scheduled,
+            lastSent: lastSent && { pane: lastSent.pane, at: new Date(lastSent.at).toISOString() },
+        };
+    }
+
+    function writeStatus() {
+        const s = status();
+        const lines = [`Auto-continue: ${s.enabled ? 'on' : 'off'}`];
+        for (const item of s.scheduled) {
+            lines.push(`Will send "continue" to pane ${item.pane} at ${clock(Date.parse(item.at))}`);
+        }
+        lines.push(lastSent ? `Last sent: pane ${lastSent.pane} at ${clock(lastSent.at)}` : 'Last sent: never');
+        try {
+            fs.mkdirSync(stateDir, { recursive: true });
+            fs.writeFileSync(statusFile, lines.join('\n') + '\n');
+        } catch (err) {
+            log(`could not write ${statusFile}: ${err.message}`);
+        }
+    }
+
+    function applyEnabled(enabled) {
+        if (enabled === lastEnabled) return;
+        if (enabled) {
+            log('on');
+        } else {
+            if (lastEnabled === true) log('off');
+            for (const [pane, w] of watchers) {
+                if (w.dueAt !== null) log(`not sent to pane ${pane}: switched off`);
+            }
+            watchers.clear();
+        }
+        lastEnabled = enabled;
+    }
+
+    function setEnabled(enabled) {
+        fs.mkdirSync(stateDir, { recursive: true });
+        fs.writeFileSync(stateFile, enabled ? 'on\n' : 'off\n');
+        applyEnabled(enabled);
+        writeStatus();
+    }
+
+    async function listPanes() {
+        let out;
+        try {
+            // "=claude": exactly this session, not a prefix match.
+            out = await tmux(['list-panes', '-s', '-t', `=${SESSION}`, '-F', '#{pane_id} #{pane_pid}']);
+        } catch {
+            return []; // no session yet (start-up) or tmux gone: nothing to watch
+        }
+        return out.split('\n')
+            .map((line) => line.trim().split(' '))
+            .filter(([id, pid]) => /^%\d+$/.test(id || '') && /^\d+$/.test(pid || ''))
+            .map(([id, pid]) => ({ id, pid: Number(pid) }));
+    }
+
+    async function send(pane, watcher) {
+        try {
+            await tmux(['send-keys', '-t', pane.id, '-l', 'continue']);
+            await sleep(ENTER_DELAY_MS);
+            await tmux(['send-keys', '-t', pane.id, 'Enter']);
+            lastSent = { pane: pane.id, at: now() };
+            log(`sent "continue" to pane ${pane.id}`);
+        } catch (err) {
+            // Not retried: a retry after "continue" went through but Enter
+            // failed would type it twice.
+            log(`could not send to pane ${pane.id}: ${err.message}`);
+        }
+        watcher.done();
+    }
+
+    async function checkPanes() {
+        const panes = await listPanes();
+        const ids = new Set(panes.map((p) => p.id));
+        for (const [pane, w] of watchers) {
+            if (ids.has(pane)) continue;
+            if (w.dueAt !== null) log(`not sent to pane ${pane}: the pane is gone`);
+            watchers.delete(pane);
+        }
+        for (const pane of panes) {
+            let screen;
+            try {
+                screen = await tmux(['capture-pane', '-p', '-J', '-t', pane.id]);
+            } catch {
+                continue;
+            }
+            if (!watchers.has(pane.id)) watchers.set(pane.id, new PaneWatcher());
+            const w = watchers.get(pane.id);
+            const t = now();
+            const change = w.observe(screen, t);
+            if (change && change.type === 'scheduled') {
+                log(`limit detected in pane ${pane.id}: "${change.matched}"` +
+                    (change.hasResetTime ? '' : ' (no reset time in the message)') +
+                    `; will send "continue" at ${clock(change.dueAt)}`);
+            } else if (change && change.type === 'cleared') {
+                log(`not sent to pane ${pane.id}: the limit message is no longer on screen`);
+            }
+            if (!w.isDue(t)) continue;
+            if (!claudeInForeground(procRoot, pane.pid)) {
+                log(`not sent to pane ${pane.id}: Claude is not the foreground program`);
+                w.done();
+                continue;
+            }
+            if (!isEnabled()) return; // switched off meanwhile; the next poll drops the plans
+            await send(pane, w);
+        }
+    }
+
+    // Never throws: a failing check must not take the image service down.
+    async function poll() {
+        if (polling) return;
+        polling = true;
+        try {
+            const enabled = isEnabled();
+            applyEnabled(enabled);
+            if (enabled) await checkPanes();
+        } catch (err) {
+            log(`check failed: ${err.message}`);
+        } finally {
+            polling = false;
+            writeStatus();
+        }
+    }
+
+    function start(intervalMs = POLL_INTERVAL_MS) {
+        const timer = setInterval(poll, intervalMs);
+        timer.unref();
+        poll();
+        return timer;
+    }
+
+    return { poll, start, setEnabled, isEnabled, status };
+}
+
+module.exports = {
+    stripAnsi,
+    detectLimit,
+    parseResetTime,
+    PaneWatcher,
+    claudeInForeground,
+    clock,
+    createAutoContinue,
+};
