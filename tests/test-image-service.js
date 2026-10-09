@@ -343,10 +343,13 @@ test('the service proxies without deprecation or experimental warnings', () => {
     assert.doesNotMatch(serviceStderr, /DeprecationWarning|ExperimentalWarning|DEP0060/);
 });
 
-test('/terminal answers 502 when ttyd is not reachable', async () => {
+// ttyd starts last, after Claude Code's update and the package installs; the
+// panel is served before that. Until ttyd answers, the terminal frame shows a
+// page that reloads itself instead of a dead error text.
+test('/terminal shows a self-reloading start page while ttyd is not up', async () => {
     const port = await freePort();
     const deadTtydPort = await freePort(); // nothing listens here
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-502-'));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-503-'));
     const proc = spawn(process.execPath, [SERVER], {
         cwd: SERVICE_DIR,
         env: {
@@ -360,8 +363,12 @@ test('/terminal answers 502 when ttyd is not reachable', async () => {
     try {
         assert.ok(await waitForHealth(port), 'instance never became healthy');
         const res = await fetch(`http://127.0.0.1:${port}/terminal/`);
-        assert.strictEqual(res.status, 502);
-        assert.strictEqual(await res.text(), 'Failed to connect to terminal');
+        assert.strictEqual(res.status, 503);
+        assert.strictEqual(res.headers.get('retry-after'), '3');
+        assert.match(res.headers.get('content-type'), /^text\/html/);
+        const html = await res.text();
+        assert.match(html, /<meta http-equiv="refresh" content="3">/);
+        assert.match(html, /Claude Workbench is starting/);
     } finally {
         proc.kill('SIGKILL');
         fs.rmSync(dir, { recursive: true, force: true });
