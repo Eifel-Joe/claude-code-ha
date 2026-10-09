@@ -298,6 +298,14 @@ test('the static UI is served at the root', async () => {
     assert.match(res.headers.get('content-type') || '', /text\/html/);
 });
 
+test('the UI loads the panel helpers and has the auto-continue button', async () => {
+    const html = await (await fetch(`http://127.0.0.1:${PORT}/`)).text();
+    assert.match(html, /<script src="workbench-ui\.js"><\/script>/);
+    assert.match(html, /id="auto-continue-btn"/);
+    const js = await fetch(`http://127.0.0.1:${PORT}/workbench-ui.js`);
+    assert.strictEqual(js.status, 200);
+});
+
 test('the UI is revalidated on every load (Cache-Control: no-cache)', async () => {
     // After an app update the browser must not combine a cached
     // terminal-clipboard.js with the new index.html (owine's fork, 67dd7e55).
