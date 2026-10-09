@@ -152,8 +152,14 @@ const terminalProxy = createProxyMiddleware({
 
 app.use('/terminal', terminalProxy);
 
-// Serve static files (HTML interface) - MUST be after API routes
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files (HTML interface) - MUST be after API routes.
+// no-cache: the browser revalidates every file (ETag; a 304 when unchanged),
+// so after an app update index.html and terminal-clipboard.js cannot come
+// from different versions - Safari kept old JS with new HTML
+// (owine's fork, commit 67dd7e55).
+app.use(express.static(path.join(__dirname, 'public'), {
+    setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache'),
+}));
 
 // Multer error handling middleware
 app.use((err, req, res, next) => {
