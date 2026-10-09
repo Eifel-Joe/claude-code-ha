@@ -27,6 +27,8 @@ This app provides a web-based terminal interface with Claude Code CLI pre-instal
 - **Direct Config Access**: Terminal starts in your `/config` directory for immediate access to all Home Assistant files
 - **Home Assistant Integration**: Access directly from your dashboard
 - **Panel Icon**: Quick access from the sidebar with the code-braces-box icon
+- **Shift+Enter**: Inserts a new line in Claude's input instead of sending it
+- **Auto-Continue (opt-in)**: After a usage limit, types `continue` once the limit has reset; off by default, switchable from the panel header
 - **Multi-Architecture Support**: Works on amd64 and aarch64
 - **Secure Credential Management**: Persistent authentication with safe credential storage
 - **Automatic Recovery**: Built-in fallbacks and error handling for reliable operation
@@ -147,6 +149,8 @@ test-endpoint
   Supervisor's `manager` role (manage apps and backups, restart Home
   Assistant and the host; checked in the Supervisor's `security.py`). With
   `dangerously_skip_permissions` on, Claude acts there without asking.
+  Auto-continue (off by default) lets Claude go on unattended after a usage
+  limit; with `dangerously_skip_permissions` that includes commands.
 - **No open port:** the app publishes no host port. The terminal (`ttyd`)
   listens on `127.0.0.1` only and is reached through Home Assistant ingress,
   which requires a Home Assistant login.
