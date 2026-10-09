@@ -1,5 +1,45 @@
 # Changelog
 
+## 3.3.0
+
+### ✨ New Feature - `claude-doctor`
+- **The health check is now a terminal command**: `claude-doctor` runs the
+  same checks the app runs on every start — memory, disk, Node.js, Claude
+  Code, CPU and network — and sums up the failures (owine,
+  owine/claude-terminal-home-assistant `cc0d74e7`).
+
+### ✨ New Feature - Own tmux settings
+- **`~/.tmux.conf.local`** is loaded last, so it overrides the app's tmux
+  defaults and survives restarts and updates; `~/.tmux.conf` itself is still
+  rewritten on every start (owine, owine/claude-terminal-home-assistant
+  `1175851a`; also BartBourgeois and Maheidem).
+- **Focus events** are passed on, so Claude Code and vim notice when the
+  terminal gains or loses focus (owine `1e0a33e2`).
+
+### 🐛 Bug Fix - Health check tells whether Claude Code really starts
+- It checked only that `claude` exists and is executable, so a binary that
+  cannot start (library mismatch, CPU without x86-64-v2) got a green tick. It
+  now runs `claude --version` under a 10 s limit and shows the real error; on
+  a CPU that cannot run Claude it says so instead of waiting. The "Attempting
+  to install" line, which never installed anything, now points at a restart
+  (umrath, heytcass/home-assistant-addons `ff4ebec`; owine `cc0d74e7`).
+
+### 🐛 Bug Fix - No stale panel files after an update
+- The panel's files are served with `Cache-Control: no-cache`, so a browser
+  cannot combine an old script with the new page after an update (owine
+  `67dd7e55`).
+
+### 📚 Documentation - Who can open the panel
+- The README's security section said "Version 1.0.2 includes …". It now
+  states that every signed-in Home Assistant user can open the panel —
+  `panel_admin` only hides the sidebar entry — and what is behind it, with
+  sources (umrath, heytcass/home-assistant-addons `8e65403`). DOCS has a
+  short version; the volume list names `/addon_configs` instead of `/addons`.
+
+### 🔧 Technical - CI runners pinned
+- The workflows run on `ubuntu-24.04` instead of `ubuntu-latest`, which
+  becomes Ubuntu 26 on 2026-10-19.
+
 ## 3.2.0
 
 ### ✨ New Feature - Old pasted images are cleaned up
