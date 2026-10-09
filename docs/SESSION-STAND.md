@@ -1,5 +1,46 @@
 # Sitzungsstand
 
+## 2026-10-09 (10) — heytcass-Forks gesichtet, Spec + Plan 3.2.0
+
+### Stand
+- HA-Prod 09:19 auf 3.1.3 (User), Supervisor- und App-Log per MCP geprüft
+  („Removed the old npm cache …“ einmal, keine Fehler). Backup-Vergleich
+  belegt: „Claude Workbench 3.1.2“ 553.666.560 B → manuelles App-Backup
+  „Claude Workbench Test“ (3.1.3) 443.412.480 B, −110 MB.
+- Remote- und lokaler Branch `fix/backup-cache-auth-api` gelöscht.
+- Alle 104 Forks von heytcass/home-assistant-addons gesichtet: 58 mit eigenen
+  Commits, 1.092 am Claude-Add-on, CI oder Tests. Berichte der vier
+  Subagenten in `.tmp/hk-report-1..4.md` (gitignored, NICHT löschen, bevor
+  der User über die Übernahme ins Repo entschieden hat — Plan Task 9 Step 9).
+  Fork-Branches liegen als `refs/hk/<owner>/<branch>` im Repo (166 Refs).
+- Branch `feat/fork-fixes-3.2.0` (nur lokal): Spec
+  `docs/specs/2026-10-09-fork-fixes-3.2.0-design.md` und Plan
+  `docs/plans/2026-10-09-fork-fixes-3.2.0.md`, beide vom User freigegeben.
+  Noch kein Produktionscode.
+
+### Verworfen
+- Patch-ID je Commit in einer Schleife (zwei Git-Prozesse pro Commit, über
+  20 min) → ein `git log -p --stdin | git patch-id` für alle Commits, 38 s.
+
+### Fallen
+- `gh api …/compare` scheitert bei Forks mit abweichendem Repo-Namen
+  (cabinlab, evandepol, petterl/repo) → per Fetch einbezogen.
+- Subagenten-Befunde über unseren Code vor dem Weitergeben selbst prüfen
+  (alle bestätigt: `health-check.sh:158-163`, `run.sh:759/811-815`,
+  `server.js:42`, `run.sh:179-185`, `claude-auth-helper.sh:36`,
+  `persist-install:104-106`).
+
+### Nächste Schritte
+- Plan `docs/plans/2026-10-09-fork-fixes-3.2.0.md` ab Task 1 umsetzen, auf
+  Branch `feat/fork-fixes-3.2.0`.
+- Danach (eigene Spec): weitere Fork-Ideen (`claude_extra_args`,
+  `~/.tmux.conf.local`, Mobil-Toolbar, `working_directory`, `map: share`,
+  `permissions.deny`, Shift+Enter, ripgrep prüfen) und heytcass-Reste.
+
+### Empfohlene Skills
+- `superpowers:subagent-driven-development` oder `superpowers:executing-plans`,
+  pro Task `superpowers:test-driven-development`; `code-doku` für Kommentare.
+
 ## 2026-10-09 (9) — Release 3.1.3 (aus dem heytcass-Original)
 
 ### Stand

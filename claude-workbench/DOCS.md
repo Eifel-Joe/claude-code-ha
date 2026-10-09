@@ -131,6 +131,7 @@ program in the terminal cannot exfiltrate your clipboard.
 ### Persistent Packages
 - Configure APK and pip packages to auto-install on startup
 - Packages are stored in `/data/packages` and survive restarts
+- The app's own Claude Code commands (`/install`, `/install-python`, `/list-packages`) and its persistent-package skill are refreshed in `~/.claude` on every start; save your own variants under a different name
 
 ### Optional Persistent Claude Code
 - **Default**: `use_persistent_claude: true`
@@ -143,6 +144,11 @@ program in the terminal cannot exfiltrate your clipboard.
 - Only relevant if `use_persistent_claude: true`
 - When enabled, the app will update Claude Code in `/data/npm/` on each startup
 - Turn it off to update only manually, via **🔄 Update Claude Code** in the session picker
+
+### Pasted Images
+- **Default**: `image_retention_days: 30`
+- Images you paste or drop into the panel are stored in `/data/images`, which is part of every backup of the app
+- On start, the app deletes its own pasted images older than this many days (up to 3650); `0` keeps them all
 
 **Example Configuration**:
 ```yaml
@@ -158,6 +164,7 @@ persistent_pip_packages:
   - requests
 use_persistent_claude: true
 auto_update_claude_on_start: true
+image_retention_days: 30
 ```
 
 Your OAuth credentials are stored in the app's private `/data` (under `/data/home/.claude`), not in `/config`, and persist across app updates and restarts, so you won't need to log in again. Credentials an older release left in `/config/claude-config` are copied into `/data` once on start; you can delete that folder afterwards.

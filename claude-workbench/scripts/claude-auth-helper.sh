@@ -3,6 +3,10 @@
 # Claude Authentication Helper
 # Provides alternative authentication methods when clipboard paste doesn't work
 
+# Where option 2 reads the code from. Overridable for tests only
+# (tests/test-auth-helper.sh).
+AUTH_CODE_FILE="${CLAUDE_AUTH_CODE_FILE:-/config/auth-code.txt}"
+
 show_auth_menu() {
     clear
     echo "╔══════════════════════════════════════════════════════════════╗"
@@ -13,7 +17,7 @@ show_auth_menu() {
     echo ""
     echo "Options:"
     echo "  1) 📋 Manual input (type or paste the code)"
-    echo "  2) 📁 Read code from file (/config/auth-code.txt)"
+    echo "  2) 📁 Read code from file (${AUTH_CODE_FILE})"
     echo "  3) 🔄 Retry standard authentication"
     echo "  4) ❌ Exit"
     echo ""
@@ -32,10 +36,7 @@ manual_auth_input() {
         return 1
     fi
 
-    # Save to temp file for Claude to read
-    echo "$auth_code" > /tmp/claude-auth-code
-    echo ""
-    echo "✅ Code saved. Starting Claude authentication..."
+    echo "✅ Starting Claude authentication..."
     sleep 1
 
     # Try to pipe the code to Claude
@@ -43,15 +44,20 @@ manual_auth_input() {
 }
 
 read_auth_from_file() {
-    local auth_file="/config/auth-code.txt"
+    local auth_file="$AUTH_CODE_FILE"
 
     echo ""
     echo "Looking for authentication code in: $auth_file"
 
     if [ -f "$auth_file" ]; then
         auth_code=$(cat "$auth_file")
+        # Remove the file before Claude runs: it holds a login secret in /config,
+        # which is in every Home Assistant backup (owine, 96ccd0d4).
+        rm -f "$auth_file"
+        echo "🧹 Removed $auth_file"
+
         if [ -z "$auth_code" ]; then
-            echo "❌ File exists but is empty"
+            echo "❌ File was empty"
             return 1
         fi
 
@@ -60,10 +66,6 @@ read_auth_from_file() {
 
         # Try to pipe the code to Claude
         echo "$auth_code" | claude
-
-        # Clean up the file after use
-        rm -f "$auth_file"
-        echo "🧹 Cleaned up auth code file"
     else
         echo "❌ File not found: $auth_file"
         echo ""
@@ -94,7 +96,7 @@ main() {
         show_auth_menu
 
         echo -n "Enter your choice [1-4]: "
-        read -r choice
+        read -r choice || exit 1  # end of input: nothing left to choose
 
         case "$choice" in
             1)

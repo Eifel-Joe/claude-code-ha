@@ -19,6 +19,7 @@ const http = require('http');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
@@ -32,16 +33,27 @@ if (!fs.existsSync(UPLOAD_DIR)) {
     console.log(`Created upload directory: ${UPLOAD_DIR}`);
 }
 
+// Accepted image types and the extension each is stored under. The extension
+// never comes from the client's file name: the stored path is pasted into the
+// terminal, and path.extname("x.png;touch $(id) #") is ".png;touch $(id) #"
+// (owine's fork, PR #379; tests/test-image-service.js).
+const IMAGE_EXTENSIONS = {
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/gif': '.gif',
+    'image/webp': '.webp',
+    'image/svg+xml': '.svg'
+};
+
 // Configure multer for image uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, UPLOAD_DIR);
     },
     filename: (req, file, cb) => {
-        const timestamp = Date.now();
-        const ext = path.extname(file.originalname) || '.png';
-        const filename = `pasted-${timestamp}${ext}`;
-        cb(null, filename);
+        // The random part keeps two pastes in the same millisecond apart.
+        const suffix = crypto.randomBytes(4).toString('hex');
+        cb(null, `pasted-${Date.now()}-${suffix}${IMAGE_EXTENSIONS[file.mimetype]}`);
     }
 });
 
@@ -51,12 +63,12 @@ const upload = multer({
         fileSize: 10 * 1024 * 1024 // 10MB max file size
     },
     fileFilter: (req, file, cb) => {
-        // Accept images only
-        const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
-        if (allowedMimes.includes(file.mimetype)) {
+        if (Object.hasOwn(IMAGE_EXTENSIONS, file.mimetype)) {
             cb(null, true);
         } else {
-            cb(new Error('Only image files are allowed'));
+            const err = new Error('Only image files are allowed');
+            err.status = 400; // the client sent the wrong type, not a server fault
+            cb(err);
         }
     }
 });
@@ -94,6 +106,15 @@ app.post('/upload', upload.single('image'), (req, res) => {
     });
 });
 
+// Shown in the terminal frame while ttyd is not up yet: run.sh serves the panel
+// before Claude Code's update and the package installs, and starts ttyd last.
+// The page reloads itself until the terminal answers.
+const STARTING_PAGE = '<!doctype html><html><head><meta charset="utf-8">' +
+    '<meta http-equiv="refresh" content="3"><title>Claude Workbench</title>' +
+    '<style>body{margin:0;height:100vh;display:flex;align-items:center;' +
+    'justify-content:center;background:#1e1e1e;color:#ccc;font-family:sans-serif}</style>' +
+    '</head><body><p>Claude Workbench is starting…</p></body></html>';
+
 // Proxy endpoint for ttyd terminal
 // This allows ttyd to work through Home Assistant ingress
 // Handles both HTTP and WebSocket connections
@@ -117,8 +138,9 @@ const terminalProxy = createProxyMiddleware({
             // Once ttyd's headers are out (connection dropped mid-body) a 502
             // throws ERR_HTTP_HEADERS_SENT in this listener and kills the
             // service; just end the response then.
+            // Before ttyd is up, the frame gets STARTING_PAGE instead of an error.
             if (typeof res.status === 'function' && !res.headersSent) {
-                res.status(502).send('Failed to connect to terminal');
+                res.status(503).set('Retry-After', '3').type('html').send(STARTING_PAGE);
             } else if (typeof res.end === 'function') {
                 res.end();
             }
@@ -145,7 +167,7 @@ app.use((err, req, res, next) => {
 
     if (err) {
         console.error('Error:', err.message);
-        return res.status(500).json({
+        return res.status(err.status || 500).json({
             success: false,
             error: err.message
         });

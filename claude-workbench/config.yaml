@@ -1,7 +1,7 @@
 ---
 name: "Claude Workbench"
 description: "Workbench for Anthropic's Claude Code CLI in Home Assistant: web terminal, persistent auth and packages, image paste, HA and GitHub CLIs"
-version: "3.1.3"
+version: "3.2.0"
 slug: "claude_workbench"
 init: false
 
@@ -44,6 +44,7 @@ options:
   persistent_pip_packages: []
   use_persistent_claude: true
   auto_update_claude_on_start: true
+  image_retention_days: 30
 
 schema:
   auto_launch_claude: bool?
@@ -57,6 +58,7 @@ schema:
     - str?
   use_persistent_claude: bool?
   auto_update_claude_on_start: bool?
+  image_retention_days: int(0,3650)?
 
 # Volume mappings for file access
 map:

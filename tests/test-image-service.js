@@ -150,7 +150,7 @@ test('/upload stores a pasted image and returns its path', async () => {
     assert.strictEqual(res.status, 200);
     const body = await res.json();
     assert.strictEqual(body.success, true);
-    assert.match(body.filename, /^pasted-\d+\.png$/);
+    assert.match(body.filename, /^pasted-\d+-[0-9a-f]{8}\.png$/);
     assert.strictEqual(body.path, path.join(uploadDir, body.filename));
     assert.ok(fs.existsSync(body.path), 'uploaded file was not written to disk');
     assert.strictEqual(fs.readFileSync(body.path).length, PNG.length);
@@ -166,7 +166,7 @@ test('/upload refuses a non-image payload', async () => {
         body: payload
     });
 
-    assert.notStrictEqual(res.status, 200);
+    assert.strictEqual(res.status, 400, 'a rejected file type is a client error');
     const written = fs.readdirSync(uploadDir).filter((f) => f.endsWith('.sh'));
     assert.deepStrictEqual(written, [], 'a rejected upload must not reach disk');
 });
@@ -188,6 +188,28 @@ test('a hostile filename cannot escape the upload directory', async () => {
         `upload escaped the upload directory: ${body.path}`
     );
     assert.ok(!body.filename.includes('/'), 'stored filename must not contain a separator');
+});
+
+// The stored path is pasted into the terminal. path.extname() of the client's
+// name "x.png;touch $(id) #" is ".png;touch $(id) #", so the extension must come
+// from the accepted MIME type instead.
+test('the stored extension comes from the MIME type, not the client name', async () => {
+    const cases = [
+        ['x.png;touch $(id) #', 'image/png', /^pasted-\d+-[0-9a-f]{8}\.png$/],
+        ['photo.jpeg.exe', 'image/jpeg', /^pasted-\d+-[0-9a-f]{8}\.jpg$/],
+        ['noextension', 'image/webp', /^pasted-\d+-[0-9a-f]{8}\.webp$/]
+    ];
+    for (const [name, type, expected] of cases) {
+        const { boundary, payload } = multipart('image', name, type, PNG);
+        const res = await fetch(`http://127.0.0.1:${PORT}/upload`, {
+            method: 'POST',
+            headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
+            body: payload
+        });
+        assert.strictEqual(res.status, 200, `${name} (${type}) was refused`);
+        const body = await res.json();
+        assert.match(body.filename, expected, `${name} (${type}) stored as ${body.filename}`);
+    }
 });
 
 test('/terminal proxies HTTP through to ttyd', async () => {
@@ -321,10 +343,13 @@ test('the service proxies without deprecation or experimental warnings', () => {
     assert.doesNotMatch(serviceStderr, /DeprecationWarning|ExperimentalWarning|DEP0060/);
 });
 
-test('/terminal answers 502 when ttyd is not reachable', async () => {
+// ttyd starts last, after Claude Code's update and the package installs; the
+// panel is served before that. Until ttyd answers, the terminal frame shows a
+// page that reloads itself instead of a dead error text.
+test('/terminal shows a self-reloading start page while ttyd is not up', async () => {
     const port = await freePort();
     const deadTtydPort = await freePort(); // nothing listens here
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-502-'));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-503-'));
     const proc = spawn(process.execPath, [SERVER], {
         cwd: SERVICE_DIR,
         env: {
@@ -338,8 +363,12 @@ test('/terminal answers 502 when ttyd is not reachable', async () => {
     try {
         assert.ok(await waitForHealth(port), 'instance never became healthy');
         const res = await fetch(`http://127.0.0.1:${port}/terminal/`);
-        assert.strictEqual(res.status, 502);
-        assert.strictEqual(await res.text(), 'Failed to connect to terminal');
+        assert.strictEqual(res.status, 503);
+        assert.strictEqual(res.headers.get('retry-after'), '3');
+        assert.match(res.headers.get('content-type'), /^text\/html/);
+        const html = await res.text();
+        assert.match(html, /<meta http-equiv="refresh" content="3">/);
+        assert.match(html, /Claude Workbench is starting/);
     } finally {
         proc.kill('SIGKILL');
         fs.rmSync(dir, { recursive: true, force: true });

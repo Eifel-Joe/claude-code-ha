@@ -26,3 +26,6 @@ configuration:
   auto_update_claude_on_start:
     name: "Claude Code beim Start aktualisieren"
     description: "Aktualisiert Claude Code bei jedem Start. Wirkt nur mit „Claude Code in /data aktuell halten“; aus: nur über das Sitzungsmenü."
+  image_retention_days:
+    name: "Eingefügte Bilder behalten (Tage)"
+    description: "Eingefügte oder hineingezogene Bilder, die älter sind, werden beim Start aus /data/images gelöscht, damit sie die Backups nicht füllen. 0 behält alle."
