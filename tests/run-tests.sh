@@ -12,6 +12,7 @@ node --test "$tests_dir/test-app-migration.js"
 "$tests_dir/test-startup-hardening.sh"
 "$tests_dir/test-persist-install.sh"
 "$tests_dir/test-cpu-check.sh"
+"$tests_dir/test-npm-cache.sh"
 
 # The image service is the ingress entry point. Its suite needs node and the
 # service's dependencies; skip loudly rather than pretend it ran.
