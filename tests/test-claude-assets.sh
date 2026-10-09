@@ -15,8 +15,9 @@ fail() {
     exit 1
 }
 
+warnings=0
 bashio::log.info() { :; }
-bashio::log.warning() { :; }
+bashio::log.warning() { warnings=$((warnings + 1)); }
 bashio::log.error() { :; }
 bashio::config() { printf '%s\n' "${2:-}"; }
 
@@ -55,6 +56,15 @@ cmp -s "$shipped/commands/install.md" "$target/commands/install.md" || \
 install_shipped_claude_assets "$tmp_dir/fresh/.claude"
 [ -f "$tmp_dir/fresh/.claude/skills/persistent-package-manager/SKILL.md" ] || \
     fail "a fresh install did not get the shipped skill"
+
+# A failing copy (e.g. /data full) must not stop the app from starting
+# (run.sh runs under set -e); it is logged instead. Called plainly, not in
+# `|| fail`: that would switch errexit off inside the function and hide the
+# abort. Under this script's set -e a failure ends the test.
+cp() { return 1; }
+install_shipped_claude_assets "$tmp_dir/full/.claude"
+unset -f cp
+[ "$warnings" -gt 0 ] || fail "a failing copy was not logged"
 
 # Wiring. init_environment writes to fixed /data paths, so this is a text check.
 sed -n '/^init_environment() {/,/^}/p' "$run_sh" | \

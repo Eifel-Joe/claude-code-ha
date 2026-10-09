@@ -20,7 +20,7 @@ line_of() {
     printf '%s\n' "$main_body" | grep -nx "    $1" | cut -d: -f1
 }
 
-for step in install_tools start_image_service setup_persistent_claude \
+for step in run_health_check install_tools start_image_service setup_persistent_claude \
         setup_persistent_packages start_web_terminal; do
     [ -n "$(line_of "$step")" ] || fail "main() does not call $step"
 done
@@ -31,6 +31,10 @@ done
     fail "the image service must start before Claude Code's update"
 [ "$(line_of start_image_service)" -lt "$(line_of setup_persistent_packages)" ] || \
     fail "the image service must start before the package installs"
+# The health check's network probes run up to three 15 s curls; offline, the
+# panel would stay a bare 502 for that long if they ran first.
+[ "$(line_of start_image_service)" -lt "$(line_of run_health_check)" ] || \
+    fail "the image service must start before the health check's network probes"
 
 if sed -n '/^start_web_terminal() {/,/^}/p' "$run_sh" | grep -q 'start_image_service'; then
     fail "start_web_terminal still starts the image service"
