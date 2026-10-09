@@ -20,6 +20,10 @@ NPM_LEGACY_CACHE_DIR="${NPM_LEGACY_CACHE_DIR:-/data/home/.npm}"
 # only (tests/test-claude-assets.sh).
 SHIPPED_CLAUDE_DIR="${SHIPPED_CLAUDE_DIR:-/opt/.claude}"
 
+# Where the image service stores pasted images; overridable for tests only
+# (tests/test-image-retention.sh).
+IMAGE_UPLOAD_DIR="${IMAGE_UPLOAD_DIR:-/data/images}"
+
 # CPU check shared with the session picker and health check (cpu-check.sh).
 # shellcheck source=/dev/null
 [ -f "${CPU_CHECK_SCRIPT:-/opt/scripts/cpu-check.sh}" ] && . "${CPU_CHECK_SCRIPT:-/opt/scripts/cpu-check.sh}"
@@ -608,6 +612,36 @@ get_claude_launch_command() {
 
 
 # Start image upload service
+# Pasted and dropped images land in /data/images and go into every backup of the
+# app. Delete the image service's own pasted-* files older than
+# image_retention_days (0 keeps all). A value that cannot be read as a whole
+# number - including the empty string bashio::config returns when the Supervisor
+# API is unreachable - deletes nothing: for a deletion that is the only safe
+# default (owine's fork, PR #380; tests/test-image-retention.sh).
+prune_uploaded_images() {
+    local days removed
+
+    days=$(bashio::config 'image_retention_days' '30')
+    case "$days" in
+        ''|*[!0-9]*)
+            bashio::log.warning "image_retention_days '${days}' is not a whole number; keeping all uploaded images"
+            return 0
+            ;;
+    esac
+    days=$((10#$days))
+    [ "$days" -gt 0 ] || return 0
+    [ -d "$IMAGE_UPLOAD_DIR" ] || return 0
+
+    # -mtime +N matches files whose age in whole days exceeds N, so +(days-1)
+    # means "at least days old".
+    removed=$(find "$IMAGE_UPLOAD_DIR" -maxdepth 1 -type f -name 'pasted-*' \
+        -mtime "+$((days - 1))" -print -delete | wc -l)
+    removed=$((removed))
+    if [ "$removed" -gt 0 ]; then
+        bashio::log.info "Removed ${removed} uploaded image(s) older than ${days} day(s) from ${IMAGE_UPLOAD_DIR}"
+    fi
+}
+
 start_image_service() {
     local image_port=7680
     local ttyd_port=7681
@@ -814,9 +848,10 @@ main() {
 
     init_environment
     install_tools
+    prune_uploaded_images
     # Serve the panel before the slow, network-bound steps below; until ttyd
     # starts last, the terminal frame shows a start page (image-service/server.js)
-    # (owine/claude-terminal-home-assistant#380; tests/test-startup-order.sh).
+    # (owine's fork, PR #380; tests/test-startup-order.sh).
     start_image_service
     setup_tmux
     setup_persistent_claude

@@ -26,3 +26,6 @@ configuration:
   auto_update_claude_on_start:
     name: "Update Claude Code on start"
     description: "Updates Claude Code on every start. Only with “Keep Claude Code current in /data”; off: update from the session menu only."
+  image_retention_days:
+    name: "Keep pasted images (days)"
+    description: "Pasted or dropped images older than this are deleted from /data/images on start, so they do not fill your backups. 0 keeps them all."
