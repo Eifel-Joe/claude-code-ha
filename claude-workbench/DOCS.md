@@ -161,6 +161,21 @@ program in the terminal cannot exfiltrate your clipboard.
 - Images you paste or drop into the panel are stored in `/data/images`, which is part of every backup of the app
 - On start, the app deletes its own pasted images older than this many days (up to 3650); `0` keeps them all
 
+### Auto-Continue After a Usage Limit
+- **Default**: `auto_continue: false`
+- When Claude reports a usage limit, the app types `continue` into the Claude
+  session one minute after the reset (up to 30 s later, it checks every 30 s)
+- Switch it while the app runs with the ⏩ button in the panel header or
+  `auto-continue on|off|status` in the terminal (in Claude: `!auto-continue on`);
+  after a restart the option applies again
+- It only types into a pane of the `claude` tmux session where Claude is the
+  foreground program and the limit message is still on screen
+- Only Claude's own limit message counts: it has to start its screen line (after
+  frame glyphs such as `⎿` or `●`), so an answer that merely mentions
+  "rate limit reached" mid-line does not trigger it
+- Claude then works on unattended - with `dangerously_skip_permissions` it
+  also runs commands without asking
+
 **Example Configuration**:
 ```yaml
 auto_launch_claude: false
@@ -176,6 +191,7 @@ persistent_pip_packages:
 use_persistent_claude: true
 auto_update_claude_on_start: true
 image_retention_days: 30
+auto_continue: false
 ```
 
 Your OAuth credentials are stored in the app's private `/data` (under `/data/home/.claude`), not in `/config`, and persist across app updates and restarts, so you won't need to log in again. Credentials an older release left in `/config/claude-config` are copied into `/data` once on start; you can delete that folder afterwards.
@@ -205,6 +221,9 @@ node /usr/local/bin/claude
 - `claude --editor` - Start an interactive editor session
 
 The terminal starts directly in your `/config` directory, giving you immediate access to all your Home Assistant configuration files. This makes it easy to get help with your configuration, create automations, and troubleshoot issues.
+
+### Keyboard
+- **Shift+Enter** inserts a new line in Claude's input instead of sending it.
 
 ## Features
 

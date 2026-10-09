@@ -29,3 +29,6 @@ configuration:
   image_retention_days:
     name: "Eingefügte Bilder behalten (Tage)"
     description: "Eingefügte oder hineingezogene Bilder, die älter sind, werden beim Start aus /data/images gelöscht, damit sie die Backups nicht füllen. 0 behält alle."
+  auto_continue:
+    name: "Nach Nutzungslimit automatisch weitermachen"
+    description: "Meldet Claude ein Nutzungslimit, tippt die App eine Minute nach dem Reset „continue“ in die Claude-Sitzung. Claude arbeitet dann ohne Aufsicht weiter, auch mit „Ohne Rückfragen ausführen“. Zur Laufzeit mit dem Knopf ⏩ oder `auto-continue on|off` umschaltbar; nach einem Neustart gilt wieder diese Einstellung."

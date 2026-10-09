@@ -281,6 +281,10 @@ fi
 grep -qE '^\s*(RUN |&& )?ln -sf /opt/scripts/health-check\.sh /usr/local/bin/claude-doctor' "$addon_dir/Dockerfile" || \
     fail "Dockerfile does not link /usr/local/bin/claude-doctor to /opt/scripts/health-check.sh"
 
+# auto-continue switches auto-continue at runtime from the terminal.
+grep -qE '^\s*(RUN |&& )?ln -sf /opt/scripts/auto-continue\.sh /usr/local/bin/auto-continue' "$addon_dir/Dockerfile" || \
+    fail "Dockerfile does not link /usr/local/bin/auto-continue to /opt/scripts/auto-continue.sh"
+
 # The old "Version 1.0.2 includes …" security section described 2025 and kept
 # quiet about who can open the panel. The current one must say it.
 if grep -n 'Version 1.0.2 includes' "$addon_dir/README.md"; then

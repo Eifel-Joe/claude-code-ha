@@ -8,7 +8,9 @@ repo_root=$(CDPATH= cd -- "$tests_dir/.." && pwd)
 "$tests_dir/test-production-run.sh"
 "$tests_dir/test-startup-timeouts.sh"
 node "$tests_dir/test-terminal-clipboard.js"
+node --test "$tests_dir/test-workbench-ui.js"
 node --test "$tests_dir/test-app-migration.js"
+node --test "$tests_dir/test-auto-continue.js"
 "$tests_dir/test-startup-hardening.sh"
 "$tests_dir/test-persist-install.sh"
 "$tests_dir/test-cpu-check.sh"
@@ -19,6 +21,7 @@ node --test "$tests_dir/test-app-migration.js"
 "$tests_dir/test-auth-helper.sh"
 "$tests_dir/test-image-retention.sh"
 "$tests_dir/test-tmux-config.sh"
+"$tests_dir/test-auto-continue-cmd.sh"
 
 # The image service is the ingress entry point. Its suite needs node and the
 # service's dependencies; skip loudly rather than pretend it ran.

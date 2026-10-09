@@ -20,13 +20,15 @@ line_of() {
     printf '%s\n' "$main_body" | grep -nx "    $1" | cut -d: -f1
 }
 
-for step in run_health_check install_tools start_image_service setup_persistent_claude \
+for step in run_health_check install_tools init_auto_continue start_image_service setup_persistent_claude \
         setup_persistent_packages start_web_terminal; do
     [ -n "$(line_of "$step")" ] || fail "main() does not call $step"
 done
 
 [ "$(line_of install_tools)" -lt "$(line_of start_image_service)" ] || \
     fail "the image service needs curl from install_tools for its readiness check"
+[ "$(line_of init_auto_continue)" -lt "$(line_of start_image_service)" ] || \
+    fail "init_auto_continue must write the switch before the image service reads it"
 [ "$(line_of start_image_service)" -lt "$(line_of setup_persistent_claude)" ] || \
     fail "the image service must start before Claude Code's update"
 [ "$(line_of start_image_service)" -lt "$(line_of setup_persistent_packages)" ] || \

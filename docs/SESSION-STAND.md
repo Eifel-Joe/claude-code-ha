@@ -1,5 +1,42 @@
 # Sitzungsstand
 
+## 2026-10-09 (14) — Spec + Plan 3.4.0 (Shift+Enter, Auto-Continue)
+
+### Stand
+- `main` = `origin/main` = `5e967c62`, CI 37923584334 grün.
+- Branch `feat/auto-continue-3.4.0` (nur lokal): Spec
+  `docs/specs/2026-10-09-shift-enter-auto-continue-3.4.0-design.md` und Plan
+  `docs/plans/2026-10-09-shift-enter-auto-continue-3.4.0.md` (Commits `7f1ec367`,
+  `5a7f2c72`), beide vom User freigegeben. Noch kein Produktionscode, alle
+  Checkboxen offen.
+- User-Entscheidungen: Auto-Continue mit Option als Anfangszustand **plus**
+  Laufzeit-Schalter (Befehl `auto-continue`) **plus** Knopf im Panel-Header.
+- Befund HA-Test (User, tmux/ps in der App): `pane_current_command` meldet für
+  die Claude-Pane `bash` (Claude PID 354 in der Prozessgruppe von `bash -c`
+  348); deshalb Filter über `tpgid` aus `/proc` (Spec, „Befunde“).
+- ttyd 1.7.7 bündelt `@xterm/xterm` 5.4.0 mit `term.input()` (geprüft an
+  `html/yarn.lock` und den Typings auf unpkg).
+
+### Verworfen
+- `pane_current_command` als Claude-Filter (siehe oben).
+- mattbseas Zeit-Toleranz/12-h-Stale-Logik: passt nicht zu 30-s-Abfragen des
+  Bildschirms; ersetzt durch Text-Signatur (Spec).
+- JSON-Statusdatei für den Befehl (jq lokal nicht vorhanden) → Klartext.
+
+### Fallen
+- Lokal kein tmux und kein jq: alles gegen Attrappen testen.
+- Ein App-Neustart beendet die tmux-Session (Container-Neustart) – meine
+  gegenteilige Aussage im Chat war falsch.
+- Lokaler Branch `feat/safer-defaults-3.3.0` ist ein Rest (bereits gemergt).
+
+### Nächste Schritte
+- Plan Task 1–11 umsetzen (frische Sitzung), Start mit Task 1.
+
+### Empfohlene Skills
+- `superpowers:subagent-driven-development` bzw. `superpowers:executing-plans`,
+  pro Task `superpowers:test-driven-development`, am Ende
+  `superpowers:requesting-code-review`.
+
 ## 2026-10-09 (13) — Release 3.3.0 (claude-doctor, tmux, Sicherheits-Doku, Runner)
 
 ### Stand

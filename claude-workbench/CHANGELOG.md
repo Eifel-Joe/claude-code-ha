@@ -1,5 +1,28 @@
 # Changelog
 
+## 3.4.0
+
+### ✨ New Feature - Auto-continue after a usage limit
+- **Opt-in, off by default** (`auto_continue`): when Claude reports a usage
+  limit ("5-hour limit reached ∙ resets 3pm"), the app types `continue` into
+  the Claude session one minute after the reset, so a long task goes on
+  unattended (mattbsea, mattbsea's heytcass fork, commits `16847c88`,
+  `533ae0ef`, `5924cd08`, `00e22fc0` - his message parser is used as is;
+  the app only counts messages at the start of a line).
+- **Switch it at runtime** with the new ⏩ button in the panel header (shows
+  off/on and the planned time) or `auto-continue on|off|status` in the
+  terminal; after a restart the option applies again.
+- **Only where it is safe**: it types into a pane of the `claude` session
+  only if Claude is the foreground program there, the limit message is
+  still on screen and it is Claude's own message at the start of a line
+  (an answer that mentions "rate limit reached" mid-line does not count),
+  never twice for the same message.
+
+### ✨ New Feature - Shift+Enter inserts a newline
+- **Shift+Enter** no longer submits in the panel: it inserts a line break in
+  Claude's input (backslash + Enter, which Claude Code understands in any
+  terminal) (mattbsea, mattbsea's heytcass fork, commit `6e44e41f`).
+
 ## 3.3.0
 
 ### ✨ New Feature - `claude-doctor`

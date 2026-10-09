@@ -93,6 +93,18 @@
             animation: pulse 1.5s infinite;
         }
 
+        #auto-continue-btn.auto-on {
+            background: #2e7d32;
+        }
+
+        #auto-continue-btn.auto-on:hover {
+            background: #1b5e20;
+        }
+
+        .header-btn .btn-short {
+            display: none;
+        }
+
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.7; }
@@ -421,6 +433,16 @@
                 display: none;
             }
 
+            /* Auto-continue shows its state (off/on/15:01), not just an icon. */
+            #auto-continue-btn {
+                width: auto;
+                padding: 0 8px;
+            }
+
+            .header-btn .btn-short {
+                display: inline;
+            }
+
             .modal-buttons {
                 flex-wrap: wrap;
             }
@@ -444,6 +466,11 @@
             <div id="header-title">Claude Workbench - Voice & image support</div>
             <div style="display: flex; align-items: center; gap: 12px;">
                 <span id="status"></span>
+                <button id="auto-continue-btn" class="header-btn" title="Auto-continue after a usage limit" data-enabled="">
+                    <span>⏩</span>
+                    <span class="btn-label">Auto-continue: ?</span>
+                    <span class="btn-short">?</span>
+                </button>
                 <button id="link-btn" class="header-btn" title="Copy the link shown in the terminal" style="display: none;">
                     <span>🔗</span>
                     <span class="btn-label">Copy link</span>
@@ -511,6 +538,7 @@
     </div>
 
     <script src="terminal-clipboard.js"></script>
+    <script src="workbench-ui.js"></script>
     <script>
         let ttydPort = 7681;
         let uploadDir = '/data/images';
@@ -540,7 +568,10 @@
             installTerminalClipboard(iframe);
             // Paste events fire inside the (same-origin) iframe while the terminal
             // has focus, so the parent document's listener never sees them.
-            iframe.addEventListener('load', () => installImagePaste(iframe));
+            iframe.addEventListener('load', () => {
+                installImagePaste(iframe);
+                installTerminalKeys(iframe);
+            });
         }
 
         // Async Clipboard API path (needs HTTPS or localhost; prompts for permission once).
@@ -608,6 +639,54 @@
                 }
             }, true);
         }
+
+        // Shift+Enter inserts a newline in Claude (public/workbench-ui.js).
+        function installTerminalKeys(iframe) {
+            let win;
+            try { win = iframe.contentWindow; win.document; } catch { return; }
+            ClaudeWorkbenchUi.installShiftEnter(win);
+        }
+
+        // --- Auto-continue after a usage limit (image-service/auto-continue.js) ---
+        const autoContinueBtn = document.getElementById('auto-continue-btn');
+
+        function renderAutoContinue(status) {
+            const formatTime = (iso) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const label = ClaudeWorkbenchUi.autoContinueLabel(status, formatTime);
+            autoContinueBtn.querySelector('.btn-label').textContent = label.text;
+            autoContinueBtn.querySelector('.btn-short').textContent = label.short;
+            autoContinueBtn.title = label.title;
+            autoContinueBtn.classList.toggle('auto-on', label.on);
+            autoContinueBtn.dataset.enabled = status && typeof status.enabled === 'boolean' ? String(status.enabled) : '';
+        }
+
+        async function refreshAutoContinue() {
+            try {
+                const res = await fetch('auto-continue');
+                renderAutoContinue(res.ok ? await res.json() : null);
+            } catch {
+                renderAutoContinue(null);
+            }
+        }
+
+        autoContinueBtn.addEventListener('click', async () => {
+            // Unknown state (the last request failed): switch nothing, ask again.
+            if (autoContinueBtn.dataset.enabled === '') return refreshAutoContinue();
+            const enabled = autoContinueBtn.dataset.enabled !== 'true';
+            try {
+                const res = await fetch('auto-continue', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled })
+                });
+                renderAutoContinue(res.ok ? await res.json() : null);
+            } catch {
+                renderAutoContinue(null);
+            }
+        });
+
+        refreshAutoContinue();
+        setInterval(refreshAutoContinue, 30000);
 
         // Fixes mouse-selection copy and Claude Code's /copy (OSC 52) inside ttyd.
         let clipboardBridge = null;
