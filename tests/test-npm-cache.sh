@@ -50,7 +50,9 @@ setup_npm_cache
 [ "${npm_config_cache:-}" = "$NPM_CACHE_DIR" ] || fail "npm_config_cache lost on a second run"
 
 # Wiring. init_environment writes to fixed /data paths, so these are text checks.
-sed -n '/^init_environment() {/,/^}/p' "$run_sh" | grep -qx '    setup_npm_cache' || \
+# No grep -q after sed: under pipefail an early grep exit makes sed die of
+# SIGPIPE and the check fails although the line is there (CI run 37970222395).
+sed -n '/^init_environment() {/,/^}/p' "$run_sh" | grep -x '    setup_npm_cache' > /dev/null || \
     fail "init_environment does not call setup_npm_cache"
 sed -n "/<< 'PROFILE_EOF'/,/^PROFILE_EOF/p" "$run_sh" | \
     grep -qx 'export npm_config_cache="/tmp/npm-cache"' || \

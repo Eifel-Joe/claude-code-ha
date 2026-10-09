@@ -42,7 +42,9 @@ done
 [ "$(line_of setup_persistent_claude)" -lt "$(line_of run_health_check)" ] || \
     fail "the health check must run after setup_persistent_claude, on the Claude the session uses"
 
-if sed -n '/^start_web_terminal() {/,/^}/p' "$run_sh" | grep -q 'start_image_service'; then
+# grep without -q: an early exit would SIGPIPE sed, and under pipefail a
+# found line would read as "not there".
+if sed -n '/^start_web_terminal() {/,/^}/p' "$run_sh" | grep 'start_image_service' > /dev/null; then
     fail "start_web_terminal still starts the image service"
 fi
 
