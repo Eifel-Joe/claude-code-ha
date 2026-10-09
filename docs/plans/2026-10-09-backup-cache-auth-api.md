@@ -22,7 +22,7 @@ Branch: `fix/backup-cache-auth-api`.
 - Modify: `tests/test-release-metadata.sh` (nach dem Block „publishes a host port“, ca. Zeile 86–88)
 - Modify: `claude-workbench/config.yaml:74`
 
-- [ ] **Step 1: Test ergänzen** — direkt nach dem `fi` des Blocks `config.yaml publishes a host port` einfügen:
+- [x] **Step 1: Test ergänzen** — direkt nach dem `fi` des Blocks `config.yaml publishes a host port` einfügen:
 
 ```bash
 # auth_api only opens the Supervisor's username/password check; nothing in the
@@ -32,26 +32,26 @@ if grep -qE '^auth_api:' "$addon_dir/config.yaml"; then
 fi
 ```
 
-- [ ] **Step 2: RED prüfen**
+- [x] **Step 2: RED prüfen**
 
 Run: `bash tests/test-release-metadata.sh`
 Expected: Exit 1, `… config.yaml requests auth_api; the app never checks HA passwords`
 
-- [ ] **Step 3: Commit (RED)**
+- [x] **Step 3: Commit (RED)**
 
 ```bash
 git add tests/test-release-metadata.sh
 git commit -m "test: auth_api must not be requested"
 ```
 
-- [ ] **Step 4: Zeile `auth_api: true` aus `claude-workbench/config.yaml` löschen** (Edit-Tool; die Zeilen `hassio_api`, `hassio_role`, `homeassistant_api` bleiben).
+- [x] **Step 4: Zeile `auth_api: true` aus `claude-workbench/config.yaml` löschen** (Edit-Tool; die Zeilen `hassio_api`, `hassio_role`, `homeassistant_api` bleiben).
 
-- [ ] **Step 5: GREEN prüfen**
+- [x] **Step 5: GREEN prüfen**
 
 Run: `bash tests/test-release-metadata.sh`
 Expected: `Release metadata suite passed (version 3.1.2)`
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add claude-workbench/config.yaml
@@ -65,7 +65,7 @@ git commit -m "security: drop the unused auth_api permission"
 - Modify: `tests/run-tests.sh` (nach `"$tests_dir/test-cpu-check.sh"`)
 - Modify: `claude-workbench/run.sh` (Kopf-Variablen bei Zeile 11, neue Funktion vor `init_environment`, Aufruf in `init_environment`, Profil-Heredoc)
 
-- [ ] **Step 1: Test schreiben** — `tests/test-npm-cache.sh` (Write-Tool):
+- [x] **Step 1: Test schreiben** — `tests/test-npm-cache.sh` (Write-Tool):
 
 ```bash
 #!/usr/bin/env bash
@@ -130,14 +130,14 @@ echo "npm cache suite passed"
 
 Dann `chmod +x tests/test-npm-cache.sh` und `git update-index --chmod=+x tests/test-npm-cache.sh` nach dem `git add`.
 
-- [ ] **Step 2: RED prüfen**
+- [x] **Step 2: RED prüfen**
 
 Run: `bash tests/test-npm-cache.sh`
 Expected: Exit 1, `FAIL (npm cache): run.sh has no setup_npm_cache`
 
-- [ ] **Step 3: Suite in `tests/run-tests.sh` eintragen** — nach `"$tests_dir/test-cpu-check.sh"` die Zeile `"$tests_dir/test-npm-cache.sh"`.
+- [x] **Step 3: Suite in `tests/run-tests.sh` eintragen** — nach `"$tests_dir/test-cpu-check.sh"` die Zeile `"$tests_dir/test-npm-cache.sh"`.
 
-- [ ] **Step 4: Commit (RED)**
+- [x] **Step 4: Commit (RED)**
 
 ```bash
 git add tests/test-npm-cache.sh tests/run-tests.sh
@@ -145,7 +145,7 @@ git update-index --chmod=+x tests/test-npm-cache.sh
 git commit -m "test: npm's cache must live in /tmp, not in /data"
 ```
 
-- [ ] **Step 5: Kopf-Variablen in `run.sh`** — nach der Zeile `STARTUP_NPM_TIMEOUT="${STARTUP_NPM_TIMEOUT:-300}"` einfügen:
+- [x] **Step 5: Kopf-Variablen in `run.sh`** — nach der Zeile `STARTUP_NPM_TIMEOUT="${STARTUP_NPM_TIMEOUT:-300}"` einfügen:
 
 ```bash
 # npm's download cache; overridable for tests only (tests/test-npm-cache.sh).
@@ -153,7 +153,7 @@ NPM_CACHE_DIR="${NPM_CACHE_DIR:-/tmp/npm-cache}"
 NPM_LEGACY_CACHE_DIR="${NPM_LEGACY_CACHE_DIR:-/data/home/.npm}"
 ```
 
-- [ ] **Step 6: Funktion** — direkt vor `init_environment() {` einfügen:
+- [x] **Step 6: Funktion** — direkt vor `init_environment() {` einfügen:
 
 ```bash
 # npm keeps only a download cache. Under HOME=/data/home it landed in
@@ -170,9 +170,9 @@ setup_npm_cache() {
 
 ```
 
-- [ ] **Step 7: Aufruf** — in `init_environment` direkt nach `    export XDG_DATA_HOME="/data/.local/share"` eine Zeile `    setup_npm_cache` (4 Leerzeichen Einrückung).
+- [x] **Step 7: Aufruf** — in `init_environment` direkt nach `    export XDG_DATA_HOME="/data/.local/share"` eine Zeile `    setup_npm_cache` (4 Leerzeichen Einrückung).
 
-- [ ] **Step 8: Profil** — im Heredoc `PROFILE_EOF` nach der Zeile `export GH_CONFIG_DIR="/data/.config/gh"` einfügen:
+- [x] **Step 8: Profil** — im Heredoc `PROFILE_EOF` nach der Zeile `export GH_CONFIG_DIR="/data/.config/gh"` einfügen:
 
 ```bash
 
@@ -180,14 +180,14 @@ setup_npm_cache() {
 export npm_config_cache="/tmp/npm-cache"
 ```
 
-- [ ] **Step 9: GREEN prüfen**
+- [x] **Step 9: GREEN prüfen**
 
 Run: `bash tests/test-npm-cache.sh`
 Expected: `npm cache suite passed`
 
-- [ ] **Step 10: Gegenprobe** — den Aufruf `    setup_npm_cache` in `init_environment` vorübergehend auskommentieren → Test fällt mit `init_environment does not call setup_npm_cache`; wiederherstellen (Edit-Tool, kein `git checkout -- .`) → grün.
+- [x] **Step 10: Gegenprobe** — den Aufruf `    setup_npm_cache` in `init_environment` vorübergehend auskommentieren → Test fällt mit `init_environment does not call setup_npm_cache`; wiederherstellen (Edit-Tool, kein `git checkout -- .`) → grün.
 
-- [ ] **Step 11: Volle lokale Suite + ShellCheck**
+- [x] **Step 11: Volle lokale Suite + ShellCheck**
 
 ```bash
 bash tests/test-release-metadata.sh
@@ -201,7 +201,7 @@ shellcheck -S warning -e SC1008,SC1007,SC2155 -x claude-workbench/run.sh claude-
 ```
 Expected: alle grün, ShellCheck ohne Ausgabe.
 
-- [ ] **Step 12: Commit**
+- [x] **Step 12: Commit**
 
 ```bash
 git add claude-workbench/run.sh
@@ -216,9 +216,9 @@ git commit -m "fix: keep npm's download cache in /tmp, out of the app's backups"
 - Modify: `claude-workbench/CHANGELOG.md` (oben)
 - Create: `docs/release-notes-3.1.3.md`
 
-- [ ] **Step 1: Version und Badge** auf 3.1.3.
+- [x] **Step 1: Version und Badge** auf 3.1.3.
 
-- [ ] **Step 2: CHANGELOG** direkt unter `# Changelog`:
+- [x] **Step 2: CHANGELOG** direkt unter `# Changelog`:
 
 ```markdown
 ## 3.1.3
@@ -239,7 +239,7 @@ git commit -m "fix: keep npm's download cache in /tmp, out of the app's backups"
   heytcass/home-assistant-addons@3a6ee0d).
 ```
 
-- [ ] **Step 3: Release-Notes** `docs/release-notes-3.1.3.md`:
+- [x] **Step 3: Release-Notes** `docs/release-notes-3.1.3.md`:
 
 ```markdown
 ## Smaller backups, one permission less
@@ -250,9 +250,9 @@ git commit -m "fix: keep npm's download cache in /tmp, out of the app's backups"
 Thanks to Tom Cassady ([@heytcass](https://github.com/heytcass)). Full details: [CHANGELOG](https://github.com/Eifel-Joe/claude-workbench/blob/main/claude-workbench/CHANGELOG.md).
 ```
 
-- [ ] **Step 4: Prüfen** — `bash tests/test-release-metadata.sh` → `… (version 3.1.3)`; CRLF-Check `0`.
+- [x] **Step 4: Prüfen** — `bash tests/test-release-metadata.sh` → `… (version 3.1.3)`; CRLF-Check `0`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add claude-workbench/config.yaml README.md claude-workbench/CHANGELOG.md docs/release-notes-3.1.3.md
@@ -261,7 +261,7 @@ git commit -m "chore(release): 3.1.3"
 
 ### Task 4: Review, CI, HA-Test, Release (je mit Freigabe)
 
-- [ ] **Step 1:** Code-Review per Subagent (`superpowers:requesting-code-review`) über `main..fix/backup-cache-auth-api` gegen Spec und Plan; Befunde über `superpowers:receiving-code-review` prüfen.
+- [x] **Step 1:** Code-Review per Subagent (`superpowers:requesting-code-review`) über `main..fix/backup-cache-auth-api` gegen Spec und Plan; Befunde über `superpowers:receiving-code-review` prüfen.
 - [ ] **Step 2:** Push des Branches (Freigabe); CI über `gh run list --repo Eifel-Joe/claude-workbench --branch fix/backup-cache-auth-api` → grün (inkl. neuer Suite in „Regression suites“).
 - [ ] **Step 3:** Merge nach `main` (`--no-ff`), Push (Freigabe), CI auf `main` grün.
 - [ ] **Step 4:** HA-Test: vorher Größe des letzten Teil-Backups der App notieren (`ha_manage_backup`); `ha_manage_app` check_updates, dann update auf 3.1.3. Prüfen:
