@@ -12,6 +12,10 @@ STARTUP_NPM_TIMEOUT="${STARTUP_NPM_TIMEOUT:-300}"
 STARTUP_APK_TIMEOUT="${STARTUP_APK_TIMEOUT:-300}"
 STARTUP_PIP_TIMEOUT="${STARTUP_PIP_TIMEOUT:-900}"
 
+# npm's download cache; overridable for tests only (tests/test-npm-cache.sh).
+NPM_CACHE_DIR="${NPM_CACHE_DIR:-/tmp/npm-cache}"
+NPM_LEGACY_CACHE_DIR="${NPM_LEGACY_CACHE_DIR:-/data/home/.npm}"
+
 # CPU check shared with the session picker and health check (cpu-check.sh).
 # shellcheck source=/dev/null
 [ -f "${CPU_CHECK_SCRIPT:-/opt/scripts/cpu-check.sh}" ] && . "${CPU_CHECK_SCRIPT:-/opt/scripts/cpu-check.sh}"
@@ -36,6 +40,18 @@ run_with_timeout() {
         bashio::log.warning "$label timed out after ${seconds}s"
     fi
     return "$status"
+}
+
+# npm keeps only a download cache. Under HOME=/data/home it landed in
+# /data/home/.npm and so in every backup of the app (115 MB on a real install;
+# heytcass/home-assistant-addons#105). /tmp is emptied on every restart, at
+# the price of a full download (~113 MB, measured) for the update on start.
+setup_npm_cache() {
+    export npm_config_cache="$NPM_CACHE_DIR"
+    if [ -d "$NPM_LEGACY_CACHE_DIR" ]; then
+        rm -rf "$NPM_LEGACY_CACHE_DIR"
+        bashio::log.info "Removed the old npm cache from $NPM_LEGACY_CACHE_DIR (kept it out of backups)"
+    fi
 }
 
 # Initialize environment for Claude Code CLI using /data (HA best practice)
@@ -83,6 +99,7 @@ init_environment() {
     export XDG_CACHE_HOME="$cache_dir"
     export XDG_STATE_HOME="$state_dir"
     export XDG_DATA_HOME="/data/.local/share"
+    setup_npm_cache
 
     # Claude-specific environment variables
     export ANTHROPIC_CONFIG_DIR="$claude_config_dir"
@@ -137,6 +154,9 @@ export IS_SANDBOX=1
 
 # GitHub CLI persistent configuration
 export GH_CONFIG_DIR="/data/.config/gh"
+
+# npm's download cache stays out of /data (and so out of backups)
+export npm_config_cache="/tmp/npm-cache"
 
 # Persistent package paths and native Claude binary (HIGHEST PRIORITY)
 export PATH="/data/packages/bin:/data/packages/python/venv/bin:/data/home/.local/bin:$PATH"

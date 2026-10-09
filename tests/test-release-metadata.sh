@@ -87,6 +87,12 @@ if grep -qE '^\s+[0-9]+/tcp: *[0-9]+' "$addon_dir/config.yaml"; then
     fail "config.yaml publishes a host port; ttyd runs --writable with no auth, use ingress only"
 fi
 
+# auth_api only opens the Supervisor's username/password check; nothing in the
+# app uses it (dropped in 3.1.3, heytcass/home-assistant-addons@3a6ee0d).
+if grep -qE '^auth_api:' "$addon_dir/config.yaml"; then
+    fail "config.yaml requests auth_api; the app never checks HA passwords"
+fi
+
 grep -q 'interface 127.0.0.1' "$addon_dir/run.sh" || \
     fail "ttyd must bind 127.0.0.1 only; it runs --writable with no credentials"
 
