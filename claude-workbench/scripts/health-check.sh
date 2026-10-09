@@ -50,24 +50,51 @@ check_directory_permissions() {
     fi
 }
 
+# Runs "$1 --version" and prints its output; the status is the command's.
+# Present and executable is not the same as runnable: a libc mismatch leaves
+# a binary that aborts on launch, a CPU without x86-64-v2 one that hangs
+# (umrath, heytcass upstream ff4ebec; owine's fork, commit cc0d74e7). So the
+# checks run it, under a time limit, with stdin from /dev/null - as
+# claude-doctor, stdin is the terminal, and a background job that touches it
+# under timeout is stopped (SIGTTOU) and would look like a hang.
+run_version_check() {
+    local -a version_cmd=("$1" --version)
+    if command -v timeout >/dev/null 2>&1; then
+        version_cmd=(timeout "${HEALTH_VERSION_TIMEOUT:-10}" "${version_cmd[@]}")
+    fi
+    "${version_cmd[@]}" < /dev/null 2>&1
+}
+
+# Logs the result of run_version_check for a tool; returns 1 when it failed.
+# A here-string, not a pipe, for the error lines: with pipefail an
+# early-closing head could fail the check under bashio's errexit.
+report_version_check() {
+    local label="$1" tool="$2" output status=0
+    output=$(run_version_check "$tool") || status=$?
+    if [ "$status" -ne 0 ]; then
+        bashio::log.error "${label} is present but fails to run or hangs (exit ${status}) ✗"
+        bashio::log.info "Output of '${tool} --version':"
+        head -n 5 <<< "$output"
+        return 1
+    fi
+    local version="${output%%$'\n'*}"
+    bashio::log.info "${label} ${3:-installed}: ${version:-(no version output)} ✓"
+}
+
 check_node_installation() {
     bashio::log.info "=== Node.js Installation Check ==="
 
-    if command -v node >/dev/null 2>&1; then
-        local node_version=$(node --version)
-        bashio::log.info "Node.js installed: $node_version ✓"
-    else
+    if ! command -v node >/dev/null 2>&1; then
         bashio::log.error "Node.js not found ✗"
         return 1
     fi
+    report_version_check "Node.js" node || return 1
 
-    if command -v npm >/dev/null 2>&1; then
-        local npm_version=$(npm --version)
-        bashio::log.info "npm installed: $npm_version ✓"
-    else
+    if ! command -v npm >/dev/null 2>&1; then
         bashio::log.error "npm not found ✗"
         return 1
     fi
+    report_version_check "npm" npm || return 1
 }
 
 check_claude_cli() {
@@ -76,7 +103,7 @@ check_claude_cli() {
     local claude_path
     if ! claude_path=$(command -v claude 2>/dev/null); then
         bashio::log.error "Claude CLI not found ✗"
-        bashio::log.info "Restart the app: startup reinstalls Claude Code."
+        bashio::log.info "Restart the app: it restores the built-in Claude Code."
         return 1
     fi
     bashio::log.info "Claude CLI found at: ${claude_path} ✓"
@@ -86,11 +113,8 @@ check_claude_cli() {
         return 1
     fi
 
-    # Present and executable is not the same as runnable: a libc mismatch or a
-    # CPU without x86-64-v2 leaves a binary that aborts or hangs on launch
-    # (umrath, heytcass upstream ff4ebec; owine's fork, commit cc0d74e7). So
-    # run it, once, under a time limit. On such a CPU it would only hang until
-    # the limit, so say why instead (cpu-check.sh).
+    # On a CPU without x86-64-v2 `claude --version` would only hang until the
+    # time limit, so say why instead of running it (cpu-check.sh).
     local missing=""
     if command -v claude_cpu_missing_flags >/dev/null 2>&1; then
         missing=$(claude_cpu_missing_flags)
@@ -100,22 +124,7 @@ check_claude_cli() {
         return 1
     fi
 
-    local -a version_cmd=("$claude_path" --version)
-    if command -v timeout >/dev/null 2>&1; then
-        version_cmd=(timeout "${HEALTH_CLAUDE_TIMEOUT:-10}" "${version_cmd[@]}")
-    fi
-    local output status=0
-    output=$("${version_cmd[@]}" 2>&1) || status=$?
-    if [ "$status" -eq 0 ]; then
-        bashio::log.info "Claude CLI runs: ${output%%$'\n'*} ✓"
-        return 0
-    fi
-    bashio::log.error "Claude CLI is present but fails to run or hangs (exit ${status}) ✗"
-    bashio::log.info "Output of '${claude_path} --version':"
-    # A here-string, not a pipe: with pipefail an early-closing head could fail
-    # the check under bashio's errexit.
-    head -n 5 <<< "$output"
-    return 1
+    report_version_check "Claude CLI" "$claude_path" runs
 }
 
 # Claude Code hangs without a word on CPUs without x86-64-v2 (cpu-check.sh).

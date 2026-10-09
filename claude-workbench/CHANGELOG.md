@@ -23,6 +23,10 @@
   a CPU that cannot run Claude it says so instead of waiting. The "Attempting
   to install" line, which never installed anything, now points at a restart
   (umrath, heytcass/home-assistant-addons `ff4ebec`; owine `cc0d74e7`).
+- Node.js and npm are checked the same way; a broken `node` used to log
+  "Node.js installed:  ✓".
+- On start the check now runs after the persistent Claude Code is set up, so
+  it tests the binary the session uses.
 
 ### 🐛 Bug Fix - No stale panel files after an update
 - The panel's files are served with `Cache-Control: no-cache`, so a browser

@@ -871,11 +871,14 @@ main() {
     # (image-service/server.js) (owine's fork, PR #380; tests/test-startup-order.sh).
     start_image_service
 
-    # Diagnostics (especially helpful for VirtualBox issues); they only log
-    run_health_check
-
     setup_tmux
     setup_persistent_claude
+
+    # Diagnostics (especially helpful for VirtualBox issues); they only log.
+    # After setup_persistent_claude, so `claude --version` tests the binary
+    # the session and claude-doctor use (tests/test-startup-order.sh).
+    run_health_check
+
     setup_session_picker
     setup_persistent_packages
     detect_app_migration

@@ -272,7 +272,7 @@ done
 
 # ubuntu-latest moves to the next Ubuntu release without notice (Ubuntu 26
 # from 2026-10-19). Pin the runner image so a switch is a deliberate change.
-if grep -n 'runs-on: *ubuntu-latest' "$repo_root"/.github/workflows/*.yml; then
+if grep -n 'ubuntu-latest' "$repo_root"/.github/workflows/*.yml; then
     fail "a workflow runs on ubuntu-latest; pin the runner image (ubuntu-24.04)"
 fi
 

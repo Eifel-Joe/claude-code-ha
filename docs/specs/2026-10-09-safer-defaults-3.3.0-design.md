@@ -86,8 +86,30 @@ heytcass-Original (Folgepunkt 20). Befunde gegen `main` = `d2db73b9` geprüft.
 | 5 | `test-image-service.js`: `GET /` und `GET /terminal-clipboard.js` tragen `Cache-Control: no-cache` | ja |
 | 6 | Doku: Durchsicht; `test-release-metadata.sh` verbietet „Version 1.0.2 includes“ im README | ja |
 
-Die Zeitgrenze für `--version` ist per Umgebungsvariable (`HEALTH_CLAUDE_TIMEOUT`,
+Die Zeitgrenze für `--version` ist per Umgebungsvariable (`HEALTH_VERSION_TIMEOUT`,
 Standard 10) überschreibbar, damit der Hänger-Test nicht 10 s dauert.
+
+## Nachtrag nach dem Code-Review (2026-10-09)
+
+- **Reihenfolge:** `run_health_check` läuft jetzt nach `setup_persistent_claude`
+  (vorher davor) – sonst prüfte der Start-Check eine andere Binary als die
+  Sitzung und `claude-doctor`. Test in `tests/test-startup-order.sh`.
+- **Schwester-Pfad Node.js/npm:** `local v=$(node --version)` verschluckte den
+  Status. Node, npm und Claude laufen jetzt über einen gemeinsamen Helfer
+  (`run_version_check`/`report_version_check`) mit Zeitgrenze; die Variable
+  heißt deshalb `HEALTH_VERSION_TIMEOUT` statt `HEALTH_CLAUDE_TIMEOUT`.
+- **stdin aus `/dev/null`:** als `claude-doctor` ist stdin das Terminal; ein
+  `--version`, das es anfasst, würde unter `timeout` angehalten (SIGTTOU) und
+  als Hänger gemeldet.
+- **Leere Ausgabe:** „(no version output)“ statt leerer Version.
+- **Wortlaut 2d:** „Restart the app: it restores the built-in Claude Code.“ –
+  Claude steckt im Image, ein Neustart installiert nichts nach.
+- **Metadaten-Test 1** sucht `ubuntu-latest` in jeder Schreibweise.
+- **Beleg `manager`-Rolle** (README): Supervisor `main` @ `2760df9b88`,
+  `supervisor/api/middleware/security.py` `ROLE_MANAGER` erlaubt u. a.
+  `/addons/<slug>/…`, `/backups`, `/core/…`, `/homeassistant/…`, `/host/…`, `/store`.
+- **README-Volumes:** `/addons` → `/addon_configs` (gemappt ist
+  `all_app_configs:rw`, kein `/addons`).
 
 ## Ende-zu-Ende-Kriterium (HA-Test, 3.3.0)
 

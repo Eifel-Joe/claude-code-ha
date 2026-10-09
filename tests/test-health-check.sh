@@ -66,25 +66,32 @@ old_cpu="$tmp_dir/cpuinfo-old"
 printf 'flags\t\t: fpu sse4_2 popcnt\n' > "$good_cpu"
 printf 'flags\t\t: fpu sse2\n' > "$old_cpu"
 
+# write_stub [name] body - a fake command in the stub dir (default: claude).
+# Only the claude stub leaves the "was started" marker.
 write_stub() {
-    printf '#!/bin/bash\ntouch "%s"\n%s\n' "$ran_marker" "$1" > "$stub_dir/claude"
-    chmod +x "$stub_dir/claude"
+    local name=claude
+    if [ "$#" -eq 2 ]; then name=$1; shift; fi
+    local marker=":"
+    [ "$name" = claude ] && marker="touch \"$ran_marker\""
+    printf '#!/bin/bash\n%s\n%s\n' "$marker" "$1" > "$stub_dir/$name"
+    chmod +x "$stub_dir/$name"
 }
 
-# Runs check_claude_cli with only the stub dir and the system tools in PATH
-# (a real claude on the developer's machine must not be found).
+# Runs a check function with only the stub dir and the system tools in PATH
+# (a real claude or node on the developer's machine must not be found).
 # Prints the log; the exit status goes to $tmp_dir/rc.
-run_claude_check() {
-    local cpuinfo="$1" rc=0
+run_check() {
+    local check="$1" cpuinfo="$2" rc=0
     rm -f "$ran_marker"
     (
         PATH="$stub_dir:/usr/bin:/bin"
-        CPU_CHECK_ARCH=x86_64 CPU_CHECK_CPUINFO="$cpuinfo" HEALTH_CLAUDE_TIMEOUT=1
-        export CPU_CHECK_ARCH CPU_CHECK_CPUINFO HEALTH_CLAUDE_TIMEOUT
-        check_claude_cli
+        CPU_CHECK_ARCH=x86_64 CPU_CHECK_CPUINFO="$cpuinfo" HEALTH_VERSION_TIMEOUT=1
+        export CPU_CHECK_ARCH CPU_CHECK_CPUINFO HEALTH_VERSION_TIMEOUT
+        "$check"
     ) || rc=$?
     printf '%s\n' "$rc" > "$tmp_dir/rc"
 }
+run_claude_check() { run_check check_claude_cli "$1"; }
 
 # Works: version in the log, status 0.
 write_stub 'echo "2.1.300 (Claude Code)"'
@@ -116,7 +123,7 @@ grep -q '^error|Claude CLI is present but fails to run' <<< "$out" || \
 rm -f "$stub_dir/claude"
 out=$(run_claude_check "$good_cpu")
 [ "$(cat "$tmp_dir/rc")" -eq 1 ] || fail "a missing claude passed the check: $out"
-grep -qx 'info|Restart the app: startup reinstalls Claude Code.' <<< "$out" || \
+grep -qx 'info|Restart the app: it restores the built-in Claude Code.' <<< "$out" || \
     fail "a missing claude gets no restart hint: $out"
 if grep -q 'Attempting to install' <<< "$out"; then
     fail "the check still promises an install it never does: $out"
@@ -129,5 +136,50 @@ out=$(run_claude_check "$old_cpu")
 [ ! -e "$ran_marker" ] || fail "claude was started on a CPU that cannot run it"
 grep -qx 'error|Claude CLI cannot run on this CPU (lacks sse4_2 popcnt) ✗' <<< "$out" || \
     fail "the CPU reason is not reported: $out"
+
+# Runs but prints nothing: no empty version in the log.
+write_stub 'exit 0'
+out=$(run_claude_check "$good_cpu")
+[ "$(cat "$tmp_dir/rc")" -eq 0 ] || fail "a silent but working claude failed the check: $out"
+grep -qx 'info|Claude CLI runs: (no version output) ✓' <<< "$out" || \
+    fail "a silent claude logs an empty version: $out"
+
+# The check must not pass its stdin on: run as claude-doctor that is the
+# terminal, and a --version that touched it would be stopped (SIGTTOU) under
+# timeout and reported as a hang. The stub fails if it can read anything.
+write_stub 'if read -r line; then echo "read stdin: $line"; exit 3; fi; echo "2.1.300 (Claude Code)"'
+out=$(run_claude_check "$good_cpu" <<< "typed in the terminal")
+[ "$(cat "$tmp_dir/rc")" -eq 0 ] || fail "claude --version got the caller's stdin: $out"
+
+# Same "present but not runnable" pattern for Node.js and npm: the version is
+# run under the time limit and its status counts (`local v=$(node …)` hid it).
+write_stub node 'echo v22.15.0'
+write_stub npm 'echo 10.9.2'
+out=$(run_check check_node_installation "$good_cpu")
+[ "$(cat "$tmp_dir/rc")" -eq 0 ] || fail "working node and npm failed the check: $out"
+grep -qx 'info|Node.js installed: v22.15.0 ✓' <<< "$out" || fail "node version missing: $out"
+grep -qx 'info|npm installed: 10.9.2 ✓' <<< "$out" || fail "npm version missing: $out"
+
+write_stub node 'echo "Error relocating /usr/bin/node: symbol not found" >&2; exit 127'
+out=$(run_check check_node_installation "$good_cpu")
+[ "$(cat "$tmp_dir/rc")" -eq 1 ] || fail "a broken node passed the check: $out"
+grep -q '^error|Node.js is present but fails to run' <<< "$out" || \
+    fail "a broken node is not reported: $out"
+grep -qx 'Error relocating /usr/bin/node: symbol not found' <<< "$out" || \
+    fail "the real error of a broken node is not shown: $out"
+
+write_stub node 'echo v22.15.0'
+write_stub npm 'exec sleep 30'
+start=$SECONDS
+out=$(run_check check_node_installation "$good_cpu")
+[ "$(cat "$tmp_dir/rc")" -eq 1 ] || fail "a hanging npm passed the check: $out"
+[ $((SECONDS - start)) -lt 10 ] || fail "the time limit did not end a hanging npm"
+grep -q '^error|npm is present but fails to run' <<< "$out" || \
+    fail "a hanging npm is not reported: $out"
+
+rm -f "$stub_dir/npm"
+out=$(run_check check_node_installation "$good_cpu")
+[ "$(cat "$tmp_dir/rc")" -eq 1 ] || fail "a missing npm passed the check: $out"
+grep -qx 'error|npm not found ✗' <<< "$out" || fail "a missing npm is not reported: $out"
 
 echo "Health check suite passed"
