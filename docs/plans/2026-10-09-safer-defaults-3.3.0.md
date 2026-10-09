@@ -32,7 +32,7 @@
 - Modify: `tests/test-release-metadata.sh` (vor der Schlusszeile `echo "Release metadata suite passed …"`)
 - Modify: `.github/workflows/ci.yml:19,62,86`, `.github/workflows/claude.yml:20`
 
-- [ ] **Step 1: Failing test** – in `tests/test-release-metadata.sh` direkt vor `echo "Release metadata suite passed (version $config_version)"` einfügen:
+- [x] **Step 1: Failing test** – in `tests/test-release-metadata.sh` direkt vor `echo "Release metadata suite passed (version $config_version)"` einfügen:
 
 ```bash
 # ubuntu-latest moves to the next Ubuntu release without notice (Ubuntu 26
@@ -42,15 +42,15 @@ if grep -n 'runs-on: *ubuntu-latest' "$repo_root"/.github/workflows/*.yml; then
 fi
 ```
 
-- [ ] **Step 2: RED** – `bash tests/test-release-metadata.sh`
+- [x] **Step 2: RED** – `bash tests/test-release-metadata.sh`
   Expected: 4 Trefferzeilen, dann `FAIL (release metadata): a workflow runs on ubuntu-latest; …`, Exit 1.
 
-- [ ] **Step 3: Implementation** – in beiden Workflows jedes `runs-on: ubuntu-latest` durch `runs-on: ubuntu-24.04` ersetzen (Edit-Tool, `replace_all` je Datei).
+- [x] **Step 3: Implementation** – in beiden Workflows jedes `runs-on: ubuntu-latest` durch `runs-on: ubuntu-24.04` ersetzen (Edit-Tool, `replace_all` je Datei).
 
-- [ ] **Step 4: GREEN** – `bash tests/test-release-metadata.sh`
+- [x] **Step 4: GREEN** – `bash tests/test-release-metadata.sh`
   Expected: `Release metadata suite passed (version 3.2.0)`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add tests/test-release-metadata.sh .github/workflows/ci.yml .github/workflows/claude.yml
@@ -71,7 +71,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `tests/test-health-check.sh` (neuer Teil vor `echo "Health check suite passed"`)
 - Modify: `claude-workbench/scripts/health-check.sh:73-91` (`check_claude_cli`)
 
-- [ ] **Step 1: Failing test** – in `tests/test-health-check.sh` die Schlusszeile `echo "Health check suite passed"` ersetzen durch:
+- [x] **Step 1: Failing test** – in `tests/test-health-check.sh` die Schlusszeile `echo "Health check suite passed"` ersetzen durch:
 
 ```bash
 # check_claude_cli used to pass on `command -v` and the x bit alone, so a
@@ -161,10 +161,10 @@ grep -qx 'error|Claude CLI cannot run on this CPU (lacks sse4_2 popcnt) ✗' <<<
 echo "Health check suite passed"
 ```
 
-- [ ] **Step 2: RED** – `bash tests/test-health-check.sh`
+- [x] **Step 2: RED** – `bash tests/test-health-check.sh`
   Expected: `FAIL (health check): a working claude does not report its version: …` (heute „Claude CLI is executable ✓“), Exit 1.
 
-- [ ] **Step 3: Implementation** – in `claude-workbench/scripts/health-check.sh` die ganze Funktion `check_claude_cli()` (Zeilen 73–91) ersetzen durch:
+- [x] **Step 3: Implementation** – in `claude-workbench/scripts/health-check.sh` die ganze Funktion `check_claude_cli()` (Zeilen 73–91) ersetzen durch:
 
 ```bash
 check_claude_cli() {
@@ -216,10 +216,10 @@ check_claude_cli() {
 }
 ```
 
-- [ ] **Step 4: GREEN** – `bash tests/test-health-check.sh`
+- [x] **Step 4: GREEN** – `bash tests/test-health-check.sh`
   Expected: `Health check suite passed`. Danach Schwester-Pfad-Check: `check_node_installation` ruft `node --version`/`npm --version` ohne Zeitgrenze auf – bleibt so (Node ist im Image, kein bekannter Hänger; nicht im Scope der Spec), im Review erwähnen.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add tests/test-health-check.sh claude-workbench/scripts/health-check.sh
@@ -243,7 +243,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `claude-workbench/Dockerfile:141-146`
 - Modify: `claude-workbench/DOCS.md` (Abschnitt `## Troubleshooting`, Zeile 214ff)
 
-- [ ] **Step 1: Failing test** – in `tests/test-release-metadata.sh` vor der Schlusszeile einfügen:
+- [x] **Step 1: Failing test** – in `tests/test-release-metadata.sh` vor der Schlusszeile einfügen:
 
 ```bash
 # claude-doctor makes the startup health check callable from the terminal;
@@ -252,10 +252,10 @@ grep -qE '^\s*(RUN |&& )?ln -sf /opt/scripts/health-check\.sh /usr/local/bin/cla
     fail "Dockerfile does not link /usr/local/bin/claude-doctor to /opt/scripts/health-check.sh"
 ```
 
-- [ ] **Step 2: RED** – `bash tests/test-release-metadata.sh`
+- [x] **Step 2: RED** – `bash tests/test-release-metadata.sh`
   Expected: `FAIL (release metadata): Dockerfile does not link /usr/local/bin/claude-doctor …`, Exit 1.
 
-- [ ] **Step 3: Implementation** – im Dockerfile
+- [x] **Step 3: Implementation** – im Dockerfile
 
 ```dockerfile
 COPY .claude/ /opt/.claude/
@@ -283,10 +283,10 @@ RUN chmod +x /run.sh \
   last line sums up how many checks failed.
 ```
 
-- [ ] **Step 4: GREEN** – `bash tests/test-release-metadata.sh`
+- [x] **Step 4: GREEN** – `bash tests/test-release-metadata.sh`
   Expected: `Release metadata suite passed (version 3.2.0)`. Das Image selbst baut erst die CI (Task 8).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add tests/test-release-metadata.sh claude-workbench/Dockerfile claude-workbench/DOCS.md
@@ -308,7 +308,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `claude-workbench/run.sh:345-358` (Heredoc in `setup_tmux`)
 - Modify: `claude-workbench/DOCS.md` (nach Abschnitt `### tmux Mouse Mode`)
 
-- [ ] **Step 1: Failing test** – `tests/test-tmux-config.sh` anlegen:
+- [x] **Step 1: Failing test** – `tests/test-tmux-config.sh` anlegen:
 
 ```bash
 #!/usr/bin/env bash
@@ -361,10 +361,10 @@ echo "tmux config suite passed"
 "$tests_dir/test-tmux-config.sh"
 ```
 
-- [ ] **Step 2: RED** – `bash tests/test-tmux-config.sh`
+- [x] **Step 2: RED** – `bash tests/test-tmux-config.sh`
   Expected: `FAIL (tmux config): focus-events is not on`, Exit 1.
 
-- [ ] **Step 3: Implementation** – im Heredoc von `setup_tmux` (`run.sh`)
+- [x] **Step 3: Implementation** – im Heredoc von `setup_tmux` (`run.sh`)
 
 ```
 # Reduce escape-time so claude/vim feel responsive inside tmux
@@ -418,10 +418,10 @@ TMUX_EOF
 - Restarting the app loads it as well
 ````
 
-- [ ] **Step 4: GREEN** – `bash tests/test-tmux-config.sh`
+- [x] **Step 4: GREEN** – `bash tests/test-tmux-config.sh`
   Expected: `tmux config suite passed`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add tests/test-tmux-config.sh tests/run-tests.sh claude-workbench/run.sh claude-workbench/DOCS.md
@@ -444,7 +444,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `tests/test-image-service.js` (nach dem Test „the static UI is served at the root“, Zeile 257–261)
 - Modify: `claude-workbench/image-service/server.js:155-156`
 
-- [ ] **Step 1: Failing test** – nach `test('the static UI is served at the root', …)` einfügen:
+- [x] **Step 1: Failing test** – nach `test('the static UI is served at the root', …)` einfügen:
 
 ```js
 test('the UI is revalidated on every load (Cache-Control: no-cache)', async () => {
@@ -459,10 +459,10 @@ test('the UI is revalidated on every load (Cache-Control: no-cache)', async () =
 });
 ```
 
-- [ ] **Step 2: RED** – `node --test --test-reporter=tap tests/test-image-service.js`
+- [x] **Step 2: RED** – `node --test --test-reporter=tap tests/test-image-service.js`
   Expected: der neue Test `not ok` mit `'public, max-age=0' !== 'no-cache'`; die übrigen 14 wie bisher (unter Windows der bekannte ECONNRESET-Dateifehlschlag).
 
-- [ ] **Step 3: Implementation** – in `server.js`
+- [x] **Step 3: Implementation** – in `server.js`
 
 ```js
 // Serve static files (HTML interface) - MUST be after API routes
@@ -482,10 +482,10 @@ app.use(express.static(path.join(__dirname, 'public'), {
 }));
 ```
 
-- [ ] **Step 4: GREEN** – `node --test --test-reporter=tap tests/test-image-service.js`
+- [x] **Step 4: GREEN** – `node --test --test-reporter=tap tests/test-image-service.js`
   Expected: 15 Einzeltests `ok` (Windows: bekannter Dateifehlschlag ECONNRESET bleibt; maßgeblich die Einzeltests, unter Linux in der CI 15/0).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add tests/test-image-service.js claude-workbench/image-service/server.js
@@ -507,7 +507,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `claude-workbench/README.md:84-93` (Volumes-Zeile) und `:133-139` (`## Security`)
 - Modify: `claude-workbench/DOCS.md` (neuer Abschnitt `## Security` vor `## Troubleshooting`)
 
-- [ ] **Step 1: Failing test** – in `tests/test-release-metadata.sh` vor der Schlusszeile einfügen:
+- [x] **Step 1: Failing test** – in `tests/test-release-metadata.sh` vor der Schlusszeile einfügen:
 
 ```bash
 # The old "Version 1.0.2 includes …" security section described 2025 and kept
@@ -519,10 +519,10 @@ grep -q 'every signed-in Home Assistant user' "$addon_dir/README.md" || \
     fail "README.md security section does not say who can open the panel"
 ```
 
-- [ ] **Step 2: RED** – `bash tests/test-release-metadata.sh`
+- [x] **Step 2: RED** – `bash tests/test-release-metadata.sh`
   Expected: Trefferzeile `135:Version 1.0.2 includes …`, dann `FAIL (release metadata): README.md still carries the outdated …`, Exit 1.
 
-- [ ] **Step 3: Implementation**
+- [x] **Step 3: Implementation**
 
   a) `claude-workbench/README.md`, den Abschnitt von `## Security` bis vor `## Development Environment` ersetzen durch:
 
@@ -579,10 +579,10 @@ sources: the
 [Security section of the README](https://github.com/Eifel-Joe/claude-workbench/blob/main/claude-workbench/README.md#security).
 ```
 
-- [ ] **Step 4: GREEN** – `bash tests/test-release-metadata.sh`
+- [x] **Step 4: GREEN** – `bash tests/test-release-metadata.sh`
   Expected: `Release metadata suite passed (version 3.2.0)`. Durchsicht: `git diff claude-workbench/README.md claude-workbench/DOCS.md` – keine Aussage ohne Beleg aus der Spec („Belege zu 6“).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add tests/test-release-metadata.sh claude-workbench/README.md claude-workbench/DOCS.md
@@ -607,10 +607,10 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Modify: `claude-workbench/CHANGELOG.md` (oben, unter `# Changelog`)
 - Create: `docs/release-notes-3.3.0.md`
 
-- [ ] **Step 1: RED** – nur die Version in `config.yaml` auf `3.3.0` setzen, dann `bash tests/test-release-metadata.sh`
+- [x] **Step 1: RED** – nur die Version in `config.yaml` auf `3.3.0` setzen, dann `bash tests/test-release-metadata.sh`
   Expected: `FAIL (release metadata): CHANGELOG.md has no '## 3.3.0' section …`.
 
-- [ ] **Step 2: CHANGELOG** – unter `# Changelog` einfügen:
+- [x] **Step 2: CHANGELOG** – unter `# Changelog` einfügen:
 
 ```markdown
 ## 3.3.0
@@ -654,9 +654,9 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
   becomes Ubuntu 26 on 2026-10-19.
 ```
 
-- [ ] **Step 3: Badge** – `README.md` Zeile 3: `version-3.2.0-` → `version-3.3.0-`.
+- [x] **Step 3: Badge** – `README.md` Zeile 3: `version-3.2.0-` → `version-3.3.0-`.
 
-- [ ] **Step 4: Release-Notes** – `docs/release-notes-3.3.0.md` anlegen:
+- [x] **Step 4: Release-Notes** – `docs/release-notes-3.3.0.md` anlegen:
 
 ```markdown
 ## claude-doctor, own tmux settings, honest security notes
@@ -669,10 +669,10 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 These come from [@umrath](https://github.com/umrath) in [heytcass/home-assistant-addons](https://github.com/heytcass/home-assistant-addons) (`ff4ebec`, `8e65403`) and the fork by [@owine](https://github.com/owine) ([owine/claude-terminal-home-assistant](https://github.com/owine/claude-terminal-home-assistant), `cc0d74e7`, `1175851a`, `1e0a33e2`, `67dd7e55`); BartBourgeois and Maheidem had the tmux idea too. Thank you! Full details: [CHANGELOG](https://github.com/Eifel-Joe/claude-workbench/blob/main/claude-workbench/CHANGELOG.md).
 ```
 
-- [ ] **Step 5: GREEN** – `bash tests/test-release-metadata.sh`
+- [x] **Step 5: GREEN** – `bash tests/test-release-metadata.sh`
   Expected: `Release metadata suite passed (version 3.3.0)`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add claude-workbench/config.yaml README.md claude-workbench/CHANGELOG.md docs/release-notes-3.3.0.md
@@ -685,7 +685,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ### Task 8: Volle Prüfung, Review, CI, HA-Test, Release (je mit Freigabe)
 
-- [ ] **Step 1: Volle lokale Suite** (mit TMP-Exports aus den Arbeitsregeln):
+- [x] **Step 1: Volle lokale Suite** (mit TMP-Exports aus den Arbeitsregeln):
 
 ```bash
 bash tests/test-release-metadata.sh
@@ -706,7 +706,7 @@ node --test --test-reporter=tap tests/test-image-service.js
 
   Expected: alles grün (Image-Service: 15 Einzeltests maßgeblich).
 
-- [ ] **Step 2: ShellCheck wie die CI**
+- [x] **Step 2: ShellCheck wie die CI**
 
 ```bash
 shellcheck -S warning -e SC1008,SC1007,SC2155 -x claude-workbench/run.sh claude-workbench/scripts/*.sh claude-workbench/scripts/persist-install tests/*.sh
@@ -714,7 +714,7 @@ shellcheck -S warning -e SC1008,SC1007,SC2155 -x claude-workbench/run.sh claude-
 
   Expected: keine Ausgabe. CRLF-Check `0`. `.tmp/` auf Test-Reste prüfen.
 
-- [ ] **Step 3:** Code-Review per Subagent (`superpowers:requesting-code-review`) über `main..feat/safer-defaults-3.3.0` gegen Spec und Plan; Befunde über `superpowers:receiving-code-review` prüfen.
+- [x] **Step 3:** Code-Review per Subagent (`superpowers:requesting-code-review`) über `main..feat/safer-defaults-3.3.0` gegen Spec und Plan; Befunde über `superpowers:receiving-code-review` prüfen.
 - [ ] **Step 4:** Push des Branches (Freigabe); CI `gh run list --repo Eifel-Joe/claude-workbench --branch feat/safer-defaults-3.3.0` → grün; im Job-Log „Runner Image … ubuntu-24.04“, „tmux config suite passed“, Image-Service 15/0, beide Image-Builds grün.
 - [ ] **Step 5:** Merge nach `main` (`--no-ff`), Push (Freigabe), CI auf `main` grün.
 - [ ] **Step 6:** HA-Test (`ha_manage_app` check_updates, dann update auf 3.3.0). Prüfen (Ende-zu-Ende-Kriterium der Spec):
