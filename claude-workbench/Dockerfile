@@ -142,8 +142,11 @@ WORKDIR /config
 COPY run.sh /run.sh
 COPY scripts/ /opt/scripts/
 COPY .claude/ /opt/.claude/
+# claude-doctor: the startup health check, callable from the terminal
+# (owine's fork, commit cc0d74e7)
 RUN chmod +x /run.sh \
-    && chmod +x /opt/scripts/*.sh
+    && chmod +x /opt/scripts/*.sh \
+    && ln -sf /opt/scripts/health-check.sh /usr/local/bin/claude-doctor
 
 # Use exec form for better signal handling
 CMD ["/run.sh"]

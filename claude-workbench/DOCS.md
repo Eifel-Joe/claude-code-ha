@@ -213,6 +213,10 @@ The terminal starts directly in your `/config` directory, giving you immediate a
 
 ## Troubleshooting
 
+- **Run `claude-doctor`** in the terminal (session menu → "🐚 Drop to bash
+  shell") for the health check the app runs on every start: memory, disk,
+  Node.js, whether Claude Code actually starts, the CPU and the network. The
+  last line sums up how many checks failed.
 - **Claude does not start on a virtual machine (blank panel or "cannot run on this CPU")**:
   Claude Code needs an x86-64-v2 CPU (SSE4.2 and POPCNT). Proxmox's default
   CPU type `kvm64` lacks both. Set the VM's CPU type to `host` (or at least

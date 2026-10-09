@@ -276,4 +276,9 @@ if grep -n 'runs-on: *ubuntu-latest' "$repo_root"/.github/workflows/*.yml; then
     fail "a workflow runs on ubuntu-latest; pin the runner image (ubuntu-24.04)"
 fi
 
+# claude-doctor makes the startup health check callable from the terminal;
+# nobody knows /opt/scripts/health-check.sh by heart.
+grep -qE '^\s*(RUN |&& )?ln -sf /opt/scripts/health-check\.sh /usr/local/bin/claude-doctor' "$addon_dir/Dockerfile" || \
+    fail "Dockerfile does not link /usr/local/bin/claude-doctor to /opt/scripts/health-check.sh"
+
 echo "Release metadata suite passed (version $config_version)"
