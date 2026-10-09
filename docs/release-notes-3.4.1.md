@@ -5,6 +5,7 @@
 - **Shift+Enter** now inserts a new line in Claude's input instead of sending it (backslash + Enter, which Claude Code understands in any terminal).
 - **3.4.1:** a limit message first seen after its reset time (auto-continue switched on late) waited a whole day; a reset time more than 12 hours ahead now counts as just passed, so `continue` follows a minute later. 3.4.0 was only on the test instance and gets no release of its own.
 - **Security note:** auto-continue lets Claude go on unattended; with `dangerously_skip_permissions` that includes running commands.
+- **Known limitation:** weekly-limit messages get no special handling yet. Depending on their wording, auto-continue may not react, or may send `continue` again each time Claude repeats the message. Switch it off while you are on a weekly limit.
 
 **Upgrade notes:** nothing to do. Auto-continue is off until you turn it on.
 
