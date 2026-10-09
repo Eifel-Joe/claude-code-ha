@@ -1,5 +1,48 @@
 # Sitzungsstand
 
+## 2026-10-09 (13) — Release 3.3.0 (claude-doctor, tmux, Sicherheits-Doku, Runner)
+
+### Stand
+- Plan `docs/plans/2026-10-09-safer-defaults-3.3.0.md` komplett umgesetzt
+  (TDD, ein Commit je Task). Merge `f09a0afd`, Release-Commit `ad5c4db3`,
+  Tag und GitHub-Release `v3.3.0` „3.3.0 — claude-doctor, own tmux settings,
+  honest security notes“ (Latest). CI grün: Branch 37920646911, `main`
+  37920921642 und 37921617456; alle Jobs auf Runner-Image `ubuntu-24.04`,
+  Image-Service unter Linux 15/0.
+- Code-Review per Subagent: Health-Check lief vor `setup_persistent_claude`
+  (prüfte womöglich eine andere Binary) → jetzt danach; Schwester-Pfad
+  node/npm (`local v=$(…)` verschluckte den Status) → gemeinsamer Helfer
+  `run_version_check`/`report_version_check`, stdin aus `/dev/null`
+  (Gegenprobe rot); Nachtrag in der Spec.
+- HA-Test 3.3.0 (MCP-Update 13:01): Log „Claude CLI runs: 2.1.295 (Claude
+  Code) ✓“ nach dem Override; User: `claude-doctor` im Terminal liefert
+  dieselben Checks; `~/.tmux.conf.local` mit `status-bg colour22` färbt die
+  Leiste grün (tmux expandiert `~`).
+- HA-Prod 3.3.0 (User, 13:22): Supervisor „successfully updated“, App-Log
+  sauber, Health-Check alle ✓.
+
+### Verworfen
+- `timeout -k 2` im Health-Check (kein Bedarf, coreutils-timeout beendet die
+  Prozessgruppe).
+
+### Fallen
+- Store auf HA-Prod kannte 3.3.0 erst nach „Nach Updates suchen“
+  (`version_latest` blieb 3.2.0).
+- Ein Test „stdin ist kein Terminal“ mit `[ -t 0 ]` wird im Bash-Tool nie rot
+  (kein TTY) – stattdessen prüfen, ob die Kind-Binary Eingaben lesen kann.
+- HA-Test und HA-Prod zeigen Claude unterschiedlich (Statuszeile, 1M-Kontext,
+  Eingabe unten auf Prod): Einstellungen in `/data/home/.claude/` je
+  Installation, nicht die App. User: egal.
+
+### Nächste Schritte
+- Offene Punkte aus `docs/FORK-SURVEY-heytcass.md` („Umsetzungsstand“) und
+  Memory: Boot-Smoke-Test in der CI (heytcass `d50e6c0`), `claude_extra_args`,
+  Mobil-Toolbar, `working_directory`, `permissions.deny`, Log-Rauschen
+  „Proxy error“ beim Start, Auth-Helper-Pipe-Frage, „erst prüfen“-Punkte.
+
+### Empfohlene Skills
+- `task-loop` für den nächsten Punkt.
+
 ## 2026-10-09 (12) — Spec + Plan 3.3.0 (CI-Runner, claude-doctor, tmux, Sicherheits-Doku)
 
 ### Stand

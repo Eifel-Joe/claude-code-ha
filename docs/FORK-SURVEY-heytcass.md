@@ -21,7 +21,11 @@ Spalte **Empf.**: ✅ übernehmen · 🟡 prüfen/angepasst übernehmen · ❌ n
 | Mitgelieferte Skills/Commands bei jedem Start | eigener Fund | ✅ 3.2.0 |
 | Auth-Helper ohne Klartext-Reste | owine `96ccd0d4` | ✅ 3.2.0 |
 | `image_retention_days` | owine #380, msvinth, mattbsea | ✅ 3.2.0 |
-| `claude_extra_args` (mattbsea, ToRa89, umrath, monxas), `~/.tmux.conf.local` (owine, BartBourgeois, Maheidem), Mobil-Toolbar (mattbsea, weiting-tw), `working_directory` (owine, ToRa89, heman22union), `map: share/addons`, `permissions.deny` (Maheidem), Shift+Enter (mattbsea), Auto-Continue (mattbsea) | siehe Teile | offen |
+| Health-Check startet `claude`/`node`/`npm --version` mit Zeitgrenze, `claude-doctor` | umrath (heytcass `ff4ebec`), owine `cc0d74e7` | ✅ 3.3.0 |
+| `~/.tmux.conf.local`, `focus-events` | owine `1175851a`/`1e0a33e2`, BartBourgeois, Maheidem | ✅ 3.3.0 |
+| `Cache-Control: no-cache` für die Oberfläche | owine `67dd7e55` | ✅ 3.3.0 |
+| Sicherheits-Doku „jeder HA-User kann das Panel öffnen“ | umrath (heytcass `8e65403`) | ✅ 3.3.0 |
+| `claude_extra_args` (mattbsea, ToRa89, umrath, monxas), Mobil-Toolbar (mattbsea, weiting-tw), `working_directory` (owine, ToRa89, heman22union), `map: share/addons`, `permissions.deny` (Maheidem), Shift+Enter (mattbsea), Auto-Continue (mattbsea) | siehe Teile | offen |
 | ripgrep unter musl, Ingress-IP-Filter `172.30.32.2`, `watchdog:` | siehe Teile | offen, erst prüfen |
 | `persist-install` kopiert keine apk-Dateien | eigener Fund | offen (Folgepunkt 7) |
 | Log-Rauschen „Proxy error“ während des Starts (offener Terminal-Tab) | HA-Test 3.2.0 | offen |

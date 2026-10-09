@@ -721,6 +721,6 @@ shellcheck -S warning -e SC1008,SC1007,SC2155 -x claude-workbench/run.sh claude-
   - App-Log: „Claude CLI runs: <Version> ✓“ und die Zusammenfassung des Health-Checks;
   - User im Terminal (Picker 8): `claude-doctor` → dieselben Checks und Zusammenfassung;
   - User: `echo 'set -g status-bg colour22' >> ~/.tmux.conf.local; tmux source-file ~/.tmux.conf` → Statusleiste grün; danach `rm ~/.tmux.conf.local` und App-Neustart nach Belieben.
-- [ ] **Step 7:** Tag `v3.3.0` und GitHub-Release „3.3.0 — claude-doctor, own tmux settings, honest security notes“ mit `docs/release-notes-3.3.0.md` (Text-Freigabe vorher).
-- [ ] **Step 8:** HA-Prod-Update durch den User; Supervisor- und App-Log per MCP prüfen.
-- [ ] **Step 9:** `docs/SESSION-STAND.md` ergänzen, Tabelle „Umsetzungsstand“ in `docs/FORK-SURVEY-heytcass.md` (tmux, no-cache, `claude-doctor`) und Memory `claude-code-ha-followups` (heytcass-Rest: nur noch Boot-Smoke-Test offen; CI-Runner erledigt) aktualisieren, `.tmp/` gezielt leeren.
+- [x] **Step 7:** Tag `v3.3.0` und GitHub-Release „3.3.0 — claude-doctor, own tmux settings, honest security notes“ mit `docs/release-notes-3.3.0.md` (Text-Freigabe vorher).
+- [x] **Step 8:** HA-Prod-Update durch den User; Supervisor- und App-Log per MCP prüfen.
+- [x] **Step 9:** `docs/SESSION-STAND.md` ergänzen, Tabelle „Umsetzungsstand“ in `docs/FORK-SURVEY-heytcass.md` (tmux, no-cache, `claude-doctor`) und Memory `claude-code-ha-followups` (heytcass-Rest: nur noch Boot-Smoke-Test offen; CI-Runner erledigt) aktualisieren, `.tmp/` gezielt leeren.
