@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.4.1
+
+### 🐛 Bug Fix - Auto-continue waited a day for a reset that had just passed
+- **A limit message first seen after its reset time** - auto-continue
+  switched on late, or the reset fell between two checks - was planned for
+  the same time the next day. A reset time more than 12 hours ahead now
+  counts as just passed, so `continue` follows one minute later (Claude's
+  5-hour limit never resets further ahead). Found on the test instance with
+  3.4.0, which was not released on its own.
+
 ## 3.4.0
 
 ### ✨ New Feature - Auto-continue after a usage limit

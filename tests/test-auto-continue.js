@@ -152,6 +152,29 @@ test('PaneWatcher never plans further than 24 hours ahead', () => {
     assert.equal(w.dueAt, T0 + 24 * 3600000);
 });
 
+// HA-Test 3.4.0: "Resets at 19:46" first seen at 19:46:07 was planned for the
+// next day - the parser rolls a passed clock time forward by a day.
+test('PaneWatcher sends soon when the reset time has just passed', () => {
+    const w = new ac.PaneWatcher();
+    const seen = Date.UTC(2026, 9, 9, 15, 0, 7);
+    w.observe('⎿  Claude usage limit reached. Resets at 15:00 (UTC)\n', seen);
+    assert.equal(w.dueAt, seen + 60000);
+});
+
+test('PaneWatcher sends soon when switched on hours after the reset', () => {
+    const w = new ac.PaneWatcher();
+    const seen = Date.UTC(2026, 9, 9, 21, 0, 0); // banner for 18:00 still on screen
+    w.observe('5-hour limit reached ∙ resets 6pm (UTC)\n', seen);
+    assert.equal(w.dueAt, seen + 60000);
+});
+
+test('PaneWatcher still waits for a reset a few hours ahead', () => {
+    const w = new ac.PaneWatcher();
+    const seen = Date.UTC(2026, 9, 9, 22, 0, 0); // 5-hour window across midnight
+    w.observe('5-hour limit reached ∙ resets 2am (UTC)\n', seen);
+    assert.equal(w.dueAt, Date.UTC(2026, 9, 10, 2, 1, 0));
+});
+
 // Claude's banners start their line; prose and tool output that mention a
 // rate limit mid-line must not plan a "continue" into an idle Claude.
 test('PaneWatcher ignores a rate limit mentioned in Claude\'s prose', () => {
