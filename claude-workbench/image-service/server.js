@@ -106,6 +106,15 @@ app.post('/upload', upload.single('image'), (req, res) => {
     });
 });
 
+// Shown in the terminal frame while ttyd is not up yet: run.sh serves the panel
+// before Claude Code's update and the package installs, and starts ttyd last.
+// The page reloads itself until the terminal answers.
+const STARTING_PAGE = '<!doctype html><html><head><meta charset="utf-8">' +
+    '<meta http-equiv="refresh" content="3"><title>Claude Workbench</title>' +
+    '<style>body{margin:0;height:100vh;display:flex;align-items:center;' +
+    'justify-content:center;background:#1e1e1e;color:#ccc;font-family:sans-serif}</style>' +
+    '</head><body><p>Claude Workbench is starting…</p></body></html>';
+
 // Proxy endpoint for ttyd terminal
 // This allows ttyd to work through Home Assistant ingress
 // Handles both HTTP and WebSocket connections
@@ -129,8 +138,9 @@ const terminalProxy = createProxyMiddleware({
             // Once ttyd's headers are out (connection dropped mid-body) a 502
             // throws ERR_HTTP_HEADERS_SENT in this listener and kills the
             // service; just end the response then.
+            // Before ttyd is up, the frame gets STARTING_PAGE instead of an error.
             if (typeof res.status === 'function' && !res.headersSent) {
-                res.status(502).send('Failed to connect to terminal');
+                res.status(503).set('Retry-After', '3').type('html').send(STARTING_PAGE);
             } else if (typeof res.end === 'function') {
                 res.end();
             }
