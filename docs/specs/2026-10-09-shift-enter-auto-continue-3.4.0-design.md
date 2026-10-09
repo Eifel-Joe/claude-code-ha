@@ -175,7 +175,7 @@ commit 6e44e41f)“. Im App-Code nur in der Form „mattbsea's fork, commit …�
 
 ## Tests
 - **Node (`tests/test-auto-continue.js`, `node --test`):** mattbseas Parser-Tests übernommen
-  (Muster, relative/absolute Zeiten, Zeitzone, Sommerzeit, alter Banner); Watcher mit
+  (Muster, relative/absolute Zeiten, Zeitzone, Sommerzeit; mattbseas Test „alter Banner“ entfällt, die Signatur ersetzt ihn); Watcher mit
   gefälschtem tmux-Runner, gefälschtem `/proc`-Baum und gefälschter Uhr: plant bei Meldung,
   sendet `-l continue` dann `Enter` an die richtige Pane-ID; sendet **nicht**, wenn die
   Meldung beim Fälligwerden weg ist, wenn `off`, wenn kein `claude` im Vordergrund; `off`
@@ -191,6 +191,18 @@ commit 6e44e41f)“. Im App-Code nur in der Form „mattbsea's fork, commit …�
 - **`tests/test-release-metadata.sh`:** neue Option hat Übersetzungen (bestehende Prüfung),
   Link `auto-continue` im Dockerfile.
 
+## Nachtrag Code-Review (Tasks 1–4)
+- **Fehlalarme:** Eine Bildschirmzeile zählt nur als Limit-Meldung, wenn die Meldung am
+  Zeilenanfang steht (vorher entfernt: Zeichen, die weder Buchstabe noch Ziffer sind, z. B.
+  `⎿ ● │`, und ein Vorsatz „Claude“, „Claude AI“ oder „You're“). Normale Antworten wie
+  „The API answered HTTP 429 "rate limit reached"“ lösen nichts mehr aus. Rest-Risiko: eine
+  Werkzeug-Zeile, die mit „Rate limit reached“ beginnt. Die Reset-Zeit wird nur aus diesen
+  Zeilen gelesen, nicht aus dem ganzen Bildschirm (`bannerMatch`, Commit `8784ed3a`).
+- **Abschalten während einer Abfrage** verwirft auch dann alle Pläne; `GET /auto-continue`
+  zeigt bei „aus“ keine Pläne (`c315aa16`).
+- Eine Abfrage wirft nie; ein Fehler beim Schreiben der Statusdatei wird nur einmal geloggt
+  (`de6fb13e`).
+
 ## Ende-zu-Ende-Kriterium (HA-Test)
 1. **Shift+Enter:** In Claude „Zeile 1“, Shift+Enter, „Zeile 2“ → beide Zeilen stehen im
    Eingabefeld, nichts wurde abgeschickt; Enter schickt beides ab.
@@ -199,6 +211,6 @@ commit 6e44e41f)“. Im App-Code nur in der Form „mattbsea's fork, commit …�
    des Containers). Erwartet binnen 30 s: App-Log „limit detected“ und „will send continue
    at …“, Knopf „Continue HH:MM+1“, `auto-continue status` zeigt denselben Plan. Etwa 1 min
    nach HH:MM: Log „sent“, in Claude wurde „continue“ abgeschickt.
-3. **Gegenprobe:** Ablauf wie 2, aber vor der Uhrzeit `auto-continue off` → Log „discarded“,
+3. **Gegenprobe:** Ablauf wie 2, aber vor der Uhrzeit `auto-continue off` → Log „not sent to pane %0: switched off“,
    nichts wird gesendet, Knopf zeigt „off“.
 4. App-Log ohne `[auto-continue]`-Zeilen, solange es aus ist.

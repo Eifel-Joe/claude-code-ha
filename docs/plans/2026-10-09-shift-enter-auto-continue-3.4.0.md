@@ -55,7 +55,7 @@
 - Create: `tests/test-auto-continue.js`
 - Modify: `tests/run-tests.sh`
 
-- [ ] **Step 1: Failing test schreiben** – `tests/test-auto-continue.js`:
+- [x] **Step 1: Failing test schreiben** – `tests/test-auto-continue.js`:
 
 ```js
 #!/usr/bin/env node
@@ -151,12 +151,12 @@ In `tests/run-tests.sh` nach der Zeile `node --test "$tests_dir/test-app-migrati
 node --test "$tests_dir/test-auto-continue.js"
 ```
 
-- [ ] **Step 2: Test laufen lassen, RED erwarten**
+- [x] **Step 2: Test laufen lassen, RED erwarten**
 
 Run: `node --test --test-reporter=tap tests/test-auto-continue.js`
 Expected: FAIL, `Cannot find module …/auto-continue.js`
 
-- [ ] **Step 3: Implementierung** – `claude-workbench/image-service/auto-continue.js` (Teil 1; die
+- [x] **Step 3: Implementierung** – `claude-workbench/image-service/auto-continue.js` (Teil 1; die
   Funktionen ab `stripAnsi` bis `parseResetTime` sind mattbseas Code aus `00e22fc0`, unverändert bis auf
   `const`-Stil; `module.exports` wird in Task 2–4 erweitert):
 
@@ -314,12 +314,12 @@ module.exports = { stripAnsi, detectLimit, parseResetTime };
   Hinweis: `fs`, `path`, `execFile` und die Konstanten ab `RESUME_GRACE_MS` werden erst in Task 2–4
   benutzt; ShellCheck/ESLint laufen auf JS nicht, das ist bis dahin in Ordnung.
 
-- [ ] **Step 4: GREEN**
+- [x] **Step 4: GREEN**
 
 Run: `node --test --test-reporter=tap tests/test-auto-continue.js`
 Expected: `# pass 9`, `# fail 0`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add claude-workbench/image-service/auto-continue.js tests/test-auto-continue.js tests/run-tests.sh
@@ -334,7 +334,7 @@ git commit -m "feat: parse Claude usage-limit banners (mattbsea's parser)"
 - Modify: `claude-workbench/image-service/auto-continue.js`
 - Test: `tests/test-auto-continue.js`
 
-- [ ] **Step 1: Failing tests anhängen** (ans Ende von `tests/test-auto-continue.js`):
+- [x] **Step 1: Failing tests anhängen** (ans Ende von `tests/test-auto-continue.js`):
 
 ```js
 const T0 = Date.UTC(2026, 9, 9, 12, 0, 0);
@@ -406,12 +406,12 @@ test('PaneWatcher never plans further than 24 hours ahead', () => {
 });
 ```
 
-- [ ] **Step 2: RED**
+- [x] **Step 2: RED**
 
 Run: `node --test --test-reporter=tap tests/test-auto-continue.js`
 Expected: die 8 neuen Tests FAIL mit `ac.PaneWatcher is not a constructor`.
 
-- [ ] **Step 3: Implementierung** – in `auto-continue.js` vor `module.exports` einfügen:
+- [x] **Step 3: Implementierung** – in `auto-continue.js` vor `module.exports` einfügen:
 
 ```js
 // Screen lines that carry a limit banner, trimmed.
@@ -490,12 +490,12 @@ class PaneWatcher {
 module.exports = { stripAnsi, detectLimit, parseResetTime, PaneWatcher };
 ```
 
-- [ ] **Step 4: GREEN**
+- [x] **Step 4: GREEN**
 
 Run: `node --test --test-reporter=tap tests/test-auto-continue.js`
 Expected: `# pass 17`, `# fail 0`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add claude-workbench/image-service/auto-continue.js tests/test-auto-continue.js
@@ -510,7 +510,7 @@ git commit -m "feat: track limit banners per tmux pane by their screen text"
 - Modify: `claude-workbench/image-service/auto-continue.js`
 - Test: `tests/test-auto-continue.js`
 
-- [ ] **Step 1: Failing tests anhängen:**
+- [x] **Step 1: Failing tests anhängen:**
 
 ```js
 // Fake /proc: { pid: 'pid (comm) state ppid pgrp session tty_nr tpgid ...' }
@@ -558,12 +558,12 @@ test('claudeInForeground reads a comm with spaces and parentheses', () => {
 });
 ```
 
-- [ ] **Step 2: RED**
+- [x] **Step 2: RED**
 
 Run: `node --test --test-reporter=tap tests/test-auto-continue.js`
 Expected: 2 FAIL, `ac.claudeInForeground is not a function`.
 
-- [ ] **Step 3: Implementierung** – vor `module.exports` einfügen:
+- [x] **Step 3: Implementierung** – vor `module.exports` einfügen:
 
 ```js
 // comm, process group and the terminal's foreground group from
@@ -612,12 +612,12 @@ function claudeInForeground(procRoot, panePid) {
 module.exports = { stripAnsi, detectLimit, parseResetTime, PaneWatcher, claudeInForeground };
 ```
 
-- [ ] **Step 4: GREEN**
+- [x] **Step 4: GREEN**
 
 Run: `node --test --test-reporter=tap tests/test-auto-continue.js`
 Expected: `# pass 19`, `# fail 0`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add claude-workbench/image-service/auto-continue.js tests/test-auto-continue.js
@@ -632,7 +632,7 @@ git commit -m "feat: send only where claude is the pane's foreground program"
 - Modify: `claude-workbench/image-service/auto-continue.js`
 - Test: `tests/test-auto-continue.js`
 
-- [ ] **Step 1: Failing tests anhängen:**
+- [x] **Step 1: Failing tests anhängen:**
 
 ```js
 // Fake tmux: one pane per entry of `screens` ({ '%0': { pid, screen } }).
@@ -813,12 +813,12 @@ test('setEnabled writes on/off to the state file', () => {
 });
 ```
 
-- [ ] **Step 2: RED**
+- [x] **Step 2: RED**
 
 Run: `node --test --test-reporter=tap tests/test-auto-continue.js`
 Expected: 10 FAIL, `ac.createAutoContinue is not a function`.
 
-- [ ] **Step 3: Implementierung** – vor `module.exports` einfügen:
+- [x] **Step 3: Implementierung** – vor `module.exports` einfügen:
 
 ```js
 function runTmux(args) {
@@ -1016,16 +1016,16 @@ module.exports = {
 };
 ```
 
-- [ ] **Step 4: GREEN**
+- [x] **Step 4: GREEN**
 
 Run: `node --test --test-reporter=tap tests/test-auto-continue.js`
 Expected: `# pass 29`, `# fail 0`
 
-- [ ] **Step 5: Gegenprobe** – in `checkPanes` die Zeile `if (!claudeInForeground(procRoot, pane.pid)) {`
+- [x] **Step 5: Gegenprobe** – in `checkPanes` die Zeile `if (!claudeInForeground(procRoot, pane.pid)) {`
   vorübergehend in `if (false) {` ändern (Edit-Tool), Tests laufen lassen: „nothing is sent when claude
   is not in the foreground“ muss FAIL zeigen. Zurück per Edit-Tool, Tests wieder GREEN.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add claude-workbench/image-service/auto-continue.js tests/test-auto-continue.js
@@ -1033,6 +1033,14 @@ git commit -m "feat: auto-continue controller - poll tmux, send continue, on/off
 ```
 
 ---
+
+### Nachtrag nach Tasks 1–4 (Code-Review)
+
+Die Code-Blöcke von Task 1–4 sind der Stand vor dem Review. Danach geändert (Begründung im
+Spec-Nachtrag): `bannerMatch` (nur Meldungen am Zeilenanfang, Reset-Zeit nur aus diesen Zeilen,
+`8784ed3a`), Abschalten während einer Abfrage (`c315aa16`), `poll` wirft nie, Statusdatei-Fehler
+nur einmal geloggt, Test-Hygiene (`de6fb13e`). Stand: 42 Tests grün. **Für Task 5 wichtig:**
+`setEnabled` kann bei Dateifehlern werfen – der POST-Handler fängt das und antwortet 500.
 
 ### Task 5: Endpunkte im Image-Service
 
