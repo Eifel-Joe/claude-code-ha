@@ -262,13 +262,13 @@ git commit -m "chore(release): 3.1.3"
 ### Task 4: Review, CI, HA-Test, Release (je mit Freigabe)
 
 - [x] **Step 1:** Code-Review per Subagent (`superpowers:requesting-code-review`) über `main..fix/backup-cache-auth-api` gegen Spec und Plan; Befunde über `superpowers:receiving-code-review` prüfen.
-- [ ] **Step 2:** Push des Branches (Freigabe); CI über `gh run list --repo Eifel-Joe/claude-workbench --branch fix/backup-cache-auth-api` → grün (inkl. neuer Suite in „Regression suites“).
-- [ ] **Step 3:** Merge nach `main` (`--no-ff`), Push (Freigabe), CI auf `main` grün.
-- [ ] **Step 4:** HA-Test: vorher Größe des letzten Teil-Backups der App notieren (`ha_manage_backup`); `ha_manage_app` check_updates, dann update auf 3.1.3. Prüfen:
+- [x] **Step 2:** Push des Branches (Freigabe); CI über `gh run list --repo Eifel-Joe/claude-workbench --branch fix/backup-cache-auth-api` → grün (inkl. neuer Suite in „Regression suites“).
+- [x] **Step 3:** Merge nach `main` (`--no-ff`), Push (Freigabe), CI auf `main` grün.
+- [x] **Step 4:** (Backup-Vergleich auf Prod verschoben, siehe Step 6) HA-Test: vorher Größe des letzten Teil-Backups der App notieren (`ha_manage_backup`); `ha_manage_app` check_updates, dann update auf 3.1.3. Prüfen:
   - App-Log: einmal „Removed the old npm cache from /data/home/.npm“;
   - `ha_get_app`: `auth_api: false`, `state: started`;
   - User in der App-Shell: `du -sh /data/home/.npm` (nicht vorhanden), `ls -d /tmp/npm-cache`, `echo $npm_config_cache` → `/tmp/npm-cache`; Picker-Punkt 7 „Update Claude Code“ läuft;
   - neues Teil-Backup der App (Freigabe) um rund 110 MB kleiner als das vor dem Update.
-- [ ] **Step 5:** Tag `v3.1.3` und GitHub-Release „3.1.3 — Smaller backups, one permission less“ mit `docs/release-notes-3.1.3.md` (Freigabe).
-- [ ] **Step 6:** HA-Prod-Update durch den User; Supervisor- und App-Log per MCP prüfen.
-- [ ] **Step 7:** `docs/SESSION-STAND.md` ergänzen, Memory `claude-code-ha-followups` aktualisieren, `.tmp/` leeren.
+- [x] **Step 5:** Tag `v3.1.3` und GitHub-Release „3.1.3 — Smaller backups, one permission less“ mit `docs/release-notes-3.1.3.md` (Freigabe).
+- [ ] **Step 6:** HA-Prod-Update durch den User; Supervisor- und App-Log per MCP prüfen. Backup-Vergleich: automatisches Backup „Claude Workbench 3.1.2“ (vor dem Update, mit Cache) gegen ein späteres Teil-Backup nur der App (User legt es an); Größen per MCP `ha_manage_backup` list.
+- [x] **Step 7:** `docs/SESSION-STAND.md` ergänzen, Memory `claude-code-ha-followups` aktualisieren, `.tmp/` leeren.

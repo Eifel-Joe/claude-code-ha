@@ -1,5 +1,51 @@
 # Sitzungsstand
 
+## 2026-10-09 (9) — Release 3.1.3 (aus dem heytcass-Original)
+
+### Stand
+- heytcass/home-assistant-addons gesichtet (Remote `heytcass`, 71 Commits
+  seit der Abspaltung `fa10282`); Ergebnis als Folgepunkt 20 im Memory
+  `claude-code-ha-followups`.
+- Spec `docs/specs/2026-10-09-backup-cache-auth-api-design.md`, Plan
+  `docs/plans/2026-10-09-backup-cache-auth-api.md`. Auf `main` (`b42963a`),
+  Tag/Release `v3.1.3`. CI grün: Branch 37894699879, `main` 37895096647
+  (inkl. neuer Suite `tests/test-npm-cache.sh`).
+- `auth_api` entfernt (Metadaten-Test verhindert Rückkehr); npm-Cache per
+  `setup_npm_cache` nach `/tmp/npm-cache`, alter `/data/home/.npm` wird beim
+  Start einmal gelöscht; Profil exportiert dieselbe Variable. Credits an
+  heytcass in CHANGELOG und Release-Notes.
+- Entscheidung A (Cache nach `/tmp`) statt B (`backup_exclude`) nach Messung
+  auf HA-Test: Update mit leerem Cache 19,1 s / 113 MB, mit warmem 2,9 s.
+- HA-Test 3.1.3 (Update per MCP 08:46): Log „Removed the old npm cache …“
+  einmal, Update beim Start 08:46:34–08:46:54, `auth_api: false`, healthy.
+  User: `/data/home/.npm` weg, `npm_config_cache=/tmp/npm-cache`,
+  `/tmp/npm-cache` 113 MB; Picker-Punkt 7 „changed 2 packages in 3s“
+  (erbt den Cache über tmux).
+- Offen: HA-Prod-Update (User) und Backup-Vergleich dort (siehe Plan,
+  Task 4 Step 6). Das MCP-Update auf Test legte kein automatisches Backup an.
+
+### Verworfen
+- `backup_exclude` (Variante B), `npm_config_cache` zusätzlich im Picker
+  setzen, `npm cache clean`.
+
+### Fallen
+- `"$B\\$cache"` in Bash ergab den Ordner `npmprobe$cache` — Pfade für
+  Windows-npm mit Vorwärts-Schrägstrichen (`D:/…`) bauen.
+- Foreground-`sleep` ist im Bash-Tool gesperrt; Warten per
+  `run_in_background`.
+- MCP `ha_manage_backup` create macht nur Voll-Backups, kein Teil-Backup
+  einer App.
+
+### Nächste Schritte
+- HA-Prod auf 3.1.3 (User), danach Logs per MCP; später Teil-Backup der App
+  und Größenvergleich mit „Claude Workbench 3.1.2“.
+- Remote-Branch `fix/backup-cache-auth-api` löschen (Freigabe).
+- Weitere heytcass-Punkte (Folgepunkt 20): Boot-Smoke-Test in der CI,
+  Health-Check mit `claude --version` und CPU-Gate, Sicherheits-Doku.
+
+### Empfohlene Skills
+- `task-loop` für den nächsten Folgepunkt.
+
 ## 2026-10-07 (8) — Release 3.1.2 (Picker-Label) und Fork-🟡-Entscheidungen
 
 ### Stand
