@@ -755,9 +755,6 @@ start_web_terminal() {
     auto_launch_claude=$(bashio::config 'auto_launch_claude' 'true')
     bashio::log.info "Auto-launch Claude: ${auto_launch_claude}"
 
-    # Start the image upload service first
-    start_image_service
-
     # Export launch command so the tmux-claude wrapper and session can access it
     export CLAUDE_LAUNCH_CMD="$launch_command"
 
@@ -807,6 +804,10 @@ main() {
 
     init_environment
     install_tools
+    # Serve the panel before the slow, network-bound steps below; until ttyd
+    # starts last, the terminal frame shows a start page (image-service/server.js)
+    # (owine/claude-terminal-home-assistant#380; tests/test-startup-order.sh).
+    start_image_service
     setup_tmux
     setup_persistent_claude
     setup_session_picker
