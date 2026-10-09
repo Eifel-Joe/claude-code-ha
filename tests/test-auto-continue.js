@@ -151,3 +151,47 @@ test('PaneWatcher never plans further than 24 hours ahead', () => {
     w.observe('Please try again in 48 hours\n', T0);
     assert.equal(w.dueAt, T0 + 24 * 3600000);
 });
+
+// Fake /proc: { pid: 'pid (comm) state ppid pgrp session tty_nr tpgid ...' }
+function makeProc(stats) {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-proc-'));
+    for (const [pid, line] of Object.entries(stats)) {
+        fs.mkdirSync(path.join(root, pid));
+        fs.writeFileSync(path.join(root, pid, 'stat'), `${line} 0 0 0\n`);
+    }
+    fs.mkdirSync(path.join(root, 'self'));
+    return root;
+}
+
+// HA-Test 3.3.0: bash -c (no job control) runs claude in its own process group.
+const PROC_CLAUDE = {
+    348: '348 (bash) S 347 348 348 34816 348',
+    354: '354 (claude) S 348 348 348 34816 348',
+};
+// Interactive bash in another pane with vim in the foreground.
+const PROC_VIM = {
+    500: '500 (bash) S 1 500 500 34817 600',
+    600: '600 (vim) S 500 600 500 34817 600',
+};
+
+test('claudeInForeground finds claude in the pane\'s foreground group', () => {
+    const root = makeProc({ ...PROC_CLAUDE, ...PROC_VIM });
+    try {
+        assert.equal(ac.claudeInForeground(root, 348), true);
+        assert.equal(ac.claudeInForeground(root, 500), false);
+        assert.equal(ac.claudeInForeground(root, 999), false);
+    } finally {
+        fs.rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('claudeInForeground reads a comm with spaces and parentheses', () => {
+    const root = makeProc({
+        700: '700 (my (odd) sh) S 1 700 700 34818 700',
+    });
+    try {
+        assert.equal(ac.claudeInForeground(root, 700), false);
+    } finally {
+        fs.rmSync(root, { recursive: true, force: true });
+    }
+});

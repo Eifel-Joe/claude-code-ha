@@ -214,4 +214,43 @@ class PaneWatcher {
     }
 }
 
-module.exports = { stripAnsi, detectLimit, parseResetTime, PaneWatcher };
+// comm, process group and the terminal's foreground group from
+// /proc/<pid>/stat (proc(5): "pid (comm) state ppid pgrp session tty_nr tpgid
+// ..."). comm may contain spaces and parentheses, so it ends at the last ")".
+function readStat(procRoot, pid) {
+    try {
+        const raw = fs.readFileSync(path.join(procRoot, String(pid), 'stat'), 'utf8');
+        const open = raw.indexOf('(');
+        const close = raw.lastIndexOf(')');
+        if (open < 0 || close < open) return null;
+        const rest = raw.slice(close + 2).split(' ');
+        return { comm: raw.slice(open + 1, close), pgrp: Number(rest[2]), tpgid: Number(rest[5]) };
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Whether Claude runs in the foreground of the pane whose shell is `panePid`.
+ * tmux's pane_current_command cannot tell: on HA-Test it says "bash" for the
+ * Claude pane, because `bash -c` has no job control and claude stays in bash's
+ * process group. The terminal's foreground group (tpgid) does tell: it holds
+ * claude there, and vim (not claude) when vim runs in an interactive shell.
+ */
+function claudeInForeground(procRoot, panePid) {
+    const pane = readStat(procRoot, panePid);
+    if (!pane || !(pane.tpgid > 0)) return false;
+    let entries;
+    try {
+        entries = fs.readdirSync(procRoot);
+    } catch {
+        return false;
+    }
+    return entries.some((entry) => {
+        if (!/^\d+$/.test(entry)) return false;
+        const stat = readStat(procRoot, entry);
+        return stat !== null && stat.pgrp === pane.tpgid && stat.comm === 'claude';
+    });
+}
+
+module.exports = { stripAnsi, detectLimit, parseResetTime, PaneWatcher, claudeInForeground };
