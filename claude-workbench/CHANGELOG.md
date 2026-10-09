@@ -1,5 +1,41 @@
 # Changelog
 
+## 3.2.0
+
+### ✨ New Feature - Old pasted images are cleaned up
+- **New option `image_retention_days`** (default 30, `0` keeps everything):
+  images pasted or dropped into the panel land in `/data/images`, which is
+  part of every backup of the app, and nothing ever removed them. On start the
+  app now deletes its own pasted images older than that (owine,
+  owine/claude-terminal-home-assistant#380; also suggested by msvinth and
+  mattbsea).
+
+### 🐛 Bug Fix - Panel answers while the app is still starting
+- The panel only came up after Claude Code's update and the package installs;
+  until then Home Assistant showed a bare 502 (23 s on a real install). It now
+  comes up right away, and the terminal shows "Claude Workbench is starting…"
+  until it is ready (owine, owine/claude-terminal-home-assistant#380).
+
+### 🐛 Bug Fix - Health check runs every check
+- The startup health check stopped at the first failing check, so the rest of
+  the diagnosis and the summary were missing from the log (owine,
+  owine/claude-terminal-home-assistant#374).
+
+### 🐛 Bug Fix - Shipped commands and skills stay current
+- The `/install`, `/install-python` and `/list-packages` commands and the
+  persistent-package skill were only copied into a new install, so existing
+  installs never got updates. They are now refreshed on every start; your own
+  files in `~/.claude` stay untouched.
+
+### 🔒 Security - Safer upload names, no leftover login code
+- Uploaded images get their extension from the image type, not from the file
+  name the browser sends; that name ended up in the path pasted into the
+  terminal. A rejected file type now answers 400 instead of 500 (owine,
+  owine/claude-terminal-home-assistant#379).
+- The authentication helper no longer leaves the login code in
+  `/tmp/claude-auth-code`, and removes `/config/auth-code.txt` before Claude
+  starts rather than after (owine, owine/claude-terminal-home-assistant@96ccd0d).
+
 ## 3.1.3
 
 ### 🛠️ Improvement - Smaller backups: npm's cache no longer lives in /data
