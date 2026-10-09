@@ -16,6 +16,10 @@ STARTUP_PIP_TIMEOUT="${STARTUP_PIP_TIMEOUT:-900}"
 NPM_CACHE_DIR="${NPM_CACHE_DIR:-/tmp/npm-cache}"
 NPM_LEGACY_CACHE_DIR="${NPM_LEGACY_CACHE_DIR:-/data/home/.npm}"
 
+# Claude Code commands and skills shipped in the image; overridable for tests
+# only (tests/test-claude-assets.sh).
+SHIPPED_CLAUDE_DIR="${SHIPPED_CLAUDE_DIR:-/opt/.claude}"
+
 # CPU check shared with the session picker and health check (cpu-check.sh).
 # shellcheck source=/dev/null
 [ -f "${CPU_CHECK_SCRIPT:-/opt/scripts/cpu-check.sh}" ] && . "${CPU_CHECK_SCRIPT:-/opt/scripts/cpu-check.sh}"
@@ -55,6 +59,19 @@ setup_npm_cache() {
 }
 
 # Initialize environment for Claude Code CLI using /data (HA best practice)
+# Copy the shipped commands and skills over $HOME/.claude on every start. They
+# used to be copied only into a missing $HOME/.claude, so existing installs kept
+# their first version for good. Only the shipped files are written; logins,
+# projects, settings and the user's own skills stay as they are.
+install_shipped_claude_assets() {
+    local target="$1"
+
+    [ -d "$SHIPPED_CLAUDE_DIR" ] || return 0
+    mkdir -p "$target"
+    cp -R "$SHIPPED_CLAUDE_DIR/." "$target/"
+    bashio::log.info "  - Claude Code skills & commands: up to date"
+}
+
 init_environment() {
     # Use /data exclusively - guaranteed writable by HA Supervisor
     local data_home="/data/home"
@@ -176,14 +193,7 @@ PROFILE_EOF
     migrate_legacy_auth_files "$claude_config_dir"
 
     # Setup Claude Code skills and commands
-    if [ -d "/opt/.claude" ]; then
-        if [ ! -d "$data_home/.claude" ]; then
-            cp -r /opt/.claude "$data_home/.claude"
-            bashio::log.info "  - Claude Code skills & commands installed"
-        else
-            bashio::log.info "  - Claude Code skills & commands: already configured"
-        fi
-    fi
+    install_shipped_claude_assets "$data_home/.claude"
 
     bashio::log.info "Environment initialized:"
     bashio::log.info "  - Home: $HOME"

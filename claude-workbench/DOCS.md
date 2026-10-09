@@ -131,6 +131,7 @@ program in the terminal cannot exfiltrate your clipboard.
 ### Persistent Packages
 - Configure APK and pip packages to auto-install on startup
 - Packages are stored in `/data/packages` and survive restarts
+- The app's own Claude Code commands (`/install`, `/install-python`, `/list-packages`) and its persistent-package skill are refreshed in `~/.claude` on every start; save your own variants under a different name
 
 ### Optional Persistent Claude Code
 - **Default**: `use_persistent_claude: true`
