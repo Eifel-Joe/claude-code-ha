@@ -48,9 +48,11 @@ Befunde gegen `main` = `5e967c62` geprüft, Branch `feat/auto-continue-3.4.0`.
   Unabhängig davon, ob ttyd selbst `attachCustomKeyEventHandler` belegt (es gibt nur einen Slot).
 - B: `term.attachCustomKeyEventHandler` wie mattbsea. Verworfen: Würde einen von ttyd belegten
   Handler überschreiben bzw. von ttyd überschrieben.
-- Gesendet wird `\` + CR als Eingabe, so als wäre sie getippt (`term.input(data, true)`, falls
-  vorhanden; sonst über den ttyd-Socket-Weg, den xterm für Tastatureingaben nutzt — im Plan
-  gegen die ttyd-Version im Image zu klären). **Nicht** `term.paste`: Das würde Bracketed Paste
+- Gesendet wird `\` + CR als Eingabe, so als wäre sie getippt: `term.input('\\\r', true)`.
+  ttyd 1.7.7 bündelt `@xterm/xterm` 5.4.0 (`html/yarn.lock` im Tag 1.7.7), dessen Typings
+  `input(data, wasUserInput)` enthalten; ttyd leitet `onData` an den Socket weiter
+  (`html/src/components/terminal/xterm/index.ts:176`). Fehlt `term.input`, wird Shift+Enter
+  nicht abgefangen (Enter wie bisher). **Nicht** `term.paste`: Das würde Bracketed Paste
   auslösen.
 - Verworfen: ESC + CR (Meta+Enter). Hängt an `escape-time` in tmux und daran, wie Claude die
   Folge deutet; `\` + CR ist dokumentiert und robust.
@@ -85,14 +87,25 @@ Befunde gegen `main` = `5e967c62` geprüft, Branch `feat/auto-continue-3.4.0`.
 - **Parser von mattbsea übernehmen:** `stripAnsi`, `detectLimit` (Muster aus `00e22fc0`),
   `parseResetTime` (relativ „try again in N hours“, absolut „resets 3pm (TZ)“, DST-fest per
   `Intl`, unbekannte Zone → Server-Zone), Konstanten: Puffer +1 min nach Reset, Rückfall
-  30 min ohne Uhrzeit, Obergrenze 24 h, Schutz vor altem, neu gezeichnetem Banner (12 h).
-  Kopfkommentar mit Herkunft (mattbsea, Commits, MIT).
+  30 min ohne Uhrzeit, Obergrenze 24 h. Kopfkommentar mit Herkunft (mattbsea, Commits, MIT).
+  Den Watcher (Datenstrom, Timer) übernehmen wir nicht, siehe nächster Punkt.
 - **Watcher je Pane** (Schlüssel = Pane-ID `%N`), aber gespeist aus dem Bildschirminhalt
-  statt aus dem Datenstrom: jede Abfrage liefert den aktuellen sichtbaren Text der Pane, der
-  Watcher wertet ihn wie mattbseas `tail` aus.
+  statt aus dem Datenstrom. Weil dieselbe Meldung bei jeder Abfrage wieder auf dem Bildschirm
+  steht, ersetzt eine **Signatur** mattbseas Zeit-Toleranz und Stale-Logik: Signatur = alle
+  Bildschirmzeilen mit Limit-Meldung, zusammengefügt.
+  - Gleiche Signatur wie die geplante → Plan bleibt (sonst würde „try again in 5 hours“
+    bei jeder Abfrage 30 s weiterwandern).
+  - Gleiche Signatur wie die zuletzt beantwortete → nichts (kein zweites „continue“ auf
+    denselben, noch sichtbaren Banner, auch nicht im Rückfall ohne Uhrzeit).
+  - Keine Limit-Zeile mehr auf dem Bildschirm → Plan verworfen („nicht mehr sichtbar“) und
+    die beantwortete Signatur vergessen, die nächste Meldung gilt als neu.
+  - Grenzfall: Erscheint nach dem Senden exakt dieselbe Meldung erneut, während die alte noch
+    sichtbar ist, wird sie nicht erkannt (verpasst, nie doppelt gesendet).
+- Fällig wird erst bei der nächsten Abfrage nach Reset + 1 min, also bis zu 30 s später.
 - **Abfrage alle 30 s**, nur wenn eingeschaltet:
-  `tmux list-panes -a -F '#{session_name} #{pane_id} #{pane_pid}'`, gefiltert auf
-  Session `claude`; je Pane `tmux capture-pane -p -t <pane_id>`. tmux-Aufrufe per `execFile`
+  `tmux list-panes -s -t =claude -F '#{pane_id} #{pane_pid}'` (`=` = genau diese Session,
+  kein Präfix-Treffer); je Pane `tmux capture-pane -p -J -t <pane_id>` (`-J` fügt umbrochene
+  Zeilen zusammen, damit „resets 3pm (Europe/Berlin)“ nicht zerreißt). tmux-Aufrufe per `execFile`
   mit Argument-Array, ohne Shell, mit Zeitgrenze. Fehlt die Session (Start, Neustart),
   passiert nichts und es wird nicht geloggt (kein Rauschen).
 - **Claude-Filter:** Eine Pane zählt nur, wenn in der Vordergrund-Prozessgruppe ihres
@@ -119,9 +132,12 @@ Befunde gegen `main` = `5e967c62` geprüft, Branch `feat/auto-continue-3.4.0`.
 - **Zustandsdatei** `/run/claude-workbench/auto-continue` mit Inhalt `on` oder `off`.
   `run.sh` schreibt sie beim Start aus der Option, **vor** `start_image_service`. `/run` ist
   flüchtig: nach einem Neustart gilt wieder die Option.
-- **Statusdatei** `/run/claude-workbench/auto-continue.status` (JSON), vom Image-Service
-  nach jeder Abfrage und jedem Umschalten geschrieben: `enabled`, `scheduled`
-  (Liste: Pane-ID, Uhrzeit ISO), `lastSent` (Pane-ID, Uhrzeit) oder null.
+- **Statusdatei** `/run/claude-workbench/auto-continue.status` (Klartext, Uhrzeiten in der
+  Container-Zone), vom Image-Service nach jeder Abfrage und jedem Umschalten geschrieben;
+  `auto-continue status` gibt sie nur aus (kein jq nötig). Zeilen: `Auto-continue: on|off`,
+  je geplanter Pane `Will send "continue" to pane %0 at 15:01`, `Last sent: pane %0 at 14:02`
+  oder `Last sent: never`. Die HTTP-Antwort (`GET`) baut dieselben Daten als JSON:
+  `enabled`, `scheduled` (Liste: `pane`, `at` ISO), `lastSent` (`pane`, `at`) oder `null`.
 - **Befehl** `auto-continue on|off|status` (`scripts/auto-continue.sh`, Link nach
   `/usr/local/bin/auto-continue` im Dockerfile wie `claude-doctor`). `on`/`off` schreiben die
   Zustandsdatei, `status` gibt Zustand und Plan lesbar aus (Uhrzeit lokal). Unbekanntes
