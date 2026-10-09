@@ -36,7 +36,7 @@ if (!fs.existsSync(UPLOAD_DIR)) {
 // Accepted image types and the extension each is stored under. The extension
 // never comes from the client's file name: the stored path is pasted into the
 // terminal, and path.extname("x.png;touch $(id) #") is ".png;touch $(id) #"
-// (owine/claude-terminal-home-assistant#379; tests/test-image-service.js).
+// (owine's fork, PR #379; tests/test-image-service.js).
 const IMAGE_EXTENSIONS = {
     'image/jpeg': '.jpg',
     'image/png': '.png',

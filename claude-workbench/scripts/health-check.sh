@@ -158,7 +158,7 @@ run_diagnostics() {
     # Count with an assignment: `check || ((errors++))` evaluates to the old
     # count, 0, on the first failure, so (( )) returned 1 and bashio's errexit
     # ended the script before the other checks and the summary
-    # (owine/claude-terminal-home-assistant#374; tests/test-health-check.sh).
+    # (owine's fork, PR #374; tests/test-health-check.sh).
     check_system_resources || errors=$((errors + 1))
     check_directory_permissions || errors=$((errors + 1))
     check_node_installation || errors=$((errors + 1))
