@@ -1,5 +1,37 @@
 # Sitzungsstand
 
+## 2026-10-09 (12) — Spec + Plan 3.3.0 (CI-Runner, claude-doctor, tmux, Sicherheits-Doku)
+
+### Stand
+- `main` = `origin/main` = `d2db73b9`, CI 37909804599 grün.
+- Branch `feat/safer-defaults-3.3.0` (nur lokal): Spec
+  `docs/specs/2026-10-09-safer-defaults-3.3.0-design.md` (`44a07dd4`) und Plan
+  `docs/plans/2026-10-09-safer-defaults-3.3.0.md` (`627474e2`), beide vom User
+  freigegeben. Noch kein Produktionscode, alle Checkboxen offen.
+- Bündel aus den offenen Punkten: 4c (Runner `ubuntu-24.04`, Frist 2026-10-19),
+  2b (Health-Check startet `claude --version`, `claude-doctor`), 2c
+  (Sicherheits-Doku), 1g (no-cache), 1b (`~/.tmux.conf.local`).
+- Aussage „jeder angemeldete HA-User kann das Panel öffnen“ im Code geprüft
+  (Core `dev` @ `bc163ce175`, Supervisor `main` @ `2760df9b88`; Details in der Spec).
+
+### Verworfen
+- Health-Check-Gegentest mit Nicht-Admin-User auf HA-Test (User wählte
+  Code-Prüfung statt Live-Test).
+
+### Fallen
+- `SESSION-STAND.md`: „Abschnitt 11“ ist `## 2026-10-09 (11) …` oben in der
+  Datei, nicht eine Überschrift `## 11`.
+- README behauptete Zugriff auf `/addons`; gemappt ist `all_app_configs`
+  (`/addon_configs`) – im Plan Task 6 mit korrigiert.
+
+### Nächste Schritte
+- Plan Task 1–8 umsetzen (frische Sitzung), Start mit Task 1.
+
+### Empfohlene Skills
+- `superpowers:executing-plans` bzw. `superpowers:subagent-driven-development`,
+  pro Task `superpowers:test-driven-development`, am Ende
+  `superpowers:requesting-code-review`.
+
 ## 2026-10-09 (11) — Release 3.2.0 (Fork-Fixes, Bilder-Aufräumen)
 
 ### Stand
