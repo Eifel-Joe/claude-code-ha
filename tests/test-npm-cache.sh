@@ -52,7 +52,8 @@ setup_npm_cache
 # Wiring. init_environment writes to fixed /data paths, so these are text checks.
 sed -n '/^init_environment() {/,/^}/p' "$run_sh" | grep -qx '    setup_npm_cache' || \
     fail "init_environment does not call setup_npm_cache"
-grep -qx 'export npm_config_cache="/tmp/npm-cache"' "$run_sh" || \
+sed -n "/<< 'PROFILE_EOF'/,/^PROFILE_EOF/p" "$run_sh" | \
+    grep -qx 'export npm_config_cache="/tmp/npm-cache"' || \
     fail "the shell profile does not point npm_config_cache at /tmp"
 
 echo "npm cache suite passed"

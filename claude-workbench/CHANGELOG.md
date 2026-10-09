@@ -8,7 +8,7 @@
   each app update. It now lives in `/tmp/npm-cache` and is gone after a
   restart; the old folder is removed once on start (heytcass,
   heytcass/home-assistant-addons#105).
-- Trade-off: with `auto_update_claude_on_start`, every start now downloads
+- Trade-off: with `auto_update_claude_on_start` (on by default), every start now downloads
   Claude Code again (about 113 MB, about 16 s longer start, measured), even
   without a new version.
 
