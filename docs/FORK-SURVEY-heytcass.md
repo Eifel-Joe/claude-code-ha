@@ -25,7 +25,7 @@ Spalte **Empf.**: ✅ übernehmen · 🟡 prüfen/angepasst übernehmen · ❌ n
 | `~/.tmux.conf.local`, `focus-events` | owine `1175851a`/`1e0a33e2`, BartBourgeois, Maheidem | ✅ 3.3.0 |
 | `Cache-Control: no-cache` für die Oberfläche | owine `67dd7e55` | ✅ 3.3.0 |
 | Sicherheits-Doku „jeder HA-User kann das Panel öffnen“ | umrath (heytcass `8e65403`) | ✅ 3.3.0 |
-| Shift+Enter, Auto-Continue nach Usage-Limit (Knopf, Befehl, Option) | mattbsea | ✅ 3.4.0 |
+| Shift+Enter, Auto-Continue nach Usage-Limit (Knopf, Befehl, Option) | mattbsea | ✅ 3.4.1 |
 | `claude_extra_args` (mattbsea, ToRa89, umrath, monxas), Mobil-Toolbar (mattbsea, weiting-tw), `working_directory` (owine, ToRa89, heman22union), `map: share/addons`, `permissions.deny` (Maheidem) | siehe Teile | offen |
 | ripgrep unter musl, Ingress-IP-Filter `172.30.32.2`, `watchdog:` | siehe Teile | offen, erst prüfen |
 | `persist-install` kopiert keine apk-Dateien | eigener Fund | offen (Folgepunkt 7) |

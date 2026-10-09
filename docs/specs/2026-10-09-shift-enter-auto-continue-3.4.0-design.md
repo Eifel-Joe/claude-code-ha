@@ -203,6 +203,15 @@ commit 6e44e41f)“. Im App-Code nur in der Form „mattbsea's fork, commit …�
 - Eine Abfrage wirft nie; ein Fehler beim Schreiben der Statusdatei wird nur einmal geloggt
   (`de6fb13e`).
 
+## Nachtrag HA-Test 3.4.0 → 3.4.1
+- E2E-Punkte 1–4 auf HA-Test bestanden (2026-10-09, Log 19:48–19:51: „switched off“,
+  „limit detected … will send at 19:51“, „sent "continue" to pane %0“ um 19:51:08).
+- Fehler beim ersten Versuch: „Resets at 19:46“, erst um 19:46:07 erkannt, wurde auf den
+  nächsten Tag geplant (der Parser rollt eine vergangene Uhrzeit auf morgen). Seit 3.4.1 gilt
+  eine Uhrzeit, die mehr als 12 h voraus liegt, als gerade vergangen → Senden nach 1 min.
+  Relative Angaben („try again in 48 hours“) bleiben unverändert (`b3b11353`).
+- 3.4.0 bekommt kein eigenes Release; HA-Test brauchte für das neue Image eine neue Version.
+
 ## Ende-zu-Ende-Kriterium (HA-Test)
 1. **Shift+Enter:** In Claude „Zeile 1“, Shift+Enter, „Zeile 2“ → beide Zeilen stehen im
    Eingabefeld, nichts wurde abgeschickt; Enter schickt beides ab.
