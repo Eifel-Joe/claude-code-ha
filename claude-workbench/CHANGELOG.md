@@ -1,5 +1,22 @@
 # Changelog
 
+## 3.1.3
+
+### 🛠️ Improvement - Smaller backups: npm's cache no longer lives in /data
+- npm kept its download cache in `/data/home/.npm` (about 115 MB), so it went
+  into every backup of the app — including the one Home Assistant makes before
+  each app update. It now lives in `/tmp/npm-cache` and is gone after a
+  restart; the old folder is removed once on start (heytcass,
+  heytcass/home-assistant-addons#105).
+- Trade-off: with `auto_update_claude_on_start`, every start now downloads
+  Claude Code again (about 113 MB, about 16 s longer start, measured), even
+  without a new version.
+
+### 🔒 Security - No access to Home Assistant's password check
+- Dropped the `auth_api` permission. It only lets an app check Home Assistant
+  usernames and passwords, which Claude Workbench never does (heytcass,
+  heytcass/home-assistant-addons@3a6ee0d).
+
 ## 3.1.2
 
 ### 🐛 Bug Fix - Update menu no longer claims "up to date" without knowing
