@@ -1,5 +1,41 @@
 # Sitzungsstand
 
+## 2026-10-09 (15) — 3.4.0/3.4.1 umgesetzt, HA-Test bestanden, Release offen
+
+### Stand
+- Plan `docs/plans/2026-10-09-shift-enter-auto-continue-3.4.0.md` Task 1–10 umgesetzt
+  (Subagenten je Task, zwei Code-Reviews mit Nachträgen in Spec und Plan). Merge 3.4.0
+  `371b8d45`, Korrektur 3.4.1 Merge `21b8473e` = `origin/main`. CI grün: Branch-Läufe
+  37940380829 (3.4.0) und 37969861639 (3.4.1, `ca7d4dae`, „version 3.4.1“, 45 Tests).
+- HA-Test 3.4.1 (MCP-Update), Health-Check „Claude CLI runs: 2.1.295 ✓“. E2E laut Spec
+  bestanden: Shift+Enter, Knopf an/aus, „limit detected … will send at 19:51“ → „sent
+  "continue" to pane %0“ 19:51:08 (3.4.0) und 20:04:27 (3.4.1), Gegenprobe „switched off“.
+- 3.4.1 = Uhrzeit mehr als 12 h voraus gilt als gerade vergangen (gefunden auf HA-Test:
+  „Resets at 19:46“ um 19:46:07 erkannt → Plan für den nächsten Tag). Live geprüft:
+  Meldung mit Uhrzeit 3 min in der Vergangenheit, erkannt 20:20:27, gesendet 20:21:27.
+- Kein Tag, kein GitHub-Release, HA-Prod noch auf 3.3.0. 3.4.0 bekommt kein eigenes Release;
+  Notizen in `docs/release-notes-3.4.1.md`.
+
+### Verworfen
+- Neues Image derselben Version per `rebuild`: geht nur bei lokalen Apps, nicht aus dem
+  GitHub-Store → Korrektur als 3.4.1.
+
+### Fallen
+- `git add a b nicht-vorhanden 2>/dev/null` bricht komplett ab und verschluckt den Grund:
+  Commit `b3b11353` enthielt nur die Umbenennung der Release-Notes, der Code kam erst mit
+  `ca7d4dae`. Nach jedem Commit `git show --stat` lesen.
+- Windows-`netstat` meldet „ABHÖREN“, nicht „LISTENING“; Hintergrund-Server mit TaskStop
+  beenden.
+- Test-Server ohne `AUTO_CONTINUE_DIR` schrieben nach `D:\run` (behoben, gelöscht).
+- Claude kommentiert `!echo`-Limitmeldungen („not a real notice“) – stört den Test nicht.
+
+### Nächste Schritte
+- Release v3.4.1 (Text zeigen, Freigabe), danach HA-Prod-Update durch den User, Logs prüfen.
+- Zurückgestellt (Memory Folgepunkt 24): Bremse nach erfolglosen Versuchen / Wochenlimit.
+
+### Empfohlene Skills
+- `superpowers:verification-before-completion` vor dem Release.
+
 ## 2026-10-09 (14) — Spec + Plan 3.4.0 (Shift+Enter, Auto-Continue)
 
 ### Stand
