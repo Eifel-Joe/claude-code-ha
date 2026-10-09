@@ -270,5 +270,5 @@ git commit -m "chore(release): 3.1.3"
   - User in der App-Shell: `du -sh /data/home/.npm` (nicht vorhanden), `ls -d /tmp/npm-cache`, `echo $npm_config_cache` → `/tmp/npm-cache`; Picker-Punkt 7 „Update Claude Code“ läuft;
   - neues Teil-Backup der App (Freigabe) um rund 110 MB kleiner als das vor dem Update.
 - [x] **Step 5:** Tag `v3.1.3` und GitHub-Release „3.1.3 — Smaller backups, one permission less“ mit `docs/release-notes-3.1.3.md` (Freigabe).
-- [ ] **Step 6:** HA-Prod-Update durch den User; Supervisor- und App-Log per MCP prüfen. Backup-Vergleich: automatisches Backup „Claude Workbench 3.1.2“ (vor dem Update, mit Cache) gegen ein späteres Teil-Backup nur der App (User legt es an); Größen per MCP `ha_manage_backup` list.
+- [x] **Step 6:** HA-Prod-Update durch den User; Supervisor- und App-Log per MCP prüfen. Backup-Vergleich: automatisches Backup „Claude Workbench 3.1.2“ (vor dem Update, mit Cache) gegen ein späteres Teil-Backup nur der App (User legt es an); Größen per MCP `ha_manage_backup` list.
 - [x] **Step 7:** `docs/SESSION-STAND.md` ergänzen, Memory `claude-code-ha-followups` aktualisieren, `.tmp/` leeren.

@@ -1,5 +1,54 @@
 # Sitzungsstand
 
+## 2026-10-09 (11) — Release 3.2.0 (Fork-Fixes, Bilder-Aufräumen)
+
+### Stand
+- Plan `docs/plans/2026-10-09-fork-fixes-3.2.0.md` komplett umgesetzt (TDD,
+  RED/GREEN-Commits). Merge `7aa35ca0`, Release-Titel-Fix `cadd1d38`, Tag und
+  GitHub-Release `v3.2.0` „3.2.0 — Cleaner backups, a panel that comes up
+  first“. CI grün: Branch 37907770615, `main` 37908298432 und 37909296560
+  (Image-Service-Suite unter Linux 14/0 – der ECONNRESET-Fehlschlag ist
+  Windows-only).
+- Code-Review per Subagent: I1 (Health-Check-Netzproben verzögerten das
+  Panel bis ~45 s offline) → Health-Check läuft jetzt nach dem Bild-Service;
+  M1 Obergrenze 3650 (BusyBox-find 32 Bit); M2 Kopieren/Aufräumen brechen den
+  Start nicht mehr ab; Texte präzisiert.
+- HA-Test 3.2.0 (Update per MCP 11:00): „Removed 1 uploaded image(s) older
+  than 30 day(s)“, Bild-Service healthy vor Health-Check und Claude-Update,
+  Health-Check-Zusammenfassung, Skills „up to date“; User: `pasted-old.png`
+  weg, `pasted-new.png` da, `SKILL-OK`, neues Bild
+  `pasted-1791536787576-150d9996.png`.
+- HA-Prod 3.2.0 (User, 11:09): Logs per MCP sauber, keine alten Bilder.
+- `docs/FORK-SURVEY-heytcass.md` (vier Teilberichte + Umsetzungsstand);
+  `refs/hk/*` gelöscht, `.tmp/` geleert.
+
+### Verworfen
+- Credit-Kommentare mit Repo-Namen `owine/claude-terminal-home-assistant`
+  im App-Code: `tests/test-release-metadata.sh` verbietet „claude-terminal“
+  dort → „owine's fork, PR #…“; voller Name nur in CHANGELOG/Release-Notes.
+
+### Fallen
+- Tests für „Funktion darf den Start nicht abbrechen“ nie mit `|| fail`
+  aufrufen: das schaltet errexit in der Funktion ab und verdeckt den Abbruch.
+- GNU-find (Git Bash, CI) zeigt den 32-Bit-Überlauf von BusyBox-find nicht;
+  Ablehnung mit Warnung prüfen statt „nichts gelöscht“.
+- `gh release view --json isLatest` gibt es nicht (Exit 1 nach erfolgreichem
+  Release) – `gh release list` zeigt „Latest“.
+- unbestätigt: Startseite „Claude Workbench is starting…“ live nicht gesehen –
+  ein offener Terminal-Tab verbindet sich selbst neu; erscheint nur bei
+  frischem Laden während des Starts (automatisch getestet).
+
+### Nächste Schritte
+- Offene Ideen aus `docs/FORK-SURVEY-heytcass.md` (Umsetzungsstand) und
+  heytcass-Reste (Boot-Smoke-Test in der CI, Health-Check mit
+  `claude --version`, Sicherheits-Doku) – neue Spec.
+- Log-Rauschen „Proxy error … ECONNREFUSED“ während des Starts dämpfen.
+- Offene Frage: Auth-Helper `echo code | claude` – funktioniert der Login so?
+- CI: `ubuntu-latest` wechselt ab 2026-10-19 auf Ubuntu 26.
+
+### Empfohlene Skills
+- `task-loop` für den nächsten Folgepunkt.
+
 ## 2026-10-09 (10) — heytcass-Forks gesichtet, Spec + Plan 3.2.0
 
 ### Stand
