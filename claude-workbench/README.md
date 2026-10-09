@@ -91,7 +91,7 @@ The app works out of the box, but also supports a few optional advanced settings
 - **Authentication**: OAuth with Anthropic (credentials kept in the app's private `/data`, under `/data/home/.claude`, not in `/config`)
 - **Terminal**: Full bash environment with Claude Code CLI pre-installed
 - **Persistent Claude override**: Optional `use_persistent_claude` / `auto_update_claude_on_start`
-- **Volumes**: Access to both `/config` (Home Assistant) and `/addons` (for development)
+- **Volumes**: `/config` (Home Assistant configuration) and `/addon_configs` (the other apps' folders), both read-write
 
 ## Troubleshooting
 
@@ -132,11 +132,29 @@ test-endpoint
 
 ## Security
 
-Version 1.0.2 includes important security improvements:
-- ✅ **Secure Credential Management**: Limited filesystem access to safe directories only
-- ✅ **Safe Cleanup Operations**: No more dangerous system-wide file deletions
-- ✅ **Proper Permission Handling**: Consistent file permissions (600) for credentials
-- ✅ **Input Validation**: Enhanced error checking and bounds validation
+- **Who can open the terminal: every signed-in Home Assistant user, not only
+  administrators.** The app sets `panel_admin: true`, but that only hides the
+  sidebar entry from non-admins. Home Assistant's ingress view accepts any
+  valid ingress session, and Home Assistant deliberately lets every signed-in
+  user create one and read an app's ingress URL
+  (`homeassistant/components/hassio/ingress.py`: `requires_auth = False`;
+  `websocket_api.py`: `WS_NO_ADMIN_ENDPOINTS`, since home-assistant/core#60120).
+  The Supervisor checks the session, not the user's role. Checked against
+  Home Assistant Core and Supervisor on 2026-10-09; the app cannot change it.
+- **What is behind the panel:** a root shell in the app's container that can
+  write your whole Home Assistant configuration (`/config`) and the other
+  apps' folders (`/addon_configs`), and holds `SUPERVISOR_TOKEN` with the
+  Supervisor's `manager` role (manage apps and backups, restart Home
+  Assistant and the host; checked in the Supervisor's `security.py`). With
+  `dangerously_skip_permissions` on, Claude acts there without asking.
+- **No open port:** the app publishes no host port. The terminal (`ttyd`)
+  listens on `127.0.0.1` only and is reached through Home Assistant ingress,
+  which requires a Home Assistant login.
+- **What follows:** treat every account on your Home Assistant as trusted
+  while this app is installed. If you hand out limited accounts (family,
+  guests, a wall tablet), stop or uninstall the app.
+- **Login data** for Claude stays in the app's private `/data`
+  (`/data/home/.claude`, mode 600), not in `/config`.
 
 ## Development Environment
 

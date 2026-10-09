@@ -35,6 +35,10 @@ done
 # panel would stay a bare 502 for that long if they ran first.
 [ "$(line_of start_image_service)" -lt "$(line_of run_health_check)" ] || \
     fail "the image service must start before the health check's network probes"
+# The health check runs `claude --version`; before setup_persistent_claude it
+# would test a different binary than the session (and claude-doctor) uses.
+[ "$(line_of setup_persistent_claude)" -lt "$(line_of run_health_check)" ] || \
+    fail "the health check must run after setup_persistent_claude, on the Claude the session uses"
 
 if sed -n '/^start_web_terminal() {/,/^}/p' "$run_sh" | grep -q 'start_image_service'; then
     fail "start_web_terminal still starts the image service"

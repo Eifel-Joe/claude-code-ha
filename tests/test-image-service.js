@@ -260,6 +260,17 @@ test('the static UI is served at the root', async () => {
     assert.match(res.headers.get('content-type') || '', /text\/html/);
 });
 
+test('the UI is revalidated on every load (Cache-Control: no-cache)', async () => {
+    // After an app update the browser must not combine a cached
+    // terminal-clipboard.js with the new index.html (owine's fork, 67dd7e55).
+    for (const file of ['/', '/terminal-clipboard.js']) {
+        const res = await fetch(`http://127.0.0.1:${PORT}${file}`);
+        assert.strictEqual(res.status, 200, `${file} not served`);
+        assert.strictEqual(res.headers.get('cache-control'), 'no-cache',
+            `${file} must be revalidated on every load`);
+    }
+});
+
 test('a WebSocket upgrade is proxied even as the very first proxy request', async () => {
     // Regression guard: http-proxy-middleware only subscribes to 'upgrade'
     // lazily, on the first HTTP request that reaches the middleware. Without an

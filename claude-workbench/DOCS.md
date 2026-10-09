@@ -74,6 +74,17 @@ The app offers several configuration options:
 - Keep disabled for reliable native browser copy/paste in the ttyd terminal, including OAuth codes
 - Enable only if you prefer tmux mouse selection, scrolling, and pane controls
 
+### Own tmux Settings
+- The app rewrites `~/.tmux.conf` on every start. Put your own settings in
+  `~/.tmux.conf.local` (that is `/data/home/.tmux.conf.local`): it is loaded
+  last, so it overrides the defaults, and it survives restarts and updates
+- Example – a green status bar:
+  ```bash
+  echo 'set -g status-bg colour22' >> ~/.tmux.conf.local
+  tmux source-file ~/.tmux.conf
+  ```
+- Restarting the app loads it as well
+
 ### Copying Text Out of the Terminal
 
 There are five ways, and which ones you need depends on the device:
@@ -211,8 +222,22 @@ The terminal starts directly in your `/config` directory, giving you immediate a
 - **Simple Management**: Use `persist-install` command for easy package installation
 - **Python Virtual Environment**: Isolated Python environment in `/data/packages`
 
+## Security
+
+**Every signed-in Home Assistant user can open this terminal, not only
+administrators.** `panel_admin: true` only hides the sidebar entry; Home
+Assistant lets any signed-in user open an app's ingress page. Behind it is a
+root shell that can write your whole configuration and use the Supervisor
+API. If you hand out limited accounts, stop or uninstall the app. Details and
+sources: the
+[Security section of the README](https://github.com/Eifel-Joe/claude-workbench/blob/main/claude-workbench/README.md#security).
+
 ## Troubleshooting
 
+- **Run `claude-doctor`** in the terminal (session menu → "🐚 Drop to bash
+  shell") for the health check the app runs on every start: memory, disk,
+  Node.js, whether Claude Code actually starts, the CPU and the network. The
+  last line sums up how many checks failed.
 - **Claude does not start on a virtual machine (blank panel or "cannot run on this CPU")**:
   Claude Code needs an x86-64-v2 CPU (SSE4.2 and POPCNT). Proxmox's default
   CPU type `kvm64` lacks both. Set the VM's CPU type to `host` (or at least
