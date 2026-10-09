@@ -199,15 +199,21 @@ test('PaneWatcher is not misled by "reset" in a shell line', () => {
 // Fake /proc: { pid: 'pid (comm) state ppid pgrp session tty_nr tpgid ...' }
 function makeProc(stats) {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-proc-'));
-    for (const [pid, line] of Object.entries(stats)) {
-        fs.mkdirSync(path.join(root, pid));
-        fs.writeFileSync(path.join(root, pid, 'stat'), `${line} 0 0 0\n`);
+    try {
+        for (const [pid, line] of Object.entries(stats)) {
+            fs.mkdirSync(path.join(root, pid));
+            fs.writeFileSync(path.join(root, pid, 'stat'), `${line} 0 0 0\n`);
+        }
+        fs.mkdirSync(path.join(root, 'self'));
+    } catch (err) {
+        fs.rmSync(root, { recursive: true, force: true });
+        throw err;
     }
-    fs.mkdirSync(path.join(root, 'self'));
     return root;
 }
 
-// HA-Test 3.3.0: bash -c (no job control) runs claude in its own process group.
+// HA-Test 3.3.0: bash -c (no job control) runs claude in bash's process
+// group (pgrp 348), which is the terminal's foreground group.
 const PROC_CLAUDE = {
     348: '348 (bash) S 347 348 348 34816 348',
     354: '354 (claude) S 348 348 348 34816 348',
@@ -230,11 +236,13 @@ test('claudeInForeground finds claude in the pane\'s foreground group', () => {
 });
 
 test('claudeInForeground reads a comm with spaces and parentheses', () => {
+    // The pane's tpgid (701) is only found if the comm ends at the last ")".
     const root = makeProc({
-        700: '700 (my (odd) sh) S 1 700 700 34818 700',
+        700: '700 (my (odd) sh) S 1 700 700 34818 701',
+        701: '701 (claude) S 700 701 700 34818 701',
     });
     try {
-        assert.equal(ac.claudeInForeground(root, 700), false);
+        assert.equal(ac.claudeInForeground(root, 700), true);
     } finally {
         fs.rmSync(root, { recursive: true, force: true });
     }
@@ -260,27 +268,43 @@ function makeTmux(screens, onCall = () => {}) {
 // `hooks.onCall(args, t)` is handed to the fake tmux (see makeTmux).
 function makeController(screens, stats = PROC_CLAUDE, hooks = {}) {
     const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-state-'));
-    const procRoot = makeProc(stats);
+    let procRoot = null;
+    const cleanup = () => {
+        fs.rmSync(stateDir, { recursive: true, force: true });
+        if (procRoot) fs.rmSync(procRoot, { recursive: true, force: true });
+    };
     const clock = { now: T0 };
     const logs = [];
     let t = null;
     const fake = makeTmux(screens, (args) => { if (hooks.onCall && t) hooks.onCall(args, t); });
-    const ctl = ac.createAutoContinue({
-        stateDir,
-        procRoot,
-        tmux: fake.tmux,
-        now: () => clock.now,
-        log: (m) => logs.push(m),
-        sleep: async () => {},
-    });
-    const cleanup = () => {
-        fs.rmSync(stateDir, { recursive: true, force: true });
-        fs.rmSync(procRoot, { recursive: true, force: true });
-    };
+    let ctl;
+    try {
+        procRoot = makeProc(stats);
+        ctl = ac.createAutoContinue({
+            stateDir,
+            procRoot,
+            tmux: fake.tmux,
+            now: () => clock.now,
+            log: (m) => logs.push(m),
+            sleep: async () => {},
+        });
+    } catch (err) {
+        cleanup();
+        throw err;
+    }
     const sends = () => fake.calls.filter((a) => a[0] === 'send-keys');
     t = { ctl, stateDir, clock, logs, calls: fake.calls, sends, cleanup };
     return t;
 }
+
+test('the test helpers leave no temp dir behind when they fail', () => {
+    const ours = () => fs.readdirSync(os.tmpdir()).filter((n) => /^ac-(proc|state)-/.test(n)).sort();
+    const before = ours();
+    // A "self" entry collides with the fake /proc's own self dir.
+    assert.throws(() => makeProc({ self: 'x' }));
+    assert.throws(() => makeController({}, { self: 'x' }));
+    assert.deepEqual(ours(), before);
+});
 
 test('switched off: no tmux call, no log line', async () => {
     const t = makeController({ '%0': { pid: 348, screen: RELATIVE } });
@@ -452,6 +476,55 @@ test('status shows no plans once the command has switched off', async () => {
         assert.equal(t.ctl.status().scheduled.length, 1);
         fs.writeFileSync(path.join(t.stateDir, 'auto-continue'), 'off\n');
         assert.deepEqual(t.ctl.status(), { enabled: false, scheduled: [], lastSent: null });
+    } finally { t.cleanup(); }
+});
+
+test('a plan for a pane that is gone is dropped', async () => {
+    const screens = { '%0': { pid: 348, screen: RELATIVE } };
+    const t = makeController(screens);
+    try {
+        t.ctl.setEnabled(true);
+        await t.ctl.poll();
+        delete screens['%0'];
+        t.clock.now = T0 + 6 * 3600000;
+        await t.ctl.poll();
+        assert.deepEqual(t.sends(), []);
+        assert.ok(t.logs.includes('not sent to pane %0: the pane is gone'), t.logs.join('\n'));
+        assert.deepEqual(t.ctl.status().scheduled, []);
+    } finally { t.cleanup(); }
+});
+
+test('poll never rejects, even when the status summary cannot be built', async () => {
+    const t = makeController({ '%0': { pid: 348, screen: RELATIVE } });
+    const RealDTF = Intl.DateTimeFormat;
+    try {
+        t.ctl.setEnabled(true);
+        // clock() (HH:MM for the summary) fails once a plan exists.
+        Intl.DateTimeFormat = function () { throw new Error('no Intl'); };
+        await assert.doesNotReject(t.ctl.poll());
+    } finally {
+        Intl.DateTimeFormat = RealDTF;
+        t.cleanup();
+    }
+});
+
+test('a status file that cannot be written is logged once until it works again', async () => {
+    const t = makeController({ '%0': { pid: 348, screen: RELATIVE } });
+    const statusFile = path.join(t.stateDir, 'auto-continue.status');
+    const failures = () => t.logs.filter((l) => l.startsWith('could not write')).length;
+    try {
+        fs.mkdirSync(statusFile); // a directory in its place: every write fails
+        t.ctl.setEnabled(true);
+        await t.ctl.poll();
+        await t.ctl.poll();
+        assert.equal(failures(), 1, t.logs.join('\n'));
+        fs.rmdirSync(statusFile);
+        await t.ctl.poll();
+        assert.ok(fs.statSync(statusFile).isFile());
+        fs.rmSync(statusFile);
+        fs.mkdirSync(statusFile);
+        await t.ctl.poll();
+        assert.equal(failures(), 2, t.logs.join('\n'));
     } finally { t.cleanup(); }
 });
 

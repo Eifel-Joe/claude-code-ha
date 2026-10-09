@@ -305,6 +305,7 @@ function createAutoContinue(options = {}) {
     let lastSent = null;        // { pane, at }
     let lastEnabled = null;     // null until the first poll: an "off" start logs nothing
     let polling = false;
+    let statusWriteFailed = false;
 
     function isEnabled() {
         try {
@@ -329,18 +330,24 @@ function createAutoContinue(options = {}) {
         };
     }
 
+    // Never throws: it runs in poll()'s finally, and a rejected poll() would be
+    // an unhandled rejection in the image service. A failing write is logged
+    // once until a write succeeds again, not on every 30 s poll.
     function writeStatus() {
-        const s = status();
-        const lines = [`Auto-continue: ${s.enabled ? 'on' : 'off'}`];
-        for (const item of s.scheduled) {
-            lines.push(`Will send "continue" to pane ${item.pane} at ${clock(Date.parse(item.at))}`);
-        }
-        lines.push(lastSent ? `Last sent: pane ${lastSent.pane} at ${clock(lastSent.at)}` : 'Last sent: never');
         try {
+            const s = status();
+            const lines = [`Auto-continue: ${s.enabled ? 'on' : 'off'}`];
+            for (const item of s.scheduled) {
+                lines.push(`Will send "continue" to pane ${item.pane} at ${clock(Date.parse(item.at))}`);
+            }
+            lines.push(lastSent ? `Last sent: pane ${lastSent.pane} at ${clock(lastSent.at)}` : 'Last sent: never');
             fs.mkdirSync(stateDir, { recursive: true });
             fs.writeFileSync(statusFile, lines.join('\n') + '\n');
+            statusWriteFailed = false;
         } catch (err) {
-            log(`could not write ${statusFile}: ${err.message}`);
+            if (statusWriteFailed) return;
+            statusWriteFailed = true;
+            log(`could not write ${statusFile}: ${(err && err.message) || err}`);
         }
     }
 
@@ -387,6 +394,8 @@ function createAutoContinue(options = {}) {
         try {
             await tmux(['send-keys', '-t', pane.id, '-l', 'continue']);
             await sleep(ENTER_DELAY_MS);
+            // Sent even if the switch went off during the pause, on purpose:
+            // better than leaving "continue" half-typed in Claude's prompt.
             await tmux(['send-keys', '-t', pane.id, 'Enter']);
             lastSent = { pane: pane.id, at: now() };
             log(`sent "continue" to pane ${pane.id}`);
@@ -458,10 +467,12 @@ function createAutoContinue(options = {}) {
         }
     }
 
+    // poll() does not reject; the .catch is a last guard so that a future
+    // slip can never become an unhandled rejection in the image service.
     function start(intervalMs = POLL_INTERVAL_MS) {
-        const timer = setInterval(poll, intervalMs);
+        const timer = setInterval(() => { poll().catch(() => {}); }, intervalMs);
         timer.unref();
-        poll();
+        poll().catch(() => {});
         return timer;
     }
 
