@@ -25,8 +25,9 @@ SHIPPED_CLAUDE_DIR="${SHIPPED_CLAUDE_DIR:-/opt/.claude}"
 IMAGE_UPLOAD_DIR="${IMAGE_UPLOAD_DIR:-/data/images}"
 
 # Auto-continue's switch ("on"/"off"), read by the image service on every poll
-# and flipped by the auto-continue command. /run is cleared on restart, so the
-# option decides again after every start (image-service/auto-continue.js).
+# and flipped by the auto-continue command. init_auto_continue rewrites it on
+# every start, so the option decides again after a restart
+# (image-service/auto-continue.js).
 AUTO_CONTINUE_DIR="${AUTO_CONTINUE_DIR:-/run/claude-workbench}"
 
 # CPU check shared with the session picker and health check (cpu-check.sh).

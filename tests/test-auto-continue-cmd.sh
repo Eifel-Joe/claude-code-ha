@@ -100,4 +100,11 @@ grep -q 'Usage: auto-continue' "$tmp_dir/err" || fail "no usage on stderr"
 
 bash "$cmd" --help | grep -q 'Usage: auto-continue' || fail "--help shows no usage"
 
+# on/off drop the service's report, which describes the old switch until its
+# next check: status must not show "off" right after "on".
+printf 'Auto-continue: off\nLast sent: never\n' > "$AUTO_CONTINUE_DIR/auto-continue.status"
+bash "$cmd" on > /dev/null || fail "on failed"
+out=$(bash "$cmd" status) || fail "status failed after on"
+printf '%s\n' "$out" | grep -q '^Auto-continue: on$' || fail "status right after on said: $out"
+
 echo "Auto-continue suite passed"

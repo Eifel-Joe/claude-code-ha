@@ -302,6 +302,8 @@ test('the UI loads the panel helpers and has the auto-continue button', async ()
     const html = await (await fetch(`http://127.0.0.1:${PORT}/`)).text();
     assert.match(html, /<script src="workbench-ui\.js"><\/script>/);
     assert.match(html, /id="auto-continue-btn"/);
+    // Unknown until the first GET answers: a click then switches nothing.
+    assert.match(html, /<button id="auto-continue-btn"[^>]*data-enabled=""/);
     const js = await fetch(`http://127.0.0.1:${PORT}/workbench-ui.js`);
     assert.strictEqual(js.status, 200);
 });
@@ -346,7 +348,10 @@ test('a WebSocket upgrade is proxied even as the very first proxy request', asyn
             ...process.env,
             IMAGE_SERVICE_PORT: String(port),
             TTYD_PORT: String(ttydPort),
-            UPLOAD_DIR: dir
+            UPLOAD_DIR: dir,
+            // Every instance polls for auto-continue and writes its status
+            // file; without this it would go to /run/claude-workbench.
+            AUTO_CONTINUE_DIR: dir
         },
         stdio: 'ignore'
     });
@@ -413,7 +418,8 @@ test('/terminal shows a self-reloading start page while ttyd is not up', async (
             ...process.env,
             IMAGE_SERVICE_PORT: String(port),
             TTYD_PORT: String(deadTtydPort),
-            UPLOAD_DIR: dir
+            UPLOAD_DIR: dir,
+            AUTO_CONTINUE_DIR: dir
         },
         stdio: 'ignore'
     });

@@ -23,6 +23,8 @@ case "${1:-status}" in
     on|off)
         mkdir -p "$dir"
         printf '%s\n' "$1" > "$state_file"
+        # The service's report describes the old switch until its next check.
+        rm -f "$status_file"
         echo "Auto-continue is now $1 (the image service picks it up within 30 seconds)."
         ;;
     status)
