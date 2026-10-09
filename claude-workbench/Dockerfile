@@ -143,10 +143,12 @@ COPY run.sh /run.sh
 COPY scripts/ /opt/scripts/
 COPY .claude/ /opt/.claude/
 # claude-doctor: the startup health check, callable from the terminal
-# (owine's fork, commit cc0d74e7)
+# (owine's fork, commit cc0d74e7); auto-continue: the runtime switch for
+# auto-continue after a usage limit (mattbsea's fork, commit 00e22fc0)
 RUN chmod +x /run.sh \
     && chmod +x /opt/scripts/*.sh \
-    && ln -sf /opt/scripts/health-check.sh /usr/local/bin/claude-doctor
+    && ln -sf /opt/scripts/health-check.sh /usr/local/bin/claude-doctor \
+    && ln -sf /opt/scripts/auto-continue.sh /usr/local/bin/auto-continue
 
 # Use exec form for better signal handling
 CMD ["/run.sh"]
