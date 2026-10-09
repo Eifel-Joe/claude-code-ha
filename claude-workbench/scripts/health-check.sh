@@ -73,21 +73,49 @@ check_node_installation() {
 check_claude_cli() {
     bashio::log.info "=== Claude CLI Check ==="
 
-    if command -v claude >/dev/null 2>&1; then
-        bashio::log.info "Claude CLI found at: $(which claude) ✓"
-
-        # Check if Claude CLI is executable
-        if [ -x "$(which claude)" ]; then
-            bashio::log.info "Claude CLI is executable ✓"
-        else
-            bashio::log.error "Claude CLI is not executable ✗"
-            return 1
-        fi
-    else
+    local claude_path
+    if ! claude_path=$(command -v claude 2>/dev/null); then
         bashio::log.error "Claude CLI not found ✗"
-        bashio::log.info "Attempting to install Claude CLI..."
+        bashio::log.info "Restart the app: startup reinstalls Claude Code."
         return 1
     fi
+    bashio::log.info "Claude CLI found at: ${claude_path} ✓"
+
+    if [ ! -x "$claude_path" ]; then
+        bashio::log.error "Claude CLI is not executable ✗"
+        return 1
+    fi
+
+    # Present and executable is not the same as runnable: a libc mismatch or a
+    # CPU without x86-64-v2 leaves a binary that aborts or hangs on launch
+    # (umrath, heytcass upstream ff4ebec; owine's fork, commit cc0d74e7). So
+    # run it, once, under a time limit. On such a CPU it would only hang until
+    # the limit, so say why instead (cpu-check.sh).
+    local missing=""
+    if command -v claude_cpu_missing_flags >/dev/null 2>&1; then
+        missing=$(claude_cpu_missing_flags)
+    fi
+    if [ -n "$missing" ]; then
+        bashio::log.error "Claude CLI cannot run on this CPU (lacks ${missing}) ✗"
+        return 1
+    fi
+
+    local -a version_cmd=("$claude_path" --version)
+    if command -v timeout >/dev/null 2>&1; then
+        version_cmd=(timeout "${HEALTH_CLAUDE_TIMEOUT:-10}" "${version_cmd[@]}")
+    fi
+    local output status=0
+    output=$("${version_cmd[@]}" 2>&1) || status=$?
+    if [ "$status" -eq 0 ]; then
+        bashio::log.info "Claude CLI runs: ${output%%$'\n'*} ✓"
+        return 0
+    fi
+    bashio::log.error "Claude CLI is present but fails to run or hangs (exit ${status}) ✗"
+    bashio::log.info "Output of '${claude_path} --version':"
+    # A here-string, not a pipe: with pipefail an early-closing head could fail
+    # the check under bashio's errexit.
+    head -n 5 <<< "$output"
+    return 1
 }
 
 # Claude Code hangs without a word on CPUs without x86-64-v2 (cpu-check.sh).
