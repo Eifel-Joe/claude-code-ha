@@ -345,6 +345,10 @@ set -g history-limit 50000
 # Reduce escape-time so claude/vim feel responsive inside tmux
 set -g escape-time 20
 
+# Pass focus in/out events on, so Claude Code and vim notice when the
+# terminal gains or loses focus
+set -g focus-events on
+
 # Start window and pane numbering at 1 (easier to reach on keyboard)
 set -g base-index 1
 setw -g pane-base-index 1
@@ -355,6 +359,11 @@ set -g status-bg colour235
 set -g status-fg colour136
 set -g status-left '[#S] '
 set -g status-right '%H:%M'
+
+# Own settings: this file is rewritten on every start, ~/.tmux.conf.local is
+# never touched by the app. Loaded last, so it overrides everything above
+# (owine's fork, commit 1175851a).
+source-file -q ~/.tmux.conf.local
 TMUX_EOF
 
     # Wrapper: attach to existing 'claude' session, or create a fresh one that runs the launch command

@@ -74,6 +74,17 @@ The app offers several configuration options:
 - Keep disabled for reliable native browser copy/paste in the ttyd terminal, including OAuth codes
 - Enable only if you prefer tmux mouse selection, scrolling, and pane controls
 
+### Own tmux Settings
+- The app rewrites `~/.tmux.conf` on every start. Put your own settings in
+  `~/.tmux.conf.local` (that is `/data/home/.tmux.conf.local`): it is loaded
+  last, so it overrides the defaults, and it survives restarts and updates
+- Example – a green status bar:
+  ```bash
+  echo 'set -g status-bg colour22' >> ~/.tmux.conf.local
+  tmux source-file ~/.tmux.conf
+  ```
+- Restarting the app loads it as well
+
 ### Copying Text Out of the Terminal
 
 There are five ways, and which ones you need depends on the device:
