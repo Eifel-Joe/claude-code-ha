@@ -1,6 +1,6 @@
 ## claude-doctor, own tmux settings, honest security notes
 
-- **`claude-doctor`** runs the app's health check in the terminal — and the check now actually starts Claude Code, so a binary that cannot run no longer gets a green tick.
+- **`claude-doctor`** runs the app's health check in the terminal — and the check now actually starts Claude Code, Node.js and npm, so a binary that cannot run no longer gets a green tick.
 - **Own tmux settings** go in `~/.tmux.conf.local`; they override the defaults and survive restarts and updates.
 - **Security notes:** every signed-in Home Assistant user can open the panel, not only administrators (`panel_admin` only hides the sidebar entry). The README now says so and what is behind the panel. If you hand out limited accounts, stop or uninstall the app.
 - **Fixes:** the panel's files are no longer served stale after an update; CI runs on a pinned Ubuntu 24.04.

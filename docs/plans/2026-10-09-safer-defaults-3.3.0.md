@@ -715,9 +715,9 @@ shellcheck -S warning -e SC1008,SC1007,SC2155 -x claude-workbench/run.sh claude-
   Expected: keine Ausgabe. CRLF-Check `0`. `.tmp/` auf Test-Reste prüfen.
 
 - [x] **Step 3:** Code-Review per Subagent (`superpowers:requesting-code-review`) über `main..feat/safer-defaults-3.3.0` gegen Spec und Plan; Befunde über `superpowers:receiving-code-review` prüfen.
-- [ ] **Step 4:** Push des Branches (Freigabe); CI `gh run list --repo Eifel-Joe/claude-workbench --branch feat/safer-defaults-3.3.0` → grün; im Job-Log „Runner Image … ubuntu-24.04“, „tmux config suite passed“, Image-Service 15/0, beide Image-Builds grün.
-- [ ] **Step 5:** Merge nach `main` (`--no-ff`), Push (Freigabe), CI auf `main` grün.
-- [ ] **Step 6:** HA-Test (`ha_manage_app` check_updates, dann update auf 3.3.0). Prüfen (Ende-zu-Ende-Kriterium der Spec):
+- [x] **Step 4:** Push des Branches (Freigabe); CI `gh run list --repo Eifel-Joe/claude-workbench --branch feat/safer-defaults-3.3.0` → grün; im Job-Log „Runner Image … ubuntu-24.04“, „tmux config suite passed“, Image-Service 15/0, beide Image-Builds grün.
+- [x] **Step 5:** Merge nach `main` (`--no-ff`), Push (Freigabe), CI auf `main` grün.
+- [x] **Step 6:** HA-Test (`ha_manage_app` check_updates, dann update auf 3.3.0). Prüfen (Ende-zu-Ende-Kriterium der Spec):
   - App-Log: „Claude CLI runs: <Version> ✓“ und die Zusammenfassung des Health-Checks;
   - User im Terminal (Picker 8): `claude-doctor` → dieselben Checks und Zusammenfassung;
   - User: `echo 'set -g status-bg colour22' >> ~/.tmux.conf.local; tmux source-file ~/.tmux.conf` → Statusleiste grün; danach `rm ~/.tmux.conf.local` und App-Neustart nach Belieben.
