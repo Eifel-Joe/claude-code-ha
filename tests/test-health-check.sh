@@ -53,6 +53,7 @@ grep -qx 'error|❌ 2 check(s) failed' <<< "$out" || fail "summary missing or wr
 bashio::log.info() { printf 'info|%s\n' "$*"; }
 bashio::log.warning() { printf 'warning|%s\n' "$*"; }
 bashio::log.error() { printf 'error|%s\n' "$*"; }
+# shellcheck disable=SC2034  # read by the sourced health-check.sh
 CPU_CHECK_SCRIPT="$repo_root/claude-workbench/scripts/cpu-check.sh"
 # shellcheck source=/dev/null
 source "$repo_root/claude-workbench/scripts/health-check.sh"
