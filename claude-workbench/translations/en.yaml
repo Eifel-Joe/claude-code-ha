@@ -29,3 +29,6 @@ configuration:
   image_retention_days:
     name: "Keep pasted images (days)"
     description: "Pasted or dropped images older than this are deleted from /data/images on start, so they do not fill your backups. 0 keeps them all."
+  auto_continue:
+    name: "Auto-continue after a usage limit"
+    description: "When Claude reports a usage limit, types “continue” into the Claude session one minute after the reset. Claude then works on unattended, also with “Run without asking”. Switch it at runtime with the ⏩ button or `auto-continue on|off`; after a restart this setting applies again."

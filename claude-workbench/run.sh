@@ -24,6 +24,11 @@ SHIPPED_CLAUDE_DIR="${SHIPPED_CLAUDE_DIR:-/opt/.claude}"
 # (tests/test-image-retention.sh).
 IMAGE_UPLOAD_DIR="${IMAGE_UPLOAD_DIR:-/data/images}"
 
+# Auto-continue's switch ("on"/"off"), read by the image service on every poll
+# and flipped by the auto-continue command. /run is cleared on restart, so the
+# option decides again after every start (image-service/auto-continue.js).
+AUTO_CONTINUE_DIR="${AUTO_CONTINUE_DIR:-/run/claude-workbench}"
+
 # CPU check shared with the session picker and health check (cpu-check.sh).
 # shellcheck source=/dev/null
 [ -f "${CPU_CHECK_SCRIPT:-/opt/scripts/cpu-check.sh}" ] && . "${CPU_CHECK_SCRIPT:-/opt/scripts/cpu-check.sh}"
@@ -660,6 +665,22 @@ prune_uploaded_images() {
     fi
 }
 
+# Write auto-continue's initial state from the option. Must run before the
+# image service starts; a failure only logs, the panel matters more.
+init_auto_continue() {
+    local state=off
+
+    [ "$(bashio::config 'auto_continue' 'false')" = "true" ] && state=on
+    if ! { mkdir -p "$AUTO_CONTINUE_DIR" && printf '%s\n' "$state" > "$AUTO_CONTINUE_DIR/auto-continue"; } 2>/dev/null; then
+        bashio::log.warning "Could not write the auto-continue switch to ${AUTO_CONTINUE_DIR}; auto-continue stays off"
+        return 0
+    fi
+    rm -f "$AUTO_CONTINUE_DIR/auto-continue.status"
+    if [ "$state" = "on" ]; then
+        bashio::log.info "Auto-continue after a usage limit is on (switch it with: auto-continue on|off)"
+    fi
+}
+
 # Start image upload service
 start_image_service() {
     local image_port=7680
@@ -865,6 +886,7 @@ main() {
     init_environment
     install_tools
     prune_uploaded_images
+    init_auto_continue
     # Serve the panel before the slow, network-bound steps below - the health
     # check's network probes included (up to three 15 s curls when offline);
     # until ttyd starts last, the terminal frame shows a start page
