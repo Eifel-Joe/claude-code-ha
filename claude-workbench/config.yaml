@@ -58,7 +58,7 @@ schema:
     - str?
   use_persistent_claude: bool?
   auto_update_claude_on_start: bool?
-  image_retention_days: int(0,)?
+  image_retention_days: int(0,3650)?
 
 # Volume mappings for file access
 map:

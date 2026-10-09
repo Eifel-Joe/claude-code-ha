@@ -62,20 +62,24 @@ setup_npm_cache() {
     fi
 }
 
-# Initialize environment for Claude Code CLI using /data (HA best practice)
 # Copy the shipped commands and skills over $HOME/.claude on every start. They
 # used to be copied only into a missing $HOME/.claude, so existing installs kept
 # their first version for good. Only the shipped files are written; logins,
-# projects, settings and the user's own skills stay as they are.
+# projects, settings and the user's own skills stay as they are. A failed copy
+# (e.g. /data full) is logged, not fatal: run.sh runs under set -e, and this runs
+# before the panel is served (tests/test-claude-assets.sh).
 install_shipped_claude_assets() {
     local target="$1"
 
     [ -d "$SHIPPED_CLAUDE_DIR" ] || return 0
-    mkdir -p "$target"
-    cp -R "$SHIPPED_CLAUDE_DIR/." "$target/"
+    if ! { mkdir -p "$target" && cp -R "$SHIPPED_CLAUDE_DIR/." "$target/"; }; then
+        bashio::log.warning "Could not refresh Claude Code skills & commands in $target"
+        return 0
+    fi
     bashio::log.info "  - Claude Code skills & commands: up to date"
 }
 
+# Initialize environment for Claude Code CLI using /data (HA best practice)
 init_environment() {
     # Use /data exclusively - guaranteed writable by HA Supervisor
     local data_home="/data/home"
@@ -611,37 +615,43 @@ get_claude_launch_command() {
 }
 
 
-# Start image upload service
 # Pasted and dropped images land in /data/images and go into every backup of the
 # app. Delete the image service's own pasted-* files older than
-# image_retention_days (0 keeps all). A value that cannot be read as a whole
-# number - including the empty string bashio::config returns when the Supervisor
-# API is unreachable - deletes nothing: for a deletion that is the only safe
-# default (owine's fork, PR #380; tests/test-image-retention.sh).
+# image_retention_days (0 keeps all). Anything but a whole number from 0 to 3650
+# (the schema's range) deletes nothing - for a deletion that is the only safe
+# default. The cap matters: BusyBox find keeps -mtime in 32 bits, so a huge value
+# would wrap to +0 and delete every image older than a day. A failing find is
+# logged, not fatal: run.sh runs under set -e, and this runs before the panel is
+# served (owine's fork, PR #380; tests/test-image-retention.sh).
 prune_uploaded_images() {
-    local days removed
+    local value days removed
 
-    days=$(bashio::config 'image_retention_days' '30')
-    case "$days" in
-        ''|*[!0-9]*)
-            bashio::log.warning "image_retention_days '${days}' is not a whole number; keeping all uploaded images"
-            return 0
-            ;;
+    value=$(bashio::config 'image_retention_days' '30')
+    case "$value" in
+        ''|*[!0-9]*) days=-1 ;;
+        *) [ "${#value}" -le 4 ] && days=$((10#$value)) || days=-1 ;;
     esac
-    days=$((10#$days))
+    if [ "$days" -lt 0 ] || [ "$days" -gt 3650 ]; then
+        bashio::log.warning "image_retention_days '${value}' is not a whole number from 0 to 3650; keeping all uploaded images"
+        return 0
+    fi
     [ "$days" -gt 0 ] || return 0
     [ -d "$IMAGE_UPLOAD_DIR" ] || return 0
 
     # -mtime +N matches files whose age in whole days exceeds N, so +(days-1)
     # means "at least days old".
-    removed=$(find "$IMAGE_UPLOAD_DIR" -maxdepth 1 -type f -name 'pasted-*' \
-        -mtime "+$((days - 1))" -print -delete | wc -l)
+    if ! removed=$(find "$IMAGE_UPLOAD_DIR" -maxdepth 1 -type f -name 'pasted-*' \
+            -mtime "+$((days - 1))" -print -delete | wc -l); then
+        bashio::log.warning "Could not clean up old uploaded images in ${IMAGE_UPLOAD_DIR}"
+        return 0
+    fi
     removed=$((removed))
     if [ "$removed" -gt 0 ]; then
         bashio::log.info "Removed ${removed} uploaded image(s) older than ${days} day(s) from ${IMAGE_UPLOAD_DIR}"
     fi
 }
 
+# Start image upload service
 start_image_service() {
     local image_port=7680
     local ttyd_port=7681
@@ -843,16 +853,18 @@ run_health_check() {
 main() {
     bashio::log.info "Initializing Claude Workbench app..."
 
-    # Run diagnostics first (especially helpful for VirtualBox issues)
-    run_health_check
-
     init_environment
     install_tools
     prune_uploaded_images
-    # Serve the panel before the slow, network-bound steps below; until ttyd
-    # starts last, the terminal frame shows a start page (image-service/server.js)
-    # (owine's fork, PR #380; tests/test-startup-order.sh).
+    # Serve the panel before the slow, network-bound steps below - the health
+    # check's network probes included (up to three 15 s curls when offline);
+    # until ttyd starts last, the terminal frame shows a start page
+    # (image-service/server.js) (owine's fork, PR #380; tests/test-startup-order.sh).
     start_image_service
+
+    # Diagnostics (especially helpful for VirtualBox issues); they only log
+    run_health_check
+
     setup_tmux
     setup_persistent_claude
     setup_session_picker
