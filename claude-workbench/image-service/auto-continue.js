@@ -145,4 +145,73 @@ function parseResetTime(text, nowMs) {
     return m.tz ? nextOccurrenceEpoch(null, hour, m.minute, nowMs) : null;
 }
 
-module.exports = { stripAnsi, detectLimit, parseResetTime };
+// Screen lines that carry a limit banner, trimmed.
+function limitLines(text) {
+    return text.split('\n').map((line) => line.trim()).filter((line) => detectLimit(line) !== null);
+}
+
+/**
+ * Tracks one tmux pane. Each poll hands it the whole visible screen, and the
+ * same banner keeps showing up until it scrolls away. So a banner is known by
+ * its "signature" - all limit lines on screen, joined - instead of by
+ * mattbsea's reset-time tolerance and 12 h stale window, which assume a stream
+ * that shows each banner once:
+ * - same signature as the plan: keep it (a relative "try again in 5 hours"
+ *   would otherwise move 30 s further on every poll);
+ * - same signature as the one already answered: nothing (no second
+ *   "continue" for a banner still on screen, not even in the 30 min fallback);
+ * - no limit line on screen: drop the plan and forget the answered banner.
+ * Edge: the very same text appearing again while the old one is still shown
+ * is missed - never sent twice.
+ */
+class PaneWatcher {
+    constructor() {
+        this.dueAt = null;
+        this.pendingSig = null;
+        this.answeredSig = null;
+    }
+
+    // One fresh screen. Returns null, {type: 'cleared'} or
+    // {type: 'scheduled', dueAt, matched, hasResetTime}.
+    observe(screen, nowMs) {
+        const text = stripAnsi(screen);
+        const lines = limitLines(text);
+        if (lines.length === 0) {
+            this.answeredSig = null;
+            if (this.dueAt === null) return null;
+            this.cancel();
+            return { type: 'cleared' };
+        }
+        const sig = lines.join('\n');
+        if (sig === this.answeredSig) return null;
+        if (this.dueAt !== null && sig === this.pendingSig) return null;
+
+        const resetAt = parseResetTime(text, nowMs);
+        const wanted = resetAt !== null ? resetAt + RESUME_GRACE_MS : nowMs + FALLBACK_DELAY_MS;
+        this.dueAt = Math.min(wanted, nowMs + MAX_WAIT_MS);
+        this.pendingSig = sig;
+        return {
+            type: 'scheduled',
+            dueAt: this.dueAt,
+            matched: detectLimit(lines[lines.length - 1]),
+            hasResetTime: resetAt !== null,
+        };
+    }
+
+    isDue(nowMs) {
+        return this.dueAt !== null && nowMs >= this.dueAt;
+    }
+
+    // The planned banner is dealt with (sent, or skipped on purpose).
+    done() {
+        this.answeredSig = this.pendingSig;
+        this.cancel();
+    }
+
+    cancel() {
+        this.dueAt = null;
+        this.pendingSig = null;
+    }
+}
+
+module.exports = { stripAnsi, detectLimit, parseResetTime, PaneWatcher };

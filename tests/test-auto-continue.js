@@ -83,3 +83,71 @@ test('parseResetTime falls back to the server zone for an unknown zone name', ()
 test('parseResetTime returns null without a time', () => {
     assert.equal(ac.parseResetTime('Claude usage limit reached.', Date.now()), null);
 });
+
+const T0 = Date.UTC(2026, 9, 9, 12, 0, 0);
+const RELATIVE = 'some output\nPlease try again in 5 hours\n> ';
+
+test('PaneWatcher plans one minute after the reset', () => {
+    const w = new ac.PaneWatcher();
+    const change = w.observe(RELATIVE, T0);
+    assert.equal(change.type, 'scheduled');
+    assert.equal(change.hasResetTime, true);
+    assert.equal(w.dueAt, T0 + 5 * 3600000 + 60000);
+    assert.equal(w.isDue(w.dueAt - 1), false);
+    assert.equal(w.isDue(w.dueAt), true);
+});
+
+test('PaneWatcher keeps the plan while the same banner stays on screen', () => {
+    const w = new ac.PaneWatcher();
+    w.observe(RELATIVE, T0);
+    const due = w.dueAt;
+    // A relative wait re-read 10 minutes later must not move the plan.
+    assert.equal(w.observe(RELATIVE, T0 + 10 * 60000), null);
+    assert.equal(w.dueAt, due);
+});
+
+test('PaneWatcher falls back to 30 minutes without a reset time', () => {
+    const w = new ac.PaneWatcher();
+    const change = w.observe('Claude usage limit reached.\n', T0);
+    assert.equal(change.hasResetTime, false);
+    assert.equal(w.dueAt, T0 + 30 * 60000);
+});
+
+test('PaneWatcher drops the plan when the banner leaves the screen', () => {
+    const w = new ac.PaneWatcher();
+    w.observe(RELATIVE, T0);
+    assert.deepEqual(w.observe('fresh screen\n> ', T0 + 60000), { type: 'cleared' });
+    assert.equal(w.dueAt, null);
+    assert.equal(w.observe('fresh screen\n> ', T0 + 120000), null);
+});
+
+test('PaneWatcher does not answer the same visible banner twice', () => {
+    const w = new ac.PaneWatcher();
+    w.observe('Claude usage limit reached.\n', T0);
+    w.done();
+    assert.equal(w.observe('Claude usage limit reached.\n> continue\n', T0 + 60000), null);
+    assert.equal(w.dueAt, null);
+});
+
+test('PaneWatcher plans again for a new banner after answering', () => {
+    const w = new ac.PaneWatcher();
+    w.observe('5-hour limit reached ∙ resets 3pm (UTC)\n', T0);
+    w.done();
+    const change = w.observe('5-hour limit reached ∙ resets 3pm (UTC)\n5-hour limit reached ∙ resets 8pm (UTC)\n', T0);
+    assert.equal(change.type, 'scheduled');
+    assert.equal(w.dueAt, Date.UTC(2026, 9, 9, 20, 1, 0));
+});
+
+test('PaneWatcher forgets an answered banner once it has scrolled away', () => {
+    const w = new ac.PaneWatcher();
+    w.observe('Claude usage limit reached.\n', T0);
+    w.done();
+    w.observe('other text\n', T0 + 60000);
+    assert.equal(w.observe('Claude usage limit reached.\n', T0 + 120000).type, 'scheduled');
+});
+
+test('PaneWatcher never plans further than 24 hours ahead', () => {
+    const w = new ac.PaneWatcher();
+    w.observe('Please try again in 48 hours\n', T0);
+    assert.equal(w.dueAt, T0 + 24 * 3600000);
+});
