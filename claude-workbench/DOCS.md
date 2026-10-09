@@ -222,6 +222,16 @@ The terminal starts directly in your `/config` directory, giving you immediate a
 - **Simple Management**: Use `persist-install` command for easy package installation
 - **Python Virtual Environment**: Isolated Python environment in `/data/packages`
 
+## Security
+
+**Every signed-in Home Assistant user can open this terminal, not only
+administrators.** `panel_admin: true` only hides the sidebar entry; Home
+Assistant lets any signed-in user open an app's ingress page. Behind it is a
+root shell that can write your whole configuration and use the Supervisor
+API. If you hand out limited accounts, stop or uninstall the app. Details and
+sources: the
+[Security section of the README](https://github.com/Eifel-Joe/claude-workbench/blob/main/claude-workbench/README.md#security).
+
 ## Troubleshooting
 
 - **Run `claude-doctor`** in the terminal (session menu → "🐚 Drop to bash

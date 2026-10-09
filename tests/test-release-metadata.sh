@@ -281,4 +281,12 @@ fi
 grep -qE '^\s*(RUN |&& )?ln -sf /opt/scripts/health-check\.sh /usr/local/bin/claude-doctor' "$addon_dir/Dockerfile" || \
     fail "Dockerfile does not link /usr/local/bin/claude-doctor to /opt/scripts/health-check.sh"
 
+# The old "Version 1.0.2 includes …" security section described 2025 and kept
+# quiet about who can open the panel. The current one must say it.
+if grep -n 'Version 1.0.2 includes' "$addon_dir/README.md"; then
+    fail "README.md still carries the outdated 'Version 1.0.2' security section"
+fi
+grep -q 'every signed-in Home Assistant user' "$addon_dir/README.md" || \
+    fail "README.md security section does not say who can open the panel"
+
 echo "Release metadata suite passed (version $config_version)"
