@@ -1,6 +1,6 @@
 # Sitzungsstand
 
-## 2026-10-09 (15) — 3.4.0/3.4.1 umgesetzt, HA-Test bestanden, Release offen
+## 2026-10-09 (15) — 3.4.0/3.4.1 umgesetzt, HA-Test bestanden, v3.4.1 veröffentlicht
 
 ### Stand
 - Plan `docs/plans/2026-10-09-shift-enter-auto-continue-3.4.0.md` Task 1–10 umgesetzt
@@ -13,7 +13,7 @@
 - 3.4.1 = Uhrzeit mehr als 12 h voraus gilt als gerade vergangen (gefunden auf HA-Test:
   „Resets at 19:46“ um 19:46:07 erkannt → Plan für den nächsten Tag). Live geprüft:
   Meldung mit Uhrzeit 3 min in der Vergangenheit, erkannt 20:20:27, gesendet 20:21:27.
-- Kein Tag, kein GitHub-Release, HA-Prod noch auf 3.3.0. 3.4.0 bekommt kein eigenes Release;
+- HA-Prod noch auf 3.3.0 (Update durch den User). 3.4.0 bekommt kein eigenes Release;
   Notizen in `docs/release-notes-3.4.1.md`.
 
 ### Verworfen
@@ -28,13 +28,17 @@
   beenden.
 - Test-Server ohne `AUTO_CONTINUE_DIR` schrieben nach `D:\run` (behoben, gelöscht).
 - Claude kommentiert `!echo`-Limitmeldungen („not a real notice“) – stört den Test nicht.
+- `sed … | grep -q` unter `pipefail` ist ein Wettlauf (SIGPIPE → Exit 141): CI 37970222395
+  auf `main` rot in `test-npm-cache.sh`. Behoben in `f32f935f` (`grep … > /dev/null`), auch
+  in `test-image-retention.sh` und `test-startup-order.sh`. Neue Tests so nicht schreiben.
+- Release v3.4.1 veröffentlicht (Tag auf `fc58583c`), CI `main` grün (37973723650).
 
 ### Nächste Schritte
-- Release v3.4.1 (Text zeigen, Freigabe), danach HA-Prod-Update durch den User, Logs prüfen.
+- HA-Prod-Update auf 3.4.1 durch den User, danach Supervisor- und App-Log prüfen.
 - Zurückgestellt (Memory Folgepunkt 24): Bremse nach erfolglosen Versuchen / Wochenlimit.
 
 ### Empfohlene Skills
-- `superpowers:verification-before-completion` vor dem Release.
+- `superpowers:verification-before-completion` beim Prüfen des Prod-Updates.
 
 ## 2026-10-09 (14) — Spec + Plan 3.4.0 (Shift+Enter, Auto-Continue)
 
