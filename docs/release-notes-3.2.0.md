@@ -1,4 +1,4 @@
-## Cleaner backups, a panel that answers right away
+## Cleaner backups, a panel that comes up first
 
 - **Old pasted images are deleted.** New option *Keep pasted images (days)*, default 30 (`0` keeps all). Pasted images sat in `/data/images` and in every backup forever. The first start after updating removes pasted images older than 30 days — set the option to `0` beforehand to keep them.
 - **The panel comes up first.** Before, it waited for the startup health check, Claude Code's update and the package installs (Home Assistant showed a 502). The terminal now says "Claude Workbench is starting…" until it is ready.
